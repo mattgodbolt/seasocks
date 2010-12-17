@@ -6,7 +6,7 @@ WEB_SRC=src/report
 
 BOOST_OVERRIDE=-I /site/libs/1.1/3rd/x86_64/include/boost-1_36
 INCLUDES=-I $(C_SRC) -I $(DEPS_3RD)log4cplus/include $(BOOST_OVERRIDE) 
-CPPFLAGS=-DBOOST_ASIO_DISABLE_EVENTFD=1 -g -O3 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
+CPPFLAGS=-DBOOST_ASIO_DISABLE_EVENTFD=1 -g -O0 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
 
 ifdef TEAMCITY
 BOOST_LIB_OVERRIDE=/site/libs/1.1/3rd/x86_64/lib/
