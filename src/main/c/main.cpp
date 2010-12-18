@@ -17,7 +17,7 @@
 
 class Connection {
 public:
-	Connection() : _fd(-1), _epollFd(-1), _payloadSizeRemaining(0), _state(INVALID) {}
+	Connection() : _fd(-1), _epollFd(-1), _payloadSizeRemaining(0), _state(INVALID), _closeOnEmpty(false) {}
 	~Connection() {
 		close();
 	}
@@ -30,6 +30,13 @@ public:
 				SOCK_NONBLOCK | SOCK_CLOEXEC);
 		if (_fd == -1) {
 			perror("accept");
+			return false;
+		}
+		struct linger linger;
+		linger.l_linger = 500; // 5 seconds
+		linger.l_onoff = true;
+		if (setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
+			perror("setsockopt");
 			return false;
 		}
 		printf("accept on %d\n", _fd);
@@ -45,6 +52,13 @@ public:
 		return true;
 	}
 
+	void shutdown() {
+		assert(false);
+		if (_fd != -1) {
+			::shutdown(_fd, SHUT_RDWR);
+		}
+	}
+
 	void close() {
 		if (_fd != -1) {
 			if (_epollFd != -1) {
@@ -56,6 +70,10 @@ public:
 	}
 
 	bool write(const void* data, size_t size) {
+		if (size == 0) {
+			return true;
+		}
+		int bytesSent = 0;
 		if (_outBuf.empty()) {
 			// Attempt fast path, send directly.
 			int writeResult = ::write(_fd, data, size);
@@ -66,22 +84,24 @@ public:
 			if (writeResult == -1) {
 				if (errno == EAGAIN || errno == EWOULDBLOCK) {
 					// Treat this as if zero bytes were written.
-					writeResult = 0;
+					bytesSent = 0;
 				} else {
 					perror("write");
 					return false;
 				}
+			} else {
+				bytesSent = writeResult;
 			}
-			size_t bytesToBuffer = size - writeResult;
-			size_t endOfBuffer = _outBuf.size();
-			_outBuf.resize(endOfBuffer + bytesToBuffer);
-			memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + writeResult, bytesToBuffer);
-			if ((_event.events & EPOLLOUT) == 0) {
-				_event.events |= EPOLLOUT;
-				if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, _fd, &_event) == -1) {
-					perror("epoll_ctl");
-					return false;
-				}
+		}
+		size_t bytesToBuffer = size - bytesSent;
+		size_t endOfBuffer = _outBuf.size();
+		_outBuf.resize(endOfBuffer + bytesToBuffer);
+		memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
+		if ((_event.events & EPOLLOUT) == 0) {
+			_event.events |= EPOLLOUT;
+			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, _fd, &_event) == -1) {
+				perror("epoll_ctl");
+				return false;
 			}
 		}
 		return true;
@@ -130,6 +150,10 @@ public:
 				}
 			}
 		}
+		if (_closeOnEmpty && _outBuf.empty()) {
+			close();
+			return false;
+		}
 		return true;
 	}
 
@@ -147,6 +171,9 @@ private:
 	}
 
 	bool handleHeaders() {
+		if (_inBuf.size() < 4) {
+			return true;
+		}
 		for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
 			if (_inBuf[i] == '\r' &&
 				_inBuf[i+1] == '\n' &&
@@ -207,7 +234,6 @@ private:
 	bool processHeaders(uint8_t* first, uint8_t* last) {
 		char* requestLine = extractLine(first, last);
 		assert(requestLine != NULL);
-		printf("Req line: %s\n", requestLine);
 
 		const char* verb = shift(requestLine);
 		if (strcmp(verb, "GET") != 0) {
@@ -235,7 +261,7 @@ private:
 		}
 
 		printf("authority: %s\n", authority);
-
+		bool keepAlive = false;
 		while (first < last) {
 			char* colonPos = NULL;
 			char* headerLine = extractLine(first, last, &colonPos);
@@ -248,28 +274,57 @@ private:
 			const char* key = headerLine;
 			const char* value = skipWhitespace(colonPos + 1);
 			printf("Key: %s || Value: %s\n", key, value);
+			if (strcmp(key, "Connection") == 0) {
+				if (strcmp(value, "keep-alive") == 0) {
+					keepAlive = true;
+				}
+			}
 		}
 
 		char path[1024]; // xx horrible
 		strcpy(path, "./src/web");
 		strcat(path, authority);
+		if (path[strlen(path)-1] == '/') {
+			strcat(path, "index.html");
+		}
 		FILE* f = fopen(path, "rb");
 		if (f == NULL) {
 			send404(path);
+			_closeOnEmpty = true; return true; // AND THE SAME FOR OTHER ERRORS
 			return false;
 		}
+		fseek(f, 0, SEEK_END);
+		int fileSize = ftell(f);
+		fseek(f, 0, SEEK_SET);
 		// todo: check errs
 		writeLine("HTTP/1.1 200 OK");
-		writeLine("Content-Type: text/html");
-		writeLine("Connection: close");
+		if (strstr(authority, ".js") != 0) { // xxx
+			writeLine("Content-Type: text/javascript");
+		} else {
+			writeLine("Content-Type: text/html");
+		}
+		if (keepAlive) {
+			writeLine("Connection: keep-alive");
+		} else {
+			writeLine("Connection: close");
+		}
+		char contentLength[128];
+		sprintf(contentLength, "Content-Length: %d", fileSize);
+		writeLine(contentLength);
 		writeLine("");
 		char buf[16384];
+		int total = 0;
 		for (;;) {
 			int bytesRead = fread(buf, 1, sizeof(buf), f);
+			total += bytesRead;
 			if (bytesRead <= 0) break; // TODO error
 			write(buf, bytesRead); // todo check errs
 		}
-		return false;
+		fclose(f);
+		if (!keepAlive) {
+			_closeOnEmpty = true;
+		}
+		return true;
 	}
 
 	static char* shift(char*& str) {
@@ -304,6 +359,7 @@ private:
 	int _fd;
 	int _epollFd;
 	int _payloadSizeRemaining;
+	bool _closeOnEmpty;
 	sockaddr_in _address;
 	epoll_event _event;
 	std::vector<uint8_t> _inBuf;
@@ -389,7 +445,6 @@ public:
 				} else {
 					auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 					if (!connection->handleData(events[i].events)) {
-						connection->close();
 						delete connection;
 					}
 				}
