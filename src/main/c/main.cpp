@@ -194,7 +194,10 @@ private:
 
 	void send404(const char* path) {
 		printf("not found: %s\n", path);
-		// todo
+		writeLine("HTTP/1.1 404 not found");
+		writeLine("Connection: close");
+		writeLine("");
+		// TODO
 	}
 	void sendBadRequest(const char* reason) {
 		// TODO.
