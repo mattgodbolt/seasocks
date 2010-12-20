@@ -24,6 +24,7 @@ public:
 private:
 	bool handleNewData();
 	bool handleHeaders();
+	bool handleWebSocketKey3();
 
 	// Send an error document. Returns 'true' for convenience in handle*() routines.
 	bool sendError(int errorCode, const char* message, const char* document);
@@ -34,20 +35,23 @@ private:
 	bool sendBadRequest(const char* reason);
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
+	bool sendStaticData(bool keepAlive, const char* authority);
+
 	int _fd;
 	int _epollFd;
-	int _payloadSizeRemaining;
 	bool _closeOnEmpty;
 	const char* _staticPath;
 	sockaddr_in _address;
 	epoll_event _event;
+	uint32_t _webSocketKeys[2];
 	std::vector<uint8_t> _inBuf;
 	std::vector<uint8_t> _outBuf;
 
 	enum State {
 		INVALID,
 		READING_HEADERS,
-		HANDLING_PAYLOAD,
+		READING_WEBSOCKET_KEY3,
+		HANDLING_WEBSOCKET
 	};
 	State _state;
 

@@ -8,6 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <openssl/md5.h>
+
 namespace {
 
 static char* skipWhitespace(char* str) {
@@ -55,13 +57,28 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
+uint32_t parseWebSocketKey(const char* key) {
+	uint32_t keyNumber = 0;
+	uint32_t numSpaces = 0;
+	for (;*key; ++key) {
+		if (*key >= '0' && *key <= '9') {
+			keyNumber = keyNumber * 10 + *key - '0';
+		} else if (*key == ' ') {
+			++numSpaces;
+		}
+	}
+	printf("Read number %u with numspaces=%d\n", keyNumber, numSpaces);
+	return numSpaces > 0 ? keyNumber / numSpaces : 0;
+}
+
 }  // namespace
 
 namespace SeaSocks {
 
 Connection::Connection(const char* staticPath)
-	: _fd(-1), _epollFd(-1), _payloadSizeRemaining(0), _state(INVALID), _closeOnEmpty(false), _staticPath(staticPath) {
+	: _fd(-1), _epollFd(-1), _state(INVALID), _closeOnEmpty(false), _staticPath(staticPath) {
 	assert(staticPath != NULL);
+	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
 Connection::~Connection() {
@@ -146,6 +163,7 @@ bool Connection::write(const void* data, size_t size) {
 	return true;
 }
 
+// TODO: Argh, buffer this up, and send in one go. It's slow otherwise... (wireshark says so anyway)
 bool Connection::writeLine(const char* line) {
 	static const char crlf[] = { '\r', '\n' };
 	if (!write(line, strlen(line))) return false;
@@ -200,8 +218,8 @@ bool Connection::handleNewData() {
 	switch (_state) {
 	case READING_HEADERS:
 		return handleHeaders();
-	case HANDLING_PAYLOAD:
-		return false;
+	case READING_WEBSOCKET_KEY3:
+		return handleWebSocketKey3();
 	default:
 		return false;
 	}
@@ -221,17 +239,54 @@ bool Connection::handleHeaders() {
 			}
 			/// XXX horrible
 			_inBuf.erase(_inBuf.begin(), _inBuf.begin() + i + 4);
-			if (_payloadSizeRemaining != 0) {
-				_state = HANDLING_PAYLOAD;
-			}
 			return handleNewData();
 		}
 	}
 	const size_t MAX_HEADERS_SIZE = 65536;
 	if (_inBuf.size() > MAX_HEADERS_SIZE) {
-		// todo: error doc
-		return false;
+		return sendUnsupportedError("Headers too big");
 	}
+	return true;
+}
+
+bool Connection::handleWebSocketKey3() {
+	if (_inBuf.size() < 8) {
+		return true;
+	}
+
+	struct {
+		uint32_t key0;
+		uint32_t key1;
+		char key2[8];
+	} md5Source;
+
+	md5Source.key0 = htonl(_webSocketKeys[0]);
+	md5Source.key1 = htonl(_webSocketKeys[1]);
+	memcpy(&md5Source.key2, &_inBuf[0], 8);
+
+	uint8_t digest[MD5_DIGEST_LENGTH];
+	MD5(reinterpret_cast<const uint8_t*>(&md5Source), sizeof(md5Source), digest);
+
+	printf("Attempting websocket upgrade\n");
+
+	writeLine("HTTP/1.1 101 WebSocket Protocol Handshake");
+	writeLine("Upgrade: WebSocket");
+	writeLine("Connection: Upgrade");
+	writeLine("Sec-WebSocket-Origin: http://localhost:9090");  // staggering hack
+	writeLine("Sec-WebSocket-Location: ws://localhost:9090/dump");  // staggering hack
+	writeLine("");
+
+	write(&digest, MD5_DIGEST_LENGTH);
+
+	uint8_t zero = 0;
+	write(&zero, 1);
+	static const uint8_t testMessage[]  = "console.log('it works!');";
+	write(testMessage, sizeof(testMessage) - 1);
+	uint8_t effeff = 0xff;
+	write(&effeff, 1);
+
+	_state = HANDLING_WEBSOCKET;
+
 	return true;
 }
 
@@ -286,6 +341,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
 	printf("authority: %s\n", authority);
 	bool keepAlive = false;
+	bool haveConnectionUpgrade = false;
+	bool haveWebSocketUprade = false;
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -297,13 +354,31 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		const char* key = headerLine;
 		const char* value = skipWhitespace(colonPos + 1);
 		printf("Key: %s || Value: %s\n", key, value);
-		if (strcmp(key, "Connection") == 0) {
-			if (strcmp(value, "keep-alive") == 0) {
+		if (strcasecmp(key, "Connection") == 0) {
+			if (strcasecmp(value, "keep-alive") == 0) {
 				keepAlive = true;
+			} else if (strcasecmp(value, "upgrade") == 0) {
+				haveConnectionUpgrade = true;
 			}
+		} else if (strcasecmp(key, "Upgrade") == 0 && strcasecmp(value, "websocket") == 0) {
+			haveWebSocketUprade = true;
+		} else if (strcasecmp(key, "Sec-WebSocket-Key1") == 0) {
+			_webSocketKeys[0] = parseWebSocketKey(value);
+		} else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
+			_webSocketKeys[1] = parseWebSocketKey(value);
 		}
 	}
 
+	if (haveConnectionUpgrade && haveWebSocketUprade) {
+		printf("Got a websocket with key1=0x%08x, key2=0x%08x\n", _webSocketKeys[0], _webSocketKeys[1]);
+		_state = READING_WEBSOCKET_KEY3;
+		return true;
+	} else {
+		return sendStaticData(keepAlive, authority);
+	}
+}
+
+bool Connection::sendStaticData(bool keepAlive, const char* authority) {
 	char path[1024]; // xx horrible
 	strcpy(path, _staticPath);
 	strcat(path, authority);
@@ -319,7 +394,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	fseek(f, 0, SEEK_SET);
 	// todo: check errs
 	writeLine("HTTP/1.1 200 OK");
-	if (strstr(authority, ".js") != 0) { // xxx
+	if (strstr(path, ".js") != 0) { // xxx
 		writeLine("Content-Type: text/javascript");
 	} else {
 		writeLine("Content-Type: text/html");

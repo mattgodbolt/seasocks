@@ -10,9 +10,11 @@ $(function() {
         console.log('onclose');
     };
     ws.onmessage = function(message) {
+        console.log("got '" + message.data + "'");
         eval(message.data);
     };
     ws.onerror = function(error) {
         console.log('onerror ' + error);
+        console.log(error);
     };
 });

@@ -7,7 +7,7 @@ WEB_SRC=src/report
 INCLUDES=-I $(C_SRC) -I $(DEPS_3RD)log4cplus/include
 CPPFLAGS=-g -O0 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
 
-STATIC_LIBS=-levent
+STATIC_LIBS=-levent -lssl
 
 .PHONY: all clean data show-data run-web-server
 
