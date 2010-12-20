@@ -59,7 +59,11 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 
 namespace SeaSocks {
 
-Connection::Connection() : _fd(-1), _epollFd(-1), _payloadSizeRemaining(0), _state(INVALID), _closeOnEmpty(false) {}
+Connection::Connection(const char* staticPath)
+	: _fd(-1), _epollFd(-1), _payloadSizeRemaining(0), _state(INVALID), _closeOnEmpty(false), _staticPath(staticPath) {
+	assert(staticPath != NULL);
+}
+
 Connection::~Connection() {
 	close();
 }
@@ -299,7 +303,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	}
 
 	char path[1024]; // xx horrible
-	strcpy(path, "./src/web");
+	strcpy(path, _staticPath);
 	strcat(path, authority);
 	if (path[strlen(path)-1] == '/') {
 		strcat(path, "index.html");

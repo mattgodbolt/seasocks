@@ -12,7 +12,7 @@ namespace SeaSocks {
 
 class Connection {
 public:
-	Connection();
+	Connection(const char* staticPath);
 	~Connection();
 
 	bool accept(int listenSock, int epollFd);
@@ -34,6 +34,7 @@ private:
 	int _epollFd;
 	int _payloadSizeRemaining;
 	bool _closeOnEmpty;
+	const char* _staticPath;
 	sockaddr_in _address;
 	epoll_event _event;
 	std::vector<uint8_t> _inBuf;

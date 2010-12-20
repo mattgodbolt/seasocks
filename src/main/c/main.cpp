@@ -4,7 +4,7 @@ using namespace SeaSocks;
 
 int main(int argc, const char* argv[]) {
 	Server server;
-	server.serve(9090);
+	server.serve("src/web", 9090);
 	return 0;
 }
 

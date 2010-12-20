@@ -15,7 +15,7 @@
 
 namespace SeaSocks {
 
-Server::Server() : _listenSock(-1), _epollFd(-1) {
+Server::Server() : _listenSock(-1), _epollFd(-1), _staticPath(NULL) {
 }
 
 Server::~Server() {
@@ -27,7 +27,8 @@ Server::~Server() {
 	}
 }
 
-void Server::serve(int port) {
+void Server::serve(const char* staticPath, int port) {
+	_staticPath = staticPath;
 	_listenSock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (_listenSock == -1) {
 		perror("socket");
@@ -89,7 +90,7 @@ void Server::serve(int port) {
 }
 
 void Server::handleAccept() {
-	std::auto_ptr<Connection> newConnection(new Connection());
+	std::auto_ptr<Connection> newConnection(new Connection(_staticPath));
 	if (!newConnection->accept(_listenSock, _epollFd)) {
 		perror("accept");
 		// TODO: error
