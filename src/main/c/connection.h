@@ -25,9 +25,13 @@ private:
 	bool handleNewData();
 	bool handleHeaders();
 
-	void sendUnsupportedError(const char* reason);
-	void send404(const char* path);
-	void sendBadRequest(const char* reason);
+	// Send an error document. Returns 'true' for convenience in handle*() routines.
+	bool sendError(int errorCode, const char* message, const char* document);
+
+	// Send individual errors. Again all return true for convenience.
+	bool sendUnsupportedError(const char* reason);
+	bool send404(const char* path);
+	bool sendBadRequest(const char* reason);
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
 	int _fd;

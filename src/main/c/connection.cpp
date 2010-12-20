@@ -235,21 +235,29 @@ bool Connection::handleHeaders() {
 	return true;
 }
 
-void Connection::sendUnsupportedError(const char* reason) {
-	// TODO.
-	printf("unsup: %s\n", reason);
-}
-
-void Connection::send404(const char* path) {
-	printf("not found: %s\n", path);
-	writeLine("HTTP/1.1 404 not found");
+bool Connection::sendError(int errorCode, const char* message, const char* document) {
+	printf("Error: %d - %s\n", errorCode, message);
+	char buf[1024];
+	sprintf(buf, "HTTP/1.1 %d %s", errorCode, message);
+	writeLine(buf);
+	sprintf(buf, "Content-Length: %d", static_cast<int>(strlen(document)));
 	writeLine("Connection: close");
 	writeLine("");
-	// TODO
+	writeLine(document);
+	_closeOnEmpty = true;
+	return true;
 }
-void Connection::sendBadRequest(const char* reason) {
-	// TODO.
-	printf("bad: %s\n", reason);
+
+bool Connection::sendUnsupportedError(const char* reason) {
+	return sendError(501, "Not Implemented", reason);
+}
+
+bool Connection::send404(const char* path) {
+	return sendError(404, "Not Found", path);
+}
+
+bool Connection::sendBadRequest(const char* reason) {
+	return sendError(400, "Bad Request", reason);
 }
 
 bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
@@ -258,27 +266,22 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
 	const char* verb = shift(requestLine);
 	if (strcmp(verb, "GET") != 0) {
-		sendUnsupportedError("We only support GET");
-		return false;
+		return sendUnsupportedError("We only support GET");
 	}
 	const char* authority = shift(requestLine);
 	if (authority == NULL) {
-		sendBadRequest("Malformed request line");
-		return false;
+		return sendBadRequest("Malformed request line");
 	}
 
 	const char* httpVersion = shift(requestLine);
 	if (httpVersion == NULL) {
-		sendBadRequest("Malformed request line");
-		return false;
+		return sendBadRequest("Malformed request line");
 	}
 	if (strcmp(httpVersion, "HTTP/1.1") != 0) {
-		sendUnsupportedError("Unsupported HTTP version");
-		return false;
+		return sendUnsupportedError("Unsupported HTTP version");
 	}
 	if (*requestLine != 0) {
-		sendBadRequest("Trailing crap after http version");
-		return false;
+		return sendBadRequest("Trailing crap after http version");
 	}
 
 	printf("authority: %s\n", authority);
@@ -288,8 +291,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		char* headerLine = extractLine(first, last, &colonPos);
 		assert(headerLine != NULL);
 		if (colonPos == NULL) {
-			sendBadRequest("Malformed header");
-			return false;
+			return sendBadRequest("Malformed header");
 		}
 		*colonPos = 0;
 		const char* key = headerLine;
@@ -310,9 +312,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	}
 	FILE* f = fopen(path, "rb");
 	if (f == NULL) {
-		send404(path);
-		_closeOnEmpty = true; return true; // AND THE SAME FOR OTHER ERRORS
-		return false;
+		return send404(path);
 	}
 	fseek(f, 0, SEEK_END);
 	int fileSize = ftell(f);
