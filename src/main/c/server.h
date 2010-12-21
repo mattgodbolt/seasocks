@@ -6,6 +6,7 @@
 
 namespace SeaSocks {
 
+class Connection;
 class Logger;
 
 class Server {
@@ -15,6 +16,10 @@ public:
 
 	// Serves static content from the given port on the current thread, forever.
 	void serve(const char* staticPath, int port);
+
+	void unsubscribeFromAllEvents(Connection* connection);
+	bool subscribeToWriteEvents(Connection* connection);
+	bool unsubscribeFromWriteEvents(Connection* connection);
 
 private:
 	void handleAccept();

@@ -46,10 +46,10 @@ const char* formatAddress(const sockaddr_in& address) {
 	static char ipBuffer[24];
 	sprintf(ipBuffer,
 			"%d.%d.%d.%d:%d",
-			(address.sin_addr.s_addr >> 24) & 0xff,
-			(address.sin_addr.s_addr >> 16) & 0xff,
-			(address.sin_addr.s_addr >> 8) & 0xff,
 			(address.sin_addr.s_addr >> 0) & 0xff,
+			(address.sin_addr.s_addr >> 8) & 0xff,
+			(address.sin_addr.s_addr >> 16) & 0xff,
+			(address.sin_addr.s_addr >> 24) & 0xff,
 			htons(address.sin_port));
 	return ipBuffer;
 }

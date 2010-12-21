@@ -1,6 +1,6 @@
-#define __USE_GNU  // Get some handy extra functions
 #include "connection.h"
 
+#include "server.h"
 #include "stringutil.h"
 #include "logger.h"
 
@@ -48,8 +48,20 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 
 namespace SeaSocks {
 
-Connection::Connection(boost::shared_ptr<Logger> logger, const char* staticPath)
-	: _logger(logger), _fd(-1), _epollFd(-1), _state(INVALID), _closeOnEmpty(false), _staticPath(staticPath) {
+Connection::Connection(
+		boost::shared_ptr<Logger> logger,
+		Server* server,
+		int fd,
+		const sockaddr_in& address,
+		const char* staticPath)
+	: _logger(logger),
+	  _server(server),
+	  _fd(fd),
+	  _state(READING_HEADERS),
+	  _closeOnEmpty(false),
+	  _staticPath(staticPath),
+	  _registeredForWriteEvents(false),
+	  _address(address) {
 	assert(staticPath != NULL);
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
@@ -58,45 +70,9 @@ Connection::~Connection() {
 	close();
 }
 
-bool Connection::accept(int listenSock, int epollFd) {
-	socklen_t addrLen = sizeof(_address);
-	_fd = ::accept4(listenSock,
-			reinterpret_cast<sockaddr*>(&_address),
-			&addrLen,
-			SOCK_NONBLOCK | SOCK_CLOEXEC);
-	if (_fd == -1) {
-		_logger->error("Unable to accept: %s", getLastError());
-		return false;
-	}
-	struct linger linger;
-	linger.l_linger = 500; // 5 seconds
-	linger.l_onoff = true;
-	if (setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
-		_logger->error("Unable to set linger socket option: %s", getLastError());
-		return false;
-	}
-	int yesPlease = 1;
-	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
-		_logger->error("Unable to set reuse socket option: %s", getLastError());
-		return false;
-	}
-	_logger->debug("%s : Accepted on descriptor %d, peer addr", formatAddress(_address), _fd);
-	_event.events = EPOLLIN;// | EPOLLOUT;
-	_event.data.ptr = this;
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _fd, &_event) == -1) {
-		_logger->error("Unable to add socket to epoll: %s", getLastError());
-		return false;
-	}
-	_epollFd = epollFd;
-	_state = READING_HEADERS;
-	return true;
-}
-
 void Connection::close() {
 	if (_fd != -1) {
-		if (_epollFd != -1) {
-			epoll_ctl(_epollFd, EPOLL_CTL_DEL, _fd, &_event);
-		}
+		_server->unsubscribeFromAllEvents(this);
 		::close(_fd);
 	}
 	_fd = -1;
@@ -130,12 +106,11 @@ bool Connection::write(const void* data, size_t size) {
 	size_t endOfBuffer = _outBuf.size();
 	_outBuf.resize(endOfBuffer + bytesToBuffer);
 	memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
-	if ((_event.events & EPOLLOUT) == 0) {
-		_event.events |= EPOLLOUT;
-		if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, _fd, &_event) == -1) {
-			_logger->error("Unable to modify socket epoll settings: %s", getLastError());
+	if (!_registeredForWriteEvents) {
+		if (!_server->subscribeToWriteEvents(this)) {
 			return false;
 		}
+		_registeredForWriteEvents = true;
 	}
 	return true;
 }
@@ -147,43 +122,46 @@ bool Connection::writeLine(const char* line) {
 	return write(crlf, 2);
 }
 
-bool Connection::handleData(uint32_t event) {
+bool Connection::handleDataReadyForRead() {
 	const int READ_SIZE = 16384;
-	if (event & EPOLLIN) {
-		// TODO: terrible buffer handling.
-		auto curSize = _inBuf.size();
-		_inBuf.resize(curSize + READ_SIZE);
-		int result = ::read(_fd, &_inBuf[curSize], READ_SIZE);
-		if (result == -1) {
-			_logger->error("Unable to read from socket: %s", getLastError());
-			return false;
-		}
-		if (result == 0) {
-			_logger->info("Remote end closed connection");
-			return false;
-		}
-		_inBuf.resize(curSize + result);
-		if (!handleNewData()) {
-			return false;
-		}
+	// TODO: terrible buffer handling.
+	auto curSize = _inBuf.size();
+	_inBuf.resize(curSize + READ_SIZE);
+	int result = ::read(_fd, &_inBuf[curSize], READ_SIZE);
+	if (result == -1) {
+		_logger->error("Unable to read from socket: %s", getLastError());
+		return false;
 	}
-	if (event & EPOLLOUT) {
-		if (!_outBuf.empty()) {
-			int numWritten = ::write(_fd, &_outBuf[0], _outBuf.size());
-			if (numWritten == -1) {
-				_logger->error("Unable to write to socket: %s", getLastError());
-				return false;
-			}
-			_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numWritten);
-		}
-		if (_outBuf.empty()) {
-			_event.events &= ~EPOLLOUT;
-			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, _fd, &_event) == -1) {
-				_logger->error("Unable to modify socket epoll settings: %s", getLastError());
-				return false;
-			}
-		}
+	if (result == 0) {
+		_logger->info("Remote end closed connection");
+		return false;
 	}
+	_inBuf.resize(curSize + result);
+	if (!handleNewData()) {
+		return false;
+	}
+	return checkCloseConditions();
+}
+
+bool Connection::handleDataReadyForWrite() {
+	if (!_outBuf.empty()) {
+		int numWritten = ::write(_fd, &_outBuf[0], _outBuf.size());
+		if (numWritten == -1) {
+			_logger->error("Unable to write to socket: %s", getLastError());
+			return false;
+		}
+		_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numWritten);
+	}
+	if (_outBuf.empty()) {
+		if (!_server->unsubscribeFromWriteEvents(this)) {
+			return false;
+		}
+		_registeredForWriteEvents = false;
+	}
+	return checkCloseConditions();
+}
+
+bool Connection::checkCloseConditions() {
 	if (_closeOnEmpty && _outBuf.empty()) {
 		close();
 		return false;

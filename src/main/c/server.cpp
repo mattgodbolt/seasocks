@@ -1,3 +1,4 @@
+#define __USE_GNU  // Get some handy extra functions
 #include "server.h"
 
 #include "connection.h"
@@ -84,7 +85,14 @@ void Server::serve(const char* staticPath, int port) {
 				handleAccept();
 			} else {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
-				if (!connection->handleData(events[i].events)) {
+				bool keepAlive = true;
+				if (events[i].events & EPOLLIN) {
+					keepAlive &= !connection->handleDataReadyForRead();
+				}
+				if (events[i].events & EPOLLOUT) {
+					keepAlive &= !connection->handleDataReadyForWrite();
+				}
+				if (!keepAlive) {
 					_logger->debug("Deleting connection: %d", connection->getFd());
 					delete connection;
 				}
@@ -94,13 +102,66 @@ void Server::serve(const char* staticPath, int port) {
 }
 
 void Server::handleAccept() {
-	std::auto_ptr<Connection> newConnection(new Connection(_logger, _staticPath));
-	if (!newConnection->accept(_listenSock, _epollFd)) {
+	sockaddr_in address;
+	socklen_t addrLen = sizeof(address);
+	int fd = ::accept4(_listenSock,
+			reinterpret_cast<sockaddr*>(&address),
+			&addrLen,
+			SOCK_NONBLOCK | SOCK_CLOEXEC);
+	if (fd == -1) {
 		_logger->error("Unable to accept: %s", getLastError());
 		return;
 	}
-	_logger->debug("Accepted connection on fd %d", newConnection->getFd());
-	newConnection.release();
+	struct linger linger;
+	linger.l_linger = 500; // 5 seconds
+	linger.l_onoff = true;
+	if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
+		_logger->error("Unable to set linger socket option: %s", getLastError());
+		::close(fd);
+		return;
+	}
+	int yesPlease = 1;
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
+		_logger->error("Unable to set reuse socket option: %s", getLastError());
+		::close(fd);
+		return;
+	}
+	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address), fd);
+	// TODO: track all connections?
+	Connection* newConnection = new Connection(_logger, this, fd, address, _staticPath);
+	epoll_event event = { EPOLLIN, newConnection };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
+		_logger->error("Unable to add socket to epoll: %s", getLastError());
+		delete newConnection;
+		::close(fd);
+		return;
+	}
+
+}
+
+void Server::unsubscribeFromAllEvents(Connection* connection) {
+	epoll_event event = { 0, connection };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
+		_logger->error("Unable to remove from epoll: %s", getLastError());
+	}
+}
+
+bool Server::subscribeToWriteEvents(Connection* connection) {
+	epoll_event event = { EPOLLIN | EPOLLOUT, connection };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
+		_logger->error("Unable to subscribe to write events: %s", getLastError());
+		return false;
+	}
+	return true;
+}
+
+bool Server::unsubscribeFromWriteEvents(Connection* connection) {
+	epoll_event event = { EPOLLIN, connection };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
+		_logger->error("Unable to unsubscribe from write events: %s", getLastError());
+		return false;
+	}
+	return true;
 }
 
 }  // namespace SeaSocks
