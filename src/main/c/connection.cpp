@@ -376,6 +376,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (strcmp(verb, "GET") != 0) {
 		return sendUnsupportedError("We only support GET");
 	}
+	// TODO: it's not the authority...
 	const char* authority = shift(requestLine);
 	if (authority == NULL) {
 		return sendBadRequest("Malformed request line");
