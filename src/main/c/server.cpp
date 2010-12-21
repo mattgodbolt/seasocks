@@ -128,7 +128,7 @@ void Server::handleAccept() {
 	}
 	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address), fd);
 	// TODO: track all connections?
-	Connection* newConnection = new Connection(_logger, this, fd, address, _staticPath);
+	Connection* newConnection = new Connection(_logger, this, fd, address);
 	epoll_event event = { EPOLLIN, newConnection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
 		_logger->error("Unable to add socket to epoll: %s", getLastError());
@@ -161,6 +161,18 @@ bool Server::unsubscribeFromWriteEvents(Connection* connection) {
 		return false;
 	}
 	return true;
+}
+
+void Server::addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler) {
+	_handlerMap[endpoint] = handler;
+}
+
+boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endpoint) const {
+	auto iter = _handlerMap.find(endpoint);
+	if (iter == _handlerMap.end()) {
+		return boost::shared_ptr<WebSocket::Handler>();
+	}
+	return iter->second;
 }
 
 }  // namespace SeaSocks

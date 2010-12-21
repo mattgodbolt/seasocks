@@ -1,7 +1,7 @@
 var ws;
 
 $(function() {
-    ws = new WebSocket('ws://' + document.location.host + '/dump');
+    ws = new WebSocket('ws://' + document.location.host + '/ws');
     ws.onopen = function() {
         console.log('onopen');
         ws.send('This is a journey into sound');

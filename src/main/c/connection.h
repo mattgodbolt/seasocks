@@ -1,6 +1,8 @@
 #ifndef _SEASOCKS_CONNECTION_H_
 #define _SEASOCKS_CONNECTION_H_
 
+#include "websocket.h"
+
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -14,14 +16,13 @@ namespace SeaSocks {
 class Logger;
 class Server;
 
-class Connection {
+class Connection : public WebSocket {
 public:
 	Connection(
 			boost::shared_ptr<Logger> logger,
 			Server* server,
 			int fd,
-			const sockaddr_in& address,
-			const char* staticPath);
+			const sockaddr_in& address);
 	~Connection();
 
 	void close();
@@ -32,6 +33,9 @@ public:
 
 	int getFd() const { return _fd; }
 	const sockaddr_in& getAddress() const { return _address; }
+
+	// From WebSocket.
+	bool respond(const char* webSocketResponse);
 
 private:
 	bool checkCloseConditions();
@@ -57,7 +61,6 @@ private:
 	Server* _server;
 	int _fd;
 	bool _closeOnEmpty;
-	const char* _staticPath;
 	bool _registeredForWriteEvents;
 	sockaddr_in _address;
 	uint32_t _webSocketKeys[2];
@@ -65,6 +68,7 @@ private:
 	std::vector<uint8_t> _outBuf;
 	// Populated only during web socket header parsing.
 	std::string _webSockExtraHeaders;
+	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
 
 	enum State {
 		INVALID,

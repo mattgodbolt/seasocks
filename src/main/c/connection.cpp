@@ -76,17 +76,15 @@ Connection::Connection(
 		boost::shared_ptr<Logger> logger,
 		Server* server,
 		int fd,
-		const sockaddr_in& address,
-		const char* staticPath)
+		const sockaddr_in& address)
 	: _logger(logger),
 	  _server(server),
 	  _fd(fd),
 	  _state(READING_HEADERS),
 	  _closeOnEmpty(false),
-	  _staticPath(staticPath),
 	  _registeredForWriteEvents(false),
 	  _address(address) {
-	assert(staticPath != NULL);
+	assert(server->getStaticPath() != NULL);
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
@@ -95,6 +93,9 @@ Connection::~Connection() {
 }
 
 void Connection::close() {
+	if (_webSocketHandler) {
+		_webSocketHandler->onDisconnect(this);
+	}
 	if (_fd != -1) {
 		_server->unsubscribeFromAllEvents(this);
 		::close(_fd);
@@ -261,17 +262,19 @@ bool Connection::handleWebSocketKey3() {
 
 	write(&digest, MD5_DIGEST_LENGTH);
 
-	uint8_t zero = 0;
-	write(&zero, 1);
-	static const uint8_t testMessage[]  = "console.log('it works!');";
-	write(testMessage, sizeof(testMessage) - 1);
-	uint8_t effeff = 0xff;
-	write(&effeff, 1);
-
 	_state = HANDLING_WEBSOCKET;
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
+	_webSocketHandler->onConnect(this);
 
 	return true;
+}
+
+bool Connection::respond(const char* webSocketResponse) {
+	uint8_t zero = 0;
+	if (!write(&zero, 1)) return false;
+	if (!write(webSocketResponse, strlen(webSocketResponse))) return false;
+	uint8_t effeff = 0xff;
+	return write(&effeff, 1);
 }
 
 bool Connection::handleWebSocket() {
@@ -316,6 +319,7 @@ bool Connection::handleWebSocket() {
 
 bool Connection::handleWebSocketMessage(const char* message) {
 	_logger->debug("%s : Got web socket message: '%s'", formatAddress(_address), message);
+	_webSocketHandler->onData(this, message);
 	return true;
 }
 
@@ -407,6 +411,11 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
 	if (haveConnectionUpgrade && haveWebSocketUprade) {
 		_logger->debug("%s : Got a websocket with key1=0x%08x, key2=0x%08x", formatAddress(_address), _webSocketKeys[0], _webSocketKeys[1]);
+		_webSocketHandler = _server->getWebSocketHandler(requestUri);
+		if (!_webSocketHandler) {
+			_logger->error("%s : Couldn't find WebSocket end point for '%s'", formatAddress(_address), requestUri);
+			return send404(requestUri);
+		}
 		_state = READING_WEBSOCKET_KEY3;
 		return true;
 	} else {
@@ -416,7 +425,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
 bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 	char path[1024]; // xx horrible
-	strcpy(path, _staticPath);
+	strcpy(path, _server->getStaticPath());
 	strcat(path, requestUri);
 	// Trim any trailing queries.
 	char* query = strchr(path, '?');
