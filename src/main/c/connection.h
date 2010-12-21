@@ -51,7 +51,7 @@ private:
 	bool sendBadRequest(const char* reason);
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
-	bool sendStaticData(bool keepAlive, const char* authority);
+	bool sendStaticData(bool keepAlive, const char* requestUri);
 
 	boost::shared_ptr<Logger> _logger;
 	Server* _server;

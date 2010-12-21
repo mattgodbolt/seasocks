@@ -44,6 +44,30 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
+const struct {
+	const char* extension;
+	const char* contentType;
+} contentTypes[] = {
+		{ "html", "text/html" },
+		{ "js", "application/javascript" },
+		{ "css", "text/css" },
+		{ "jpeg", "image/jpeg" },
+		{ "png", "image/png" },
+};
+
+const char* getContentType(const char* path) {
+	const char* extension = strrchr(path, '.');
+	if (extension) {
+		++extension;
+		for (size_t i = 0; i < sizeof(contentTypes) / sizeof(contentTypes[0]); ++i) {
+			if (strcasecmp(contentTypes[i].extension, extension) == 0) {
+				return contentTypes[i].contentType;
+			}
+		}
+	}
+	return "text/html";
+}
+
 }  // namespace
 
 namespace SeaSocks {
@@ -126,7 +150,7 @@ bool Connection::writeLine(const char* line) {
 bool Connection::handleDataReadyForRead() {
 	const int READ_SIZE = 16384;
 	// TODO: terrible buffer handling.
-	auto curSize = _inBuf.size();
+	size_t curSize = _inBuf.size();
 	_inBuf.resize(curSize + READ_SIZE);
 	int result = ::read(_fd, &_inBuf[curSize], READ_SIZE);
 	if (result == -1) {
@@ -329,9 +353,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (strcmp(verb, "GET") != 0) {
 		return sendUnsupportedError("We only support GET");
 	}
-	// TODO: it's not the authority...
-	const char* authority = shift(requestLine);
-	if (authority == NULL) {
+	const char* requestUri = shift(requestLine);
+	if (requestUri == NULL) {
 		return sendBadRequest("Malformed request line");
 	}
 
@@ -377,7 +400,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_webSockExtraHeaders += value;
 			_webSockExtraHeaders += "\r\nSec-WebSocket-Location: ws://";
 			_webSockExtraHeaders += value;
-			_webSockExtraHeaders += authority;
+			_webSockExtraHeaders += requestUri;
 			_webSockExtraHeaders += "\r\n";
 		}
 	}
@@ -387,14 +410,19 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		_state = READING_WEBSOCKET_KEY3;
 		return true;
 	} else {
-		return sendStaticData(keepAlive, authority);
+		return sendStaticData(keepAlive, requestUri);
 	}
 }
 
-bool Connection::sendStaticData(bool keepAlive, const char* authority) {
+bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 	char path[1024]; // xx horrible
 	strcpy(path, _staticPath);
-	strcat(path, authority);
+	strcat(path, requestUri);
+	// Trim any trailing queries.
+	char* query = strchr(path, '?');
+	if (query != NULL) {
+		*query = 0;
+	}
 	if (path[strlen(path)-1] == '/') {
 		strcat(path, "index.html");
 	}
@@ -402,16 +430,23 @@ bool Connection::sendStaticData(bool keepAlive, const char* authority) {
 	if (f == NULL) {
 		return send404(path);
 	}
-	fseek(f, 0, SEEK_END);
-	int fileSize = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	// todo: check errs
-	writeLine("HTTP/1.1 200 OK");
-	if (strstr(path, ".js") != 0) { // todo
-		writeLine("Content-Type: text/javascript");
-	} else {
-		writeLine("Content-Type: text/html");
+	if (fseek(f, 0, SEEK_END) == -1) {
+		fclose(f);
+		return send404(path);
 	}
+	int fileSize = ftell(f);
+	if (fileSize < 0) {
+		fclose(f);
+		return send404(path);
+	}
+	if (fseek(f, 0, SEEK_SET) == -1) {
+		fclose(f);
+		return send404(path);
+	}
+	writeLine("HTTP/1.1 200 OK");
+	char buf[16384];
+	sprintf(buf, "Content-Type: %s", getContentType(path));
+	writeLine(buf);
 	if (keepAlive) {
 		writeLine("Connection: keep-alive");
 	} else {
@@ -421,13 +456,24 @@ bool Connection::sendStaticData(bool keepAlive, const char* authority) {
 	sprintf(contentLength, "Content-Length: %d", fileSize);
 	writeLine(contentLength);
 	writeLine("");
-	char buf[16384];
+
 	int total = 0;
 	for (;;) {
 		int bytesRead = fread(buf, 1, sizeof(buf), f);
 		total += bytesRead;
-		if (bytesRead <= 0) break; // TODO error
-		write(buf, bytesRead); // todo check errs
+		if (bytesRead == -1) {
+			_logger->error("%s : Error reading file: ", formatAddress(_address), getLastError());
+			fclose(f);
+			// We can't send an error document as we've sent the header.
+			return false;
+		}
+		if (bytesRead == 0) {
+			break;
+		}
+		if (!write(buf, bytesRead)) {
+			fclose(f);
+			return false;
+		}
 	}
 	fclose(f);
 	if (!keepAlive) {
