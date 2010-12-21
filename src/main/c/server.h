@@ -4,7 +4,9 @@
 #include "websocket.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 #include <boost/unordered_map.hpp>
+#include <list>
 #include <string>
 
 namespace SeaSocks {
@@ -29,15 +31,27 @@ public:
 	const char* getStaticPath() const { return _staticPath; }
 	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
 
+	class Runnable {
+	public:
+		virtual ~Runnable() {}
+		virtual void run() = 0;
+	};
+	void schedule(boost::shared_ptr<Runnable> runnable);
+
 private:
 	void handleAccept();
+	boost::shared_ptr<Runnable> popNextRunnable();
 
 	boost::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;
+	int _wakeFd;
 
 	typedef boost::unordered_map<std::string, boost::shared_ptr<WebSocket::Handler>> HandlerMap;
 	HandlerMap _handlerMap;
+
+	boost::mutex _pendingRunnableMutex;
+	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 
 	const char* _staticPath;
 };
