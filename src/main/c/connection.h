@@ -6,13 +6,16 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
+#include <boost/shared_ptr.hpp>
 #include <vector>
 
 namespace SeaSocks {
 
+class Logger;
+
 class Connection {
 public:
-	Connection(const char* staticPath);
+	Connection(boost::shared_ptr<Logger> logger, const char* staticPath);
 	~Connection();
 
 	bool accept(int listenSock, int epollFd);
@@ -20,6 +23,8 @@ public:
 	bool write(const void* data, size_t size);
 	bool writeLine(const char* line);
 	bool handleData(uint32_t event);
+
+	int getFd() const { return _fd; }
 
 private:
 	bool handleNewData();
@@ -39,6 +44,7 @@ private:
 
 	bool sendStaticData(bool keepAlive, const char* authority);
 
+	boost::shared_ptr<Logger> _logger;
 	int _fd;
 	int _epollFd;
 	bool _closeOnEmpty;

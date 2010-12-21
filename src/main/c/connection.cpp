@@ -1,6 +1,9 @@
 #define __USE_GNU  // Get some handy extra functions
 #include "connection.h"
 
+#include "stringutil.h"
+#include "logger.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -12,51 +15,6 @@
 
 namespace {
 
-static char* skipWhitespace(char* str) {
-	while (isspace(*str)) ++str;
-	return str;
-}
-
-static char* skipNonWhitespace(char* str) {
-	while (*str && !isspace(*str)) {
-		++str;
-	}
-	return str;
-}
-
-static char* shift(char*& str) {
-	if (str == NULL) {
-		return NULL;
-	}
-	char* startOfWord = skipWhitespace(str);
-	if (*startOfWord == 0) {
-		str = startOfWord;
-		return NULL;
-	}
-	char* endOfWord = skipNonWhitespace(startOfWord);
-	if (*endOfWord != 0) {
-		*endOfWord++ = 0;
-	}
-	str = endOfWord;
-	return startOfWord;
-}
-
-char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
-	uint8_t* ptr = first;
-	for (uint8_t* ptr = first; ptr < last - 1; ++ptr) {
-		if (ptr[0] == '\r' && ptr[1] == '\n') {
-			ptr[0] = 0;
-			uint8_t* result = first;
-			first = ptr + 2;
-			return reinterpret_cast<char*>(result);
-		}
-		if (colon && ptr[0] == ':' && *colon == NULL) {
-			*colon = reinterpret_cast<char*>(ptr);
-		}
-	}
-	return NULL;
-}
-
 uint32_t parseWebSocketKey(const char* key) {
 	uint32_t keyNumber = 0;
 	uint32_t numSpaces = 0;
@@ -67,16 +25,31 @@ uint32_t parseWebSocketKey(const char* key) {
 			++numSpaces;
 		}
 	}
-	printf("Read number %u with numspaces=%d\n", keyNumber, numSpaces);
 	return numSpaces > 0 ? keyNumber / numSpaces : 0;
+}
+
+char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
+	uint8_t* ptr = first;
+	for (uint8_t* ptr = first; ptr < last - 1; ++ptr) {
+		if (ptr[0] == '\r' && ptr[1] == '\n') {
+			ptr[0] = 0;
+			uint8_t* result = first;
+			first = ptr + 2;
+			return reinterpret_cast<char*> (result);
+		}
+		if (colon && ptr[0] == ':' && *colon == NULL) {
+			*colon = reinterpret_cast<char*> (ptr);
+		}
+	}
+	return NULL;
 }
 
 }  // namespace
 
 namespace SeaSocks {
 
-Connection::Connection(const char* staticPath)
-	: _fd(-1), _epollFd(-1), _state(INVALID), _closeOnEmpty(false), _staticPath(staticPath) {
+Connection::Connection(boost::shared_ptr<Logger> logger, const char* staticPath)
+	: _logger(logger), _fd(-1), _epollFd(-1), _state(INVALID), _closeOnEmpty(false), _staticPath(staticPath) {
 	assert(staticPath != NULL);
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
@@ -92,27 +65,26 @@ bool Connection::accept(int listenSock, int epollFd) {
 			&addrLen,
 			SOCK_NONBLOCK | SOCK_CLOEXEC);
 	if (_fd == -1) {
-		perror("accept");
+		_logger->error("Unable to accept: %s", getLastError());
 		return false;
 	}
 	struct linger linger;
 	linger.l_linger = 500; // 5 seconds
 	linger.l_onoff = true;
 	if (setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
-		perror("setsockopt");
+		_logger->error("Unable to set linger socket option: %s", getLastError());
 		return false;
 	}
 	int yesPlease = 1;
 	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
-		perror("setsockopt");
+		_logger->error("Unable to set reuse socket option: %s", getLastError());
 		return false;
 	}
-	printf("accept on %d\n", _fd);
+	_logger->debug("%s : Accepted on descriptor %d, peer addr", formatAddress(_address), _fd);
 	_event.events = EPOLLIN;// | EPOLLOUT;
 	_event.data.ptr = this;
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _fd, &_event) == -1) {
-		perror("epoll_ctl");
-		// TODO: error;
+		_logger->error("Unable to add socket to epoll: %s", getLastError());
 		return false;
 	}
 	_epollFd = epollFd;
@@ -147,7 +119,7 @@ bool Connection::write(const void* data, size_t size) {
 				// Treat this as if zero bytes were written.
 				bytesSent = 0;
 			} else {
-				perror("write");
+				_logger->error("Unable to write to socket: %s", getLastError());
 				return false;
 			}
 		} else {
@@ -161,7 +133,7 @@ bool Connection::write(const void* data, size_t size) {
 	if ((_event.events & EPOLLOUT) == 0) {
 		_event.events |= EPOLLOUT;
 		if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, _fd, &_event) == -1) {
-			perror("epoll_ctl");
+			_logger->error("Unable to modify socket epoll settings: %s", getLastError());
 			return false;
 		}
 	}
@@ -183,11 +155,11 @@ bool Connection::handleData(uint32_t event) {
 		_inBuf.resize(curSize + READ_SIZE);
 		int result = ::read(_fd, &_inBuf[curSize], READ_SIZE);
 		if (result == -1) {
-			perror("read");
+			_logger->error("Unable to read from socket: %s", getLastError());
 			return false;
 		}
 		if (result == 0) {
-			printf("Remote end closed\n");
+			_logger->info("Remote end closed connection");
 			return false;
 		}
 		_inBuf.resize(curSize + result);
@@ -199,7 +171,7 @@ bool Connection::handleData(uint32_t event) {
 		if (!_outBuf.empty()) {
 			int numWritten = ::write(_fd, &_outBuf[0], _outBuf.size());
 			if (numWritten == -1) {
-				perror("write");
+				_logger->error("Unable to write to socket: %s", getLastError());
 				return false;
 			}
 			_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numWritten);
@@ -207,7 +179,7 @@ bool Connection::handleData(uint32_t event) {
 		if (_outBuf.empty()) {
 			_event.events &= ~EPOLLOUT;
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, _fd, &_event) == -1) {
-				perror("epoll_ctl");
+				_logger->error("Unable to modify socket epoll settings: %s", getLastError());
 				return false;
 			}
 		}
@@ -274,7 +246,7 @@ bool Connection::handleWebSocketKey3() {
 	uint8_t digest[MD5_DIGEST_LENGTH];
 	MD5(reinterpret_cast<const uint8_t*>(&md5Source), sizeof(md5Source), digest);
 
-	printf("Attempting websocket upgrade\n");
+	_logger->debug("%s : Attempting websocket upgrade", formatAddress(_address));
 
 	writeLine("HTTP/1.1 101 WebSocket Protocol Handshake");
 	writeLine("Upgrade: WebSocket");
@@ -306,7 +278,7 @@ bool Connection::handleWebSocket() {
 	size_t messageStart = 0;
 	while (messageStart < _inBuf.size()) {
 		if (_inBuf[messageStart] != 0) {
-			printf("Error in WebSocket input stream (got 0x%02x)\n", _inBuf[messageStart]);
+			_logger->error("%s : Error in WebSocket input stream (got 0x%02x)", formatAddress(_address), _inBuf[messageStart]);
 			return false;
 		}
 		// TODO: UTF-8
@@ -332,19 +304,19 @@ bool Connection::handleWebSocket() {
 	}
 	const size_t MAX_WEBSOCKET_MESSAGE_SIZE = 16384;
 	if (_inBuf.size() > MAX_WEBSOCKET_MESSAGE_SIZE) {
-		printf("WebSocket message too long\n");
+		_logger->error("%s : WebSocket message too long", formatAddress(_address));
 		return false;
 	}
 	return true;
 }
 
 bool Connection::handleWebSocketMessage(const char* message) {
-	printf("Got web socket message: %s\n", message);
+	_logger->debug("%s : Got web socket message: '%s'", formatAddress(_address), message);
 	return true;
 }
 
 bool Connection::sendError(int errorCode, const char* message, const char* document) {
-	printf("Error: %d - %s\n", errorCode, message);
+	_logger->info("%s : Sending error %d - %s", formatAddress(_address), errorCode, message);
 	char buf[1024];
 	sprintf(buf, "HTTP/1.1 %d %s", errorCode, message);
 	writeLine(buf);
@@ -393,7 +365,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		return sendBadRequest("Trailing crap after http version");
 	}
 
-	printf("authority: %s\n", authority);
 	bool keepAlive = false;
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUprade = false;
@@ -407,7 +378,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		*colonPos = 0;
 		const char* key = headerLine;
 		const char* value = skipWhitespace(colonPos + 1);
-		printf("Key: %s || Value: %s\n", key, value);
+		_logger->debug("Key: %s || Value: %s", key, value);
 		if (strcasecmp(key, "Connection") == 0) {
 			if (strcasecmp(value, "keep-alive") == 0) {
 				keepAlive = true;
@@ -424,7 +395,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	}
 
 	if (haveConnectionUpgrade && haveWebSocketUprade) {
-		printf("Got a websocket with key1=0x%08x, key2=0x%08x\n", _webSocketKeys[0], _webSocketKeys[1]);
+		_logger->debug("%s : Got a websocket with key1=0x%08x, key2=0x%08x", formatAddress(_address), _webSocketKeys[0], _webSocketKeys[1]);
 		_state = READING_WEBSOCKET_KEY3;
 		return true;
 	} else {
