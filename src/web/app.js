@@ -4,6 +4,7 @@ $(function() {
     ws = new WebSocket('ws://' + document.location.host + '/dump');
     ws.onopen = function() {
         console.log('onopen');
+        ws.send('This is a journey into sound');
     };
     ws.onclose = function() {
         $('#message').text('Lost connection.');

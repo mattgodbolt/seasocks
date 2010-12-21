@@ -25,6 +25,8 @@ private:
 	bool handleNewData();
 	bool handleHeaders();
 	bool handleWebSocketKey3();
+	bool handleWebSocket();
+	bool handleWebSocketMessage(const char* message);
 
 	// Send an error document. Returns 'true' for convenience in handle*() routines.
 	bool sendError(int errorCode, const char* message, const char* document);

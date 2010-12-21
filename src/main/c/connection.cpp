@@ -102,6 +102,11 @@ bool Connection::accept(int listenSock, int epollFd) {
 		perror("setsockopt");
 		return false;
 	}
+	int yesPlease = 1;
+	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
+		perror("setsockopt");
+		return false;
+	}
 	printf("accept on %d\n", _fd);
 	_event.events = EPOLLIN;// | EPOLLOUT;
 	_event.data.ptr = this;
@@ -220,6 +225,8 @@ bool Connection::handleNewData() {
 		return handleHeaders();
 	case READING_WEBSOCKET_KEY3:
 		return handleWebSocketKey3();
+	case HANDLING_WEBSOCKET:
+		return handleWebSocket();
 	default:
 		return false;
 	}
@@ -286,7 +293,53 @@ bool Connection::handleWebSocketKey3() {
 	write(&effeff, 1);
 
 	_state = HANDLING_WEBSOCKET;
+	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
 
+	return true;
+}
+
+bool Connection::handleWebSocket() {
+	if (_inBuf.empty()) {
+		return true;
+	}
+	size_t firstByteNotConsumed = 0;
+	size_t messageStart = 0;
+	while (messageStart < _inBuf.size()) {
+		if (_inBuf[messageStart] != 0) {
+			printf("Error in WebSocket input stream (got 0x%02x)\n", _inBuf[messageStart]);
+			return false;
+		}
+		// TODO: UTF-8
+		size_t endOfMessage = 0;
+		for (size_t i = messageStart + 1; i < _inBuf.size(); ++i) {
+			if (_inBuf[i] == 0xff) {
+				endOfMessage = i;
+				break;
+			}
+		}
+		if (endOfMessage != 0) {
+			_inBuf[endOfMessage] = 0;
+			if (!handleWebSocketMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]))) {
+				return false;
+			}
+			firstByteNotConsumed = endOfMessage + 1;
+		} else {
+			break;
+		}
+	}
+	if (firstByteNotConsumed != 0) {
+		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + firstByteNotConsumed);
+	}
+	const size_t MAX_WEBSOCKET_MESSAGE_SIZE = 16384;
+	if (_inBuf.size() > MAX_WEBSOCKET_MESSAGE_SIZE) {
+		printf("WebSocket message too long\n");
+		return false;
+	}
+	return true;
+}
+
+bool Connection::handleWebSocketMessage(const char* message) {
+	printf("Got web socket message: %s\n", message);
 	return true;
 }
 
