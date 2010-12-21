@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 
 #include <boost/shared_ptr.hpp>
+#include <string>
 #include <vector>
 
 namespace SeaSocks {
@@ -30,6 +31,7 @@ public:
 	bool handleDataReadyForWrite();
 
 	int getFd() const { return _fd; }
+	const sockaddr_in& getAddress() const { return _address; }
 
 private:
 	bool checkCloseConditions();
@@ -61,6 +63,8 @@ private:
 	uint32_t _webSocketKeys[2];
 	std::vector<uint8_t> _inBuf;
 	std::vector<uint8_t> _outBuf;
+	// Populated only during web socket header parsing.
+	std::string _webSockExtraHeaders;
 
 	enum State {
 		INVALID,

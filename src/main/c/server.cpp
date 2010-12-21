@@ -87,13 +87,13 @@ void Server::serve(const char* staticPath, int port) {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 				bool keepAlive = true;
 				if (events[i].events & EPOLLIN) {
-					keepAlive &= !connection->handleDataReadyForRead();
+					keepAlive &= connection->handleDataReadyForRead();
 				}
 				if (events[i].events & EPOLLOUT) {
-					keepAlive &= !connection->handleDataReadyForWrite();
+					keepAlive &= connection->handleDataReadyForWrite();
 				}
 				if (!keepAlive) {
-					_logger->debug("Deleting connection: %d", connection->getFd());
+					_logger->debug("Deleting connection: %s", formatAddress(connection->getAddress()));
 					delete connection;
 				}
 			}
@@ -136,7 +136,6 @@ void Server::handleAccept() {
 		::close(fd);
 		return;
 	}
-
 }
 
 void Server::unsubscribeFromAllEvents(Connection* connection) {

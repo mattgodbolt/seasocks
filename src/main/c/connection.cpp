@@ -79,6 +79,7 @@ void Connection::close() {
 }
 
 bool Connection::write(const void* data, size_t size) {
+	assert(!_closeOnEmpty);
 	if (size == 0) {
 		return true;
 	}
@@ -147,7 +148,7 @@ bool Connection::handleDataReadyForWrite() {
 	if (!_outBuf.empty()) {
 		int numWritten = ::write(_fd, &_outBuf[0], _outBuf.size());
 		if (numWritten == -1) {
-			_logger->error("Unable to write to socket: %s", getLastError());
+			_logger->error("%s : Unable to write to socket: %s", formatAddress(_address), getLastError());
 			return false;
 		}
 		_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numWritten);
@@ -163,6 +164,7 @@ bool Connection::handleDataReadyForWrite() {
 
 bool Connection::checkCloseConditions() {
 	if (_closeOnEmpty && _outBuf.empty()) {
+		_logger->debug("%s : Closing, now empty", formatAddress(_address));
 		close();
 		return false;
 	}
@@ -178,6 +180,7 @@ bool Connection::handleNewData() {
 	case HANDLING_WEBSOCKET:
 		return handleWebSocket();
 	default:
+		assert(false);
 		return false;
 	}
 }
@@ -229,8 +232,7 @@ bool Connection::handleWebSocketKey3() {
 	writeLine("HTTP/1.1 101 WebSocket Protocol Handshake");
 	writeLine("Upgrade: WebSocket");
 	writeLine("Connection: Upgrade");
-	writeLine("Sec-WebSocket-Origin: http://localhost:9090");  // staggering hack
-	writeLine("Sec-WebSocket-Location: ws://localhost:9090/dump");  // staggering hack
+	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size());
 	writeLine("");
 
 	write(&digest, MD5_DIGEST_LENGTH);
@@ -294,6 +296,7 @@ bool Connection::handleWebSocketMessage(const char* message) {
 }
 
 bool Connection::sendError(int errorCode, const char* message, const char* document) {
+	assert(_state != HANDLING_WEBSOCKET);
 	_logger->info("%s : Sending error %d - %s", formatAddress(_address), errorCode, message);
 	char buf[1024];
 	sprintf(buf, "HTTP/1.1 %d %s", errorCode, message);
@@ -369,6 +372,13 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_webSocketKeys[0] = parseWebSocketKey(value);
 		} else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
 			_webSocketKeys[1] = parseWebSocketKey(value);
+		} else if (strcasecmp(key, "Host") == 0) {
+			_webSockExtraHeaders += "Sec-WebSocket-Origin: http://";
+			_webSockExtraHeaders += value;
+			_webSockExtraHeaders += "\r\nSec-WebSocket-Location: ws://";
+			_webSockExtraHeaders += value;
+			_webSockExtraHeaders += authority;
+			_webSockExtraHeaders += "\r\n";
 		}
 	}
 
@@ -397,7 +407,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* authority) {
 	fseek(f, 0, SEEK_SET);
 	// todo: check errs
 	writeLine("HTTP/1.1 200 OK");
-	if (strstr(path, ".js") != 0) { // xxx
+	if (strstr(path, ".js") != 0) { // todo
 		writeLine("Content-Type: text/javascript");
 	} else {
 		writeLine("Content-Type: text/html");
@@ -421,6 +431,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* authority) {
 	}
 	fclose(f);
 	if (!keepAlive) {
+		_logger->debug("%s : Closing on empty", formatAddress(_address));
 		_closeOnEmpty = true;
 	}
 	return true;
