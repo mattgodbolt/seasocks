@@ -1,0 +1,7 @@
+* A standalone binary that we can use for quickly serving static files (rather than having to install and configure apache/lighty).
+   $ ./tinyhttpserver 8080 /path/to/static/files bonus 1: if everything was staticly linked, and installation on any server was as simple as copying a single binary bonus 2: put it in fig, so it doesn't even need to be installed on dev machined (e.g. $ fig tinyhttpserver/1.0.0.1 -- 8080 /some/path)
+
+* SSO support baked in so we can easily lock stuff down and spy on who's using stuff.
+bonus: can be enabled as command line flag to standalone binary
+
+* Support reverse proxying, so certain patterns can be delegated to other http/ws servers. e.g. "/kats/" -> "http://somewhere/else/kats/"
