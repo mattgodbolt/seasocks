@@ -7,7 +7,7 @@ WEB_SRC=src/report
 INCLUDES=-I $(C_SRC) -I $(DEPS_3RD)log4cplus/include
 CPPFLAGS=-g -O0 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
 
-STATIC_LIBS=-levent -lssl -lboost_thread
+STATIC_LIBS=-lssl -lboost_thread
 
 .PHONY: all clean data show-data run-web-server
 
@@ -30,7 +30,7 @@ $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp
 
 $(BIN_DIR)/seasocks: $(OBJS)
 	mkdir -p $(BIN_DIR)
-	g++ $(CPPFLAGS) -lpcap -o $@ $^ $(STATIC_LIBS)
+	g++ $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) $(WEB_DIR) *.tar.gz
