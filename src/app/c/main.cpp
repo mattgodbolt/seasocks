@@ -1,7 +1,7 @@
-#include "logger.h"
-#include "printflogger.h"
-#include "server.h"
-#include "websocket.h"
+#include "seasocks/logger.h"
+#include "seasocks/printflogger.h"
+#include "seasocks/server.h"
+#include "seasocks/websocket.h"
 
 #include <boost/shared_ptr.hpp>
 #include <set>

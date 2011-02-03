@@ -1,10 +1,8 @@
 
-DEPS_3RD=deps/3rd
-
 C_SRC=src/main/c
 WEB_SRC=src/report
 
-INCLUDES=-I $(C_SRC) -I $(DEPS_3RD)log4cplus/include
+INCLUDES=-I $(C_SRC) 
 CPPFLAGS=-g -O0 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
 
 STATIC_LIBS=-lssl -lboost_thread

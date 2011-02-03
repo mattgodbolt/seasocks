@@ -1,9 +1,9 @@
 #define __USE_GNU  // Get some handy extra functions
-#include "server.h"
+#include "seasocks/server.h"
 
-#include "connection.h"
-#include "stringutil.h"
-#include "logger.h"
+#include "seasocks/connection.h"
+#include "seasocks/stringutil.h"
+#include "seasocks/logger.h"
 
 #include <string.h>
 

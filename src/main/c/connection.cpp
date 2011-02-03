@@ -1,8 +1,8 @@
-#include "connection.h"
+#include "seasocks/connection.h"
 
-#include "server.h"
-#include "stringutil.h"
-#include "logger.h"
+#include "seasocks/server.h"
+#include "seasocks/stringutil.h"
+#include "seasocks/logger.h"
 
 #include <assert.h>
 #include <ctype.h>

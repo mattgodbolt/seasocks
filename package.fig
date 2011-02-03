@@ -1,0 +1,11 @@
+retrieve LIBPATH->lib
+retrieve INCLUDEPATH->include
+
+resource bin/libseasocks.so
+resource src/main/c/**/*.h
+
+config default
+  append LIBPATH=@/bin/libseasocks.so
+  append INCLUDEPATH=@/src/main/c//seasocks
+end
+
