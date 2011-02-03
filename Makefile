@@ -5,7 +5,8 @@ WEB_SRC=src/report
 INCLUDES=-I $(C_SRC) 
 CPPFLAGS=-g -O0 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
 
-STATIC_LIBS=-lssl -lboost_thread
+STATIC_LIBS=-lssl 
+APP_LIBS=-lboost_thread
 
 .PHONY: all clean data show-data run-web-server
 
@@ -32,7 +33,7 @@ $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp
 
 $(BIN_DIR)/seasocks: $(OBJS) obj/app/main.o
 	mkdir -p $(BIN_DIR)
-	g++ $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
+	g++ $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
 $(BIN_DIR)/libseasocks.so: $(OBJS)
 	mkdir -p $(BIN_DIR)
