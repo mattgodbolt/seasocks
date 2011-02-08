@@ -4,7 +4,6 @@
 #include "websocket.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
 #include <boost/unordered_map.hpp>
 #include <list>
 #include <string>
@@ -50,7 +49,8 @@ private:
 	typedef boost::unordered_map<std::string, boost::shared_ptr<WebSocket::Handler>> HandlerMap;
 	HandlerMap _handlerMap;
 
-	boost::mutex _pendingRunnableMutex;
+	struct mutex;  // hack to prevent header dependency on boost thread.
+	boost::shared_ptr<mutex> _pendingRunnableMutex;
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 
 	const char* _staticPath;
