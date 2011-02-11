@@ -4,7 +4,7 @@ INCLUDES=-I $(C_SRC)
 CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
 
 STATIC_LIBS=-lssl 
-APP_LIBS=-lboost_thread
+APP_LIBS=
 
 .PHONY: all clean
 

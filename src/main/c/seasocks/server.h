@@ -2,6 +2,7 @@
 #define _SEASOCKS_SERVER_H_
 
 #include "websocket.h"
+#include "mutex.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
@@ -49,8 +50,7 @@ private:
 	typedef boost::unordered_map<std::string, boost::shared_ptr<WebSocket::Handler>> HandlerMap;
 	HandlerMap _handlerMap;
 
-	struct mutex;  // hack to prevent header dependency on boost thread.
-	boost::shared_ptr<mutex> _pendingRunnableMutex;
+	Mutex _pendingRunnableMutex;
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 
 	const char* _staticPath;

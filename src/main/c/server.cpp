@@ -13,15 +13,11 @@
 #include <sys/socket.h>
 
 #include <memory>
-#include <boost/thread.hpp>
 
 namespace SeaSocks {
 
-// Workaround for header dependency on boost mutex.
-struct Server::mutex : public boost::mutex {};
-
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _wakeFd(-1), _staticPath(NULL), _pendingRunnableMutex(new Server::mutex) {
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _wakeFd(-1), _staticPath(NULL) {
 }
 
 Server::~Server() {
@@ -205,7 +201,7 @@ boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* en
 }
 
 void Server::schedule(boost::shared_ptr<Runnable> runnable) {
-	boost::lock_guard<boost::mutex> lock(*_pendingRunnableMutex);
+	LockGuard lock(_pendingRunnableMutex);
 	_pendingRunnables.push_back(runnable);
 	uint64_t one = 1;
 	if (::write(_wakeFd, &one, sizeof(one)) == -1) {
@@ -214,7 +210,7 @@ void Server::schedule(boost::shared_ptr<Runnable> runnable) {
 }
 
 boost::shared_ptr<Server::Runnable> Server::popNextRunnable() {
-	boost::lock_guard<boost::mutex> lock(*_pendingRunnableMutex);
+	LockGuard lock(_pendingRunnableMutex);
 	boost::shared_ptr<Runnable> runnable;
 	if (!_pendingRunnables.empty()) {
 		runnable = _pendingRunnables.front();
