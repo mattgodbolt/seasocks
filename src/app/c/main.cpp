@@ -1,90 +1,57 @@
-#include "seasocks/logger.h"
 #include "seasocks/printflogger.h"
 #include "seasocks/server.h"
 #include "seasocks/websocket.h"
-
+#include <string>
+#include <sstream>
 #include <boost/shared_ptr.hpp>
 #include <set>
-#include <thread>
-
-/*
- * TODOs:
- * * sort out buffers and buffering
- * * work out threading model for asynch message passing.
- */
 
 using namespace SeaSocks;
 
-class MyHandler;
-boost::shared_ptr<MyHandler> handler;
-
-class MyHandler : public WebSocket::Handler {
+class MyHandler: public WebSocket::Handler {
 public:
-	MyHandler(Server* server) : _server(server) {
+	MyHandler(Server* server) : _server(server), _currentValue(0) {
+		setValue(1);
 	}
 
 	virtual void onConnect(WebSocket* connection) {
-		printf("Got connection\n");
 		_connections.insert(connection);
+		connection->respond(_currentSetValue.c_str());
 	}
 
 	virtual void onData(WebSocket* connection, const char* data) {
-		printf("Got data: '%s'\n", data);
+		int value = atoi(data) + 1;
+		if (value > _currentValue) {
+			setValue(value);
+			for (auto iter = _connections.cbegin(); iter != _connections.cend(); ++iter) {
+				(*iter)->respond(_currentSetValue.c_str());
+			}
+		}
 	}
 
 	virtual void onDisconnect(WebSocket* connection) {
-		printf("Got disconnection\n");
 		_connections.erase(connection);
-	}
-
-	virtual void onUpdate(WebSocket* connection, void* token) {
-		printf("Got update\n");
-	}
-
-	class SendToAllRunnable : public Server::Runnable {
-	public:
-		SendToAllRunnable(boost::shared_ptr<MyHandler> handler, const char* message)
-			: _handler(handler), _message(message) {
-		}
-
-		virtual void run() {
-			for (auto iter = _handler->_connections.cbegin(); iter != _handler->_connections.cend(); ++iter) {
-				(*iter)->respond(_message.c_str());
-			}
-		}
-	private:
-		boost::shared_ptr<MyHandler> _handler;
-		std::string _message;
-	};
-
-	void sendToAll(const char* message) {
-		boost::shared_ptr<Server::Runnable> runnable(new SendToAllRunnable(handler, message));
-		_server->schedule(runnable);
 	}
 
 private:
 	std::set<WebSocket*> _connections;
 	Server* _server;
-};
+	int _currentValue;
+	std::string _currentSetValue;
 
-void update() {
-	for (;;) {
-		sleep(1);
-		static int i = 0;
-		printf("THREAD TICK %d\n", i++);
-		char buf[128];
-		sprintf(buf, "console.log('%d');", i);
-		handler->sendToAll(buf);
+	void setValue(int value) {
+		_currentValue = value;
+		std::ostringstream ostr;
+		ostr << "set(" << _currentValue << ");";
+		_currentSetValue = ostr.str();
 	}
-}
+};
 
 int main(int argc, const char* argv[]) {
 	boost::shared_ptr<Logger> logger(new PrintfLogger());
 
-	std::thread otherThread(update);
-
 	Server server(logger);
-	handler.reset(new MyHandler(&server));
+	boost::shared_ptr<MyHandler> handler(new MyHandler(&server));
 	server.addWebSocketHandler("/ws", handler);
 	server.serve("src/web", 9090);
 	return 0;

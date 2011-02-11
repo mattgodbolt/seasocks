@@ -15,7 +15,6 @@ public:
 		virtual void onConnect(WebSocket* connection) = 0;
 		virtual void onData(WebSocket* connection, const char* data) = 0;
 		virtual void onDisconnect(WebSocket* connection) = 0;
-		virtual void onUpdate(WebSocket* connection, void* token) = 0;
 	};
 
 };

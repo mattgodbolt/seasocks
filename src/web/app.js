@@ -4,7 +4,6 @@ $(function() {
     ws = new WebSocket('ws://' + document.location.host + '/ws');
     ws.onopen = function() {
         console.log('onopen');
-        ws.send('This is a journey into sound');
     };
     ws.onclose = function() {
         $('#message').text('Lost connection.');
@@ -18,4 +17,11 @@ $(function() {
         console.log('onerror ' + error);
         console.log(error);
     };
+    $('#count').click(function() {
+    	ws.send($('#count').val());
+    });
 });
+
+set = function(value) {
+	$('#count').val(value)
+}
