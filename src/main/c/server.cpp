@@ -1,4 +1,3 @@
-#define __USE_GNU  // Get some handy extra functions
 #include "seasocks/server.h"
 
 #include "seasocks/connection.h"
@@ -8,16 +7,18 @@
 #include <string.h>
 
 #include <netinet/in.h>
-#include <sys/eventfd.h>
+#include <sys/ioctl.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include <memory>
 
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _wakeFd(-1), _staticPath(NULL) {
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _staticPath(NULL) {
+	_pipes[0] = _pipes[1] = -1;
 }
 
 Server::~Server() {
@@ -25,24 +26,38 @@ Server::~Server() {
 	if (_listenSock != -1) {
 		close(_listenSock);
 	}
-	if (_wakeFd != -1) {
-		close(_wakeFd);
+	if (_pipes[0] != -1) {
+		close(_pipes[0]);
+	}
+	if (_pipes[1] != -1) {
+		close(_pipes[1]);
 	}
 	if (_epollFd != -1) {
 		close(_epollFd);
 	}
 }
 
+bool Server::configureSocket(int fd) const {
+	int yesPlease = 1;
+	if (ioctl(fd, FIONBIO, &yesPlease) != 0) {
+		_logger->error("Unable to make socket non-blocking: %s", getLastError());
+		return false;
+	}
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
+		_logger->error("Unable to set reuse socket option: %s", getLastError());
+		return false;
+	}
+	return true;
+}
+
 void Server::serve(const char* staticPath, int port) {
 	_staticPath = staticPath;
-	_listenSock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+	_listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listenSock == -1) {
 		_logger->error("Unable to create listen socket: %s", getLastError());
 		return;
 	}
-	int yesPlease = 1;
-	if (setsockopt(_listenSock, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
-		_logger->error("Unable to set socket reuse: %s", getLastError());
+	if (!configureSocket(_listenSock)) {
 		return;
 	}
 	sockaddr_in sock;
@@ -65,9 +80,9 @@ void Server::serve(const char* staticPath, int port) {
 		return;
 	}
 
-	_wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-	if (_wakeFd == -1) {
-		_logger->error("Unable to create event signal fd: %s", getLastError());
+	/* TASK: once RH5 is dead and gone, use: _wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC); instead. It's lower overhead than this. */
+	if (pipe(_pipes) != 0) {
+		_logger->error("Unable to create event signal pipe: %s", getLastError());
 		return;
 	}
 
@@ -77,8 +92,8 @@ void Server::serve(const char* staticPath, int port) {
 		return;
 	}
 
-	epoll_event eventWake = { EPOLLIN, &_wakeFd };
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _wakeFd, &eventWake) == -1) {
+	epoll_event eventWake = { EPOLLIN, &_pipes[0] };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _pipes[0], &eventWake) == -1) {
 		_logger->error("Unable to add wake socket to epoll: %s", getLastError());
 		return;
 	}
@@ -97,9 +112,9 @@ void Server::serve(const char* staticPath, int port) {
 		for (int i = 0; i < numEvents; ++i) {
 			if (events[i].data.ptr == this) {
 				handleAccept();
-			} else if (events[i].data.ptr == &_wakeFd) {
+			} else if (events[i].data.ptr == &_pipes[0]) {
 				uint64_t dummy;
-				if (::read(_wakeFd, &dummy, sizeof(dummy)) == -1) {
+				if (::read(_pipes[0], &dummy, sizeof(dummy)) == -1) {
 					_logger->error("Error from wakeFd read: %s", getLastError());
 				}
 				// It's a "wake up" event; just process any runnables.
@@ -129,10 +144,9 @@ void Server::serve(const char* staticPath, int port) {
 void Server::handleAccept() {
 	sockaddr_in address;
 	socklen_t addrLen = sizeof(address);
-	int fd = ::accept4(_listenSock,
+	int fd = ::accept(_listenSock,
 			reinterpret_cast<sockaddr*>(&address),
-			&addrLen,
-			SOCK_NONBLOCK | SOCK_CLOEXEC);
+			&addrLen);
 	if (fd == -1) {
 		_logger->error("Unable to accept: %s", getLastError());
 		return;
@@ -145,9 +159,7 @@ void Server::handleAccept() {
 		::close(fd);
 		return;
 	}
-	int yesPlease = 1;
-	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
-		_logger->error("Unable to set reuse socket option: %s", getLastError());
+	if (!configureSocket(fd)) {
 		::close(fd);
 		return;
 	}
@@ -204,7 +216,7 @@ void Server::schedule(boost::shared_ptr<Runnable> runnable) {
 	LockGuard lock(_pendingRunnableMutex);
 	_pendingRunnables.push_back(runnable);
 	uint64_t one = 1;
-	if (::write(_wakeFd, &one, sizeof(one)) == -1) {
+	if (::write(_pipes[1], &one, sizeof(one)) == -1) {
 		_logger->error("Unable to post a wake event: %s", getLastError());
 	}
 }

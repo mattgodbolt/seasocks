@@ -39,13 +39,14 @@ public:
 	void schedule(boost::shared_ptr<Runnable> runnable);
 
 private:
+	bool configureSocket(int fd) const;
 	void handleAccept();
 	boost::shared_ptr<Runnable> popNextRunnable();
 
 	boost::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;
-	int _wakeFd;
+	int _pipes[2];
 
 	typedef boost::unordered_map<std::string, boost::shared_ptr<WebSocket::Handler>> HandlerMap;
 	HandlerMap _handlerMap;
