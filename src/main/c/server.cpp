@@ -74,7 +74,7 @@ void Server::serve(const char* staticPath, int port) {
 		return;
 	}
 
-	_epollFd = epoll_create1(EPOLL_CLOEXEC);
+	_epollFd = epoll_create(10);
 	if (_epollFd == -1) {
 		_logger->error("Unable to create epoll: %s", getLastError());
 		return;
