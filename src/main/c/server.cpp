@@ -106,6 +106,7 @@ void Server::serve(const char* staticPath, int port) {
 	for (;;) {
 		int numEvents = epoll_wait(_epollFd, events, maxEvents, -1);
 		if (numEvents == -1) {
+			if (errno == EINTR) continue;
 			_logger->error("Error from epoll_wait: %s", getLastError());
 			return;
 		}
