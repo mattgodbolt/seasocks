@@ -17,7 +17,7 @@
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _staticPath(NULL) {
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _staticPath(NULL),_terminate(false) {
 	_pipes[0] = _pipes[1] = -1;
 }
 
@@ -48,6 +48,14 @@ bool Server::configureSocket(int fd) const {
 		return false;
 	}
 	return true;
+}
+
+void Server::terminate() {
+    _terminate = true;
+    uint64_t one = 1;
+	if (::write(_pipes[1], &one, sizeof(one)) == -1) {
+		_logger->error("Unable to post a wake event: %s", getLastError());
+	}
 }
 
 void Server::serve(const char* staticPath, int port) {
@@ -139,6 +147,7 @@ void Server::serve(const char* staticPath, int port) {
 			if (!runnable) break;
 			runnable->run();
 		}
+        if (_terminate) break;
 	}
 }
 

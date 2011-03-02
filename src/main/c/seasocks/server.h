@@ -21,8 +21,10 @@ public:
 
 	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler);
 
-	// Serves static content from the given port on the current thread, forever.
+	// Serves static content from the given port on the current thread, until terminate is called
 	void serve(const char* staticPath, int port);
+
+    void terminate();
 
 	void unsubscribeFromAllEvents(Connection* connection);
 	bool subscribeToWriteEvents(Connection* connection);
@@ -55,6 +57,7 @@ private:
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 
 	const char* _staticPath;
+    volatile bool _terminate;
 };
 
 

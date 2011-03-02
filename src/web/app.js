@@ -20,6 +20,9 @@ $(function() {
     $('#count').click(function() {
     	ws.send($('#count').val());
     });
+    $('#die').click(function() {
+        ws.send('die');
+     });
 });
 
 set = function(value) {

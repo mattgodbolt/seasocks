@@ -2,6 +2,7 @@
 #include "seasocks/server.h"
 #include "seasocks/websocket.h"
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <boost/shared_ptr.hpp>
 #include <set>
@@ -20,6 +21,11 @@ public:
 	}
 
 	virtual void onData(WebSocket* connection, const char* data) {
+        if (0 == std::strcmp("die", data)) {
+            _server->terminate();
+            return;
+        }
+        
 		int value = atoi(data) + 1;
 		if (value > _currentValue) {
 			setValue(value);
