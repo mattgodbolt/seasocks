@@ -11,7 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openssl/md5.h>
+#include "md5/md5.h"
 
 namespace {
 
@@ -249,8 +249,11 @@ bool Connection::handleWebSocketKey3() {
 	md5Source.key1 = htonl(_webSocketKeys[1]);
 	memcpy(&md5Source.key2, &_inBuf[0], 8);
 
-	uint8_t digest[MD5_DIGEST_LENGTH];
-	MD5(reinterpret_cast<const uint8_t*>(&md5Source), sizeof(md5Source), digest);
+	uint8_t digest[16];
+	md5_state_t md5state;
+	md5_init(&md5state);
+	md5_append(&md5state, reinterpret_cast<const uint8_t*>(&md5Source), sizeof(md5Source));
+	md5_finish(&md5state, digest);
 
 	_logger->debug("%s : Attempting websocket upgrade", formatAddress(_address));
 
@@ -260,7 +263,7 @@ bool Connection::handleWebSocketKey3() {
 	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size());
 	writeLine("");
 
-	write(&digest, MD5_DIGEST_LENGTH);
+	write(&digest, 16);
 
 	_state = HANDLING_WEBSOCKET;
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
