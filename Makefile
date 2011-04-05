@@ -15,8 +15,12 @@ FIG_DEP=.fig-up-to-date
 UNAME_R:=$(shell uname -r)
 ifeq "" "$(findstring el5,$(UNAME_R))"
   PLATFORM=ubuntu
+  CC=g++
 else
   PLATFORM=redhat
+  GCC_DIR=/site/apps/gcc-4.5.0
+  CC=$(GCC_DIR)/bin/g++
+  GCC_LIB_PATH=$(GCC_DIR)/lib64
 endif
 
 $(FIG_DEP): package.fig
@@ -43,11 +47,11 @@ $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
 
 $(BIN_DIR)/seasocks: $(OBJS) obj/app/main.o
 	mkdir -p $(BIN_DIR)
-	g++ $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
+	$(CC) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
 $(BIN_DIR)/libseasocks.so: $(OBJS)
 	mkdir -p $(BIN_DIR)
-	g++ -shared $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
+	$(CC) -shared $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
 
 $(BIN_DIR)/libseasocks.a: $(OBJS)
 	mkdir -p $(BIN_DIR)
