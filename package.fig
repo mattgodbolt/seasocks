@@ -11,3 +11,12 @@ config default
   append INCLUDEPATH=@/src/main/c//seasocks
 end
 
+config ubuntu
+  include boost/1.43.ubuntu
+  include :default
+end
+
+config redhat
+  include boost/1.43.redhat5
+  include :default
+end

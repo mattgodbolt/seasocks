@@ -1,3 +1,6 @@
 /bin
 /obj
+/include
+/lib
+.fig-up-to-date
 *.swp
