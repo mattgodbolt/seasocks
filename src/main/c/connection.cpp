@@ -1,5 +1,6 @@
 #include "seasocks/connection.h"
 
+#include "seasocks/credentials.h"
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
@@ -10,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "md5/md5.h"
 
@@ -76,14 +78,16 @@ Connection::Connection(
 		boost::shared_ptr<Logger> logger,
 		Server* server,
 		int fd,
-		const sockaddr_in& address)
+		const sockaddr_in& address,
+		boost::shared_ptr<SsoAuthenticator> sso)
 	: _logger(logger),
 	  _server(server),
 	  _fd(fd),
 	  _state(READING_HEADERS),
 	  _closeOnEmpty(false),
 	  _registeredForWriteEvents(false),
-	  _address(address) {
+	  _address(address),
+	  _sso(sso){
 	assert(server->getStaticPath() != NULL);
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
@@ -364,7 +368,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (requestUri == NULL) {
 		return sendBadRequest("Malformed request line");
 	}
-
+	
 	const char* httpVersion = shift(requestLine);
 	if (httpVersion == NULL) {
 		return sendBadRequest("Malformed request line");
@@ -411,6 +415,32 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_webSockExtraHeaders += "\r\n";
 		}
 	}
+
+	// <SSO>
+	boost::shared_ptr<Credentials> credentials(new Credentials());
+
+	if (_sso != NULL) {
+	
+		if (_sso->isBounceBackFromSsoServer(requestUri)) {
+			if (_sso->validateSignature(requestUri)) {
+				return _sso->respondWithLocalCookieAndRedirectToOriginalPage();
+			} else {
+				return _sso->respondWithInvalidSignatureError();
+			}
+		}
+		
+		_sso->extractCredentialsFromLocalCookie(credentials);
+		if (!credentials->authenticated) {
+			if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
+				return sendError(403, "Not Authorized", requestUri);
+			} else {
+				return _sso->respondWithRedirectToAuthenticationServer();
+			}
+		}
+	}
+
+	std::cout << "Credentials{authenticated:" << credentials->authenticated << ", name:" << credentials->username << "}" << std::endl;
+	// </SSO>
 
 	if (haveConnectionUpgrade && haveWebSocketUprade) {
 		_logger->debug("%s : Got a websocket with key1=0x%08x, key2=0x%08x", formatAddress(_address), _webSocketKeys[0], _webSocketKeys[1]);

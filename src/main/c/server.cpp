@@ -19,6 +19,7 @@ namespace SeaSocks {
 Server::Server(boost::shared_ptr<Logger> logger)
 	: _logger(logger), _listenSock(-1), _epollFd(-1), _staticPath(NULL),_terminate(false) {
 	_pipes[0] = _pipes[1] = -1;
+	_sso = boost::shared_ptr<SsoAuthenticator>(new SsoAuthenticator());
 }
 
 Server::~Server() {
@@ -175,7 +176,7 @@ void Server::handleAccept() {
 	}
 	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address), fd);
 	// TODO: track all connections?
-	Connection* newConnection = new Connection(_logger, this, fd, address);
+	Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
 	epoll_event event = { EPOLLIN, newConnection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
 		_logger->error("Unable to add socket to epoll: %s", getLastError());

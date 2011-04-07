@@ -2,6 +2,7 @@
 #define _SEASOCKS_CONNECTION_H_
 
 #include "websocket.h"
+#include "seasocks/ssoauthenticator.h"
 
 #include <inttypes.h>
 #include <netinet/in.h>
@@ -22,7 +23,8 @@ public:
 			boost::shared_ptr<Logger> logger,
 			Server* server,
 			int fd,
-			const sockaddr_in& address);
+			const sockaddr_in& address,
+			boost::shared_ptr<SsoAuthenticator> sso);
 	~Connection();
 
 	void close();
@@ -69,6 +71,7 @@ private:
 	// Populated only during web socket header parsing.
 	std::string _webSockExtraHeaders;
 	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
+	boost::shared_ptr<SsoAuthenticator> _sso;
 
 	enum State {
 		INVALID,

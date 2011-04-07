@@ -2,6 +2,7 @@
 #define _SEASOCKS_SERVER_H_
 
 #include "websocket.h"
+#include "ssoauthenticator.h"
 #include "mutex.h"
 
 #include <boost/shared_ptr.hpp>
@@ -55,9 +56,10 @@ private:
 
 	Mutex _pendingRunnableMutex;
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
+	boost::shared_ptr<SsoAuthenticator> _sso;
 
 	const char* _staticPath;
-    volatile bool _terminate;
+	volatile bool _terminate;
 };
 
 
