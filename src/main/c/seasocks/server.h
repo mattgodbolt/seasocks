@@ -19,7 +19,8 @@ public:
 	Server(boost::shared_ptr<Logger> logger);
 	~Server();
 
-	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler);
+	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
+			bool allowCrossOriginRequests = false);
 
 	// Serves static content from the given port on the current thread, until terminate is called
 	void serve(const char* staticPath, int port);
@@ -32,6 +33,7 @@ public:
 
 	const char* getStaticPath() const { return _staticPath; }
 	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
+	bool isCrossOriginAllowed(const char* endpoint) const;
 
 	class Runnable {
 	public:
@@ -50,7 +52,11 @@ private:
 	int _epollFd;
 	int _pipes[2];
 
-	typedef boost::unordered_map<std::string, boost::shared_ptr<WebSocket::Handler>> HandlerMap;
+	struct Entry {
+		boost::shared_ptr<WebSocket::Handler> handler;
+		bool allowCrossOrigin;
+	};
+	typedef boost::unordered_map<std::string, Entry> HandlerMap;
 	HandlerMap _handlerMap;
 
 	Mutex _pendingRunnableMutex;

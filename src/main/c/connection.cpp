@@ -44,6 +44,14 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
+const char* skipAuthority(const char* value) {
+	const char* colonSlashSlash = strstr(value, "://");
+	if (colonSlashSlash) {
+		return colonSlashSlash + 3;
+	}
+	return value;
+}
+
 const struct {
 	const char* extension;
 	const char* contentType;
@@ -379,6 +387,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	bool keepAlive = false;
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUprade = false;
+	const char* webSocketOriginKey = _server->isCrossOriginAllowed(requestUri) ? "Origin" : "Host";
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -402,7 +411,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_webSocketKeys[0] = parseWebSocketKey(value);
 		} else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
 			_webSocketKeys[1] = parseWebSocketKey(value);
-		} else if (strcasecmp(key, "Host") == 0) {
+		} else if (strcasecmp(key, webSocketOriginKey) == 0) {
+			value = skipAuthority(value);
 			_webSockExtraHeaders += "Sec-WebSocket-Origin: http://";
 			_webSockExtraHeaders += value;
 			_webSockExtraHeaders += "\r\nSec-WebSocket-Location: ws://";
