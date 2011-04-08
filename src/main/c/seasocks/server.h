@@ -20,6 +20,7 @@ public:
 	Server(boost::shared_ptr<Logger> logger);
 	~Server();
 
+	void enableSingleSignOn(SsoOptions ssoOptions);
 	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler);
 
 	// Serves static content from the given port on the current thread, until terminate is called

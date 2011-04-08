@@ -419,21 +419,23 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	// <SSO>
 	boost::shared_ptr<Credentials> credentials(new Credentials());
 
-	if (_sso->isBounceBackFromSsoServer(requestUri)) {
-		if (_sso->validateSignature(requestUri)) {
-			return _sso->respondWithLocalCookieAndRedirectToOriginalPage();
-		} else {
-			return _sso->respondWithInvalidSignatureError();
-		}
-	}
-
-	if (_sso->enabledForPath(requestUri)) {
-		_sso->extractCredentialsFromLocalCookie(credentials);
-		if (!credentials->authenticated) {
-			if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
-				return sendError(403, "Not Authorized", requestUri);
+	if (_sso) {
+		if (_sso->isBounceBackFromSsoServer(requestUri)) {
+			if (_sso->validateSignature(requestUri)) {
+				return _sso->respondWithLocalCookieAndRedirectToOriginalPage();
 			} else {
-				return _sso->respondWithRedirectToAuthenticationServer();
+				return _sso->respondWithInvalidSignatureError();
+			}
+		}
+
+		if (_sso->enabledForPath(requestUri)) {
+			_sso->extractCredentialsFromLocalCookie(credentials);
+			if (!credentials->authenticated) {
+				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
+					return sendError(403, "Not Authorized", requestUri);
+				} else {
+					return _sso->respondWithRedirectToAuthenticationServer();
+				}
 			}
 		}
 	}

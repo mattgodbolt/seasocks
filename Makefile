@@ -6,7 +6,7 @@ CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gn
 STATIC_LIBS= 
 APP_LIBS=
 
-.PHONY: all clean
+.PHONY: all clean run
 
 OBJ_DIR=obj
 BIN_DIR=bin
@@ -57,6 +57,9 @@ $(BIN_DIR)/libseasocks.a: $(OBJS)
 	mkdir -p $(BIN_DIR)
 	-rm -f $(BIN_DIR)/libseasocks.a
 	ar cq $@ $^
+
+run: $(BIN_DIR)/seasocks
+	$(BIN_DIR)/seasocks
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) *.tar.gz

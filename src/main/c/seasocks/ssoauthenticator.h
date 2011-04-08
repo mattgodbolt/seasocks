@@ -152,6 +152,9 @@ struct SsoOptions {
 class SsoAuthenticator {
 public:
 
+	SsoAuthenticator(SsoOptions options) : _options(options) {
+	}
+
 	bool isBounceBackFromSsoServer(const char* requestUri) {
 		return false;
 	}
@@ -183,6 +186,8 @@ public:
 		return false;
 	}
 
+private:
+	SsoOptions _options;
 };
 
 }  // namespace SeaSocks
