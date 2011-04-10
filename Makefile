@@ -1,4 +1,5 @@
 C_SRC=src/main/c
+TEST_SRC=src/test/c
 
 INCLUDES=-I $(C_SRC) -Iinclude -Llib
 CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
@@ -6,7 +7,7 @@ CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gn
 STATIC_LIBS= 
 APP_LIBS=
 
-.PHONY: all clean run
+.PHONY: all clean run test
 
 OBJ_DIR=obj
 BIN_DIR=bin
@@ -27,7 +28,7 @@ $(FIG_DEP): package.fig
 	rm -rf lib include
 	fig -u --config $(PLATFORM) && touch $@
 
-all: $(BIN_DIR)/seasocks $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a
+all: $(BIN_DIR)/seasocks $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a test
 
 fig: $(FIG_DEP)
 
@@ -61,5 +62,15 @@ $(BIN_DIR)/libseasocks.a: $(OBJS)
 run: $(BIN_DIR)/seasocks
 	$(BIN_DIR)/seasocks
 
+$(BIN_DIR)/test_ssoauthenticator: $(BIN_DIR)/libseasocks.a $(TEST_SRC)/test_ssoauthenticator.cpp
+	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
+	
+.tests-pass: $(BIN_DIR)/test_ssoauthenticator
+	@rm -f .tests-pass
+	$(BIN_DIR)/test_ssoauthenticator
+	@touch .tests-pass
+
+test: .tests-pass
+
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR) *.tar.gz
+	rm -rf $(OBJ_DIR) $(BIN_DIR) *.tar.gz .tests-pass

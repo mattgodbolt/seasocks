@@ -3,4 +3,5 @@
 /include
 /lib
 .fig-up-to-date
+.tests-pass
 *.swp
