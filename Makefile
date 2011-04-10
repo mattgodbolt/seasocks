@@ -62,7 +62,7 @@ $(BIN_DIR)/libseasocks.a: $(OBJS)
 run: $(BIN_DIR)/seasocks
 	$(BIN_DIR)/seasocks
 
-$(BIN_DIR)/test_ssoauthenticator: $(BIN_DIR)/libseasocks.a $(TEST_SRC)/test_ssoauthenticator.cpp
+$(BIN_DIR)/test_ssoauthenticator: $(TEST_SRC)/test_ssoauthenticator.cpp $(BIN_DIR)/libseasocks.a
 	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
 	
 .tests-pass: $(BIN_DIR)/test_ssoauthenticator

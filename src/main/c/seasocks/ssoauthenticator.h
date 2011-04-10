@@ -151,41 +151,15 @@ struct SsoOptions {
 	
 class SsoAuthenticator {
 public:
-
-	SsoAuthenticator(SsoOptions options) : _options(options) {
-	}
-
-	bool isBounceBackFromSsoServer(const char* requestUri) {
-		return false;
-	}
-
-	bool enabledForPath(const char* requestUri) {
-		return true;
-	}
-
-	bool validateSignature(const char* requestUri) {
-		return false;
-	}
-
-	bool respondWithLocalCookieAndRedirectToOriginalPage() {
-		return false;
-	}
-
-	bool respondWithInvalidSignatureError() {
-		return false;
-	}
-
-	bool respondWithRedirectToAuthenticationServer() {
-		return false;
-	}
-
-	void extractCredentialsFromLocalCookie(boost::shared_ptr<Credentials> target) {
-	}
-	
-	bool requestExplicityForbidsDrwSsoRedirect() {
-		return false;
-	}
-
+	SsoAuthenticator(SsoOptions options);
+	bool enabledForPath(const char* requestUri);
+	bool isBounceBackFromSsoServer(const char* requestUri);
+	bool validateSignature(const char* requestUri);
+	bool respondWithLocalCookieAndRedirectToOriginalPage();
+	bool respondWithInvalidSignatureError();
+	bool respondWithRedirectToAuthenticationServer();
+	void extractCredentialsFromLocalCookie(boost::shared_ptr<Credentials> target);
+	bool requestExplicityForbidsDrwSsoRedirect();
 private:
 	SsoOptions _options;
 };
