@@ -46,6 +46,14 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
+const char* skipAuthority(const char* value) {
+	const char* colonSlashSlash = strstr(value, "://");
+	if (colonSlashSlash) {
+		return colonSlashSlash + 3;
+	}
+	return value;
+}
+
 const struct {
 	const char* extension;
 	const char* contentType;
@@ -383,6 +391,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	bool keepAlive = false;
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUprade = false;
+	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -394,6 +403,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		const char* key = headerLine;
 		const char* value = skipWhitespace(colonPos + 1);
 		_logger->debug("Key: %s || Value: %s", key, value);
+		std::string strValue(value);
 		if (strcasecmp(key, "Connection") == 0) {
 			if (strcasecmp(value, "keep-alive") == 0) {
 				keepAlive = true;
@@ -406,12 +416,13 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_webSocketKeys[0] = parseWebSocketKey(value);
 		} else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
 			_webSocketKeys[1] = parseWebSocketKey(value);
+		} else if (strcasecmp(key, "Origin") == 0 && allowCrossOrigin) {
+			_webSockExtraHeaders += "Sec-WebSocket-Origin: " + strValue + "\r\n";
 		} else if (strcasecmp(key, "Host") == 0) {
-			_webSockExtraHeaders += "Sec-WebSocket-Origin: http://";
-			_webSockExtraHeaders += value;
-			_webSockExtraHeaders += "\r\nSec-WebSocket-Location: ws://";
-			_webSockExtraHeaders += value;
-			_webSockExtraHeaders += requestUri;
+			if (!allowCrossOrigin) {
+				_webSockExtraHeaders += "Sec-WebSocket-Origin: http://" + strValue + "\r\n";
+			}
+			_webSockExtraHeaders += "Sec-WebSocket-Location: ws://" + strValue + requestUri;
 			_webSockExtraHeaders += "\r\n";
 		}
 	}
