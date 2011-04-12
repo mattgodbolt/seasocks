@@ -46,6 +46,7 @@ private:
 	bool configureSocket(int fd) const;
 	void handleAccept();
 	boost::shared_ptr<Runnable> popNextRunnable();
+	void processEventQueue();
 
 	boost::shared_ptr<Logger> _logger;
 	int _listenSock;

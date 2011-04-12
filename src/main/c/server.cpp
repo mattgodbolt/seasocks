@@ -111,6 +111,7 @@ void Server::serve(const char* staticPath, int port) {
 	const int maxEvents = 20;
 	epoll_event events[maxEvents];
 
+	processEventQueue(); // For any events before startup.
 	for (;;) {
 		int numEvents = epoll_wait(_epollFd, events, maxEvents, -1);
 		if (numEvents == -1) {
@@ -142,12 +143,16 @@ void Server::serve(const char* staticPath, int port) {
 				}
 			}
 		}
-		for (;;) {
-			boost::shared_ptr<Runnable> runnable = popNextRunnable();
-			if (!runnable) break;
-			runnable->run();
-		}
-        if (_terminate) break;
+		processEventQueue();
+		if (_terminate) break;
+	}
+}
+
+void Server::processEventQueue() {
+	for (;;) {
+		boost::shared_ptr<Runnable> runnable = popNextRunnable();
+		if (!runnable) break;
+		runnable->run();
 	}
 }
 
@@ -235,7 +240,7 @@ void Server::schedule(boost::shared_ptr<Runnable> runnable) {
 	LockGuard lock(_pendingRunnableMutex);
 	_pendingRunnables.push_back(runnable);
 	uint64_t one = 1;
-	if (::write(_pipes[1], &one, sizeof(one)) == -1) {
+	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
 		_logger->error("Unable to post a wake event: %s", getLastError());
 	}
 }
