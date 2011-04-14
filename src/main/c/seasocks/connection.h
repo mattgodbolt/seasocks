@@ -28,6 +28,7 @@ public:
 	void close();
 	bool write(const void* data, size_t size);
 	bool writeLine(const char* line);
+	bool writeLine(const std::string& line);
 	bool handleDataReadyForRead();
 	bool handleDataReadyForWrite();
 

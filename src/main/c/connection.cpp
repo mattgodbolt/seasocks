@@ -11,6 +11,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/unordered_map.hpp>
+#include <fstream>
+
 #include "md5/md5.h"
 
 namespace {
@@ -44,18 +48,7 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
-const char* skipAuthority(const char* value) {
-	const char* colonSlashSlash = strstr(value, "://");
-	if (colonSlashSlash) {
-		return colonSlashSlash + 3;
-	}
-	return value;
-}
-
-const struct {
-	const char* extension;
-	const char* contentType;
-} contentTypes[] = {
+const boost::unordered_map<std::string, std::string> contentTypes = {
 		{ "html", "text/html" },
 		{ "js", "application/javascript" },
 		{ "css", "text/css" },
@@ -63,17 +56,17 @@ const struct {
 		{ "png", "image/png" },
 };
 
-const char* getContentType(const char* path) {
-	const char* extension = strrchr(path, '.');
-	if (extension) {
-		++extension;
-		for (size_t i = 0; i < sizeof(contentTypes) / sizeof(contentTypes[0]); ++i) {
-			if (strcasecmp(contentTypes[i].extension, extension) == 0) {
-				return contentTypes[i].contentType;
-			}
+const std::string& getContentType(const std::string& path) {
+	auto lastDot = path.find_last_of('.');
+	if (lastDot != path.npos) {
+		std::string extension = path.substr(lastDot + 1);
+		auto it = contentTypes.find(extension);
+		if (it != contentTypes.end()) {
+			return it->second;
 		}
 	}
-	return "text/html";
+	static const std::string defaultType("text/html");
+	return defaultType;
 }
 
 const size_t MaxBufferSize = 16 * 1024 * 1024;
@@ -96,7 +89,7 @@ Connection::Connection(
 	  _closeOnEmpty(false),
 	  _registeredForWriteEvents(false),
 	  _address(address) {
-	assert(server->getStaticPath() != NULL);
+	assert(server->getStaticPath() != "");
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
@@ -169,6 +162,10 @@ bool Connection::writeLine(const char* line) {
 	static const char crlf[] = { '\r', '\n' };
 	if (!write(line, strlen(line))) return false;
 	return write(crlf, 2);
+}
+
+bool Connection::writeLine(const std::string& line) {
+	return writeLine(line.c_str());
 }
 
 bool Connection::handleDataReadyForRead() {
@@ -469,67 +466,50 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 }
 
 bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
-	char path[1024]; // xx horrible
-	strcpy(path, _server->getStaticPath());
-	strcat(path, requestUri);
+	std::string path = _server->getStaticPath() + requestUri;
 	// Trim any trailing queries.
-	char* query = strchr(path, '?');
-	if (query != NULL) {
-		*query = 0;
+	size_t queryPos = path.find('?');
+	if (queryPos != path.npos) {
+		path.resize(queryPos);
 	}
-	if (path[strlen(path)-1] == '/') {
-		strcat(path, "index.html");
+	if (path[path.length() - 1]== '/') {
+		path += "index.html";
 	}
-	FILE* f = fopen(path, "rb");
-	if (f == NULL) {
-		return send404(path);
+	std::ifstream input(path, std::ios::in | std::ios::binary);
+	if (!input) {
+		return send404(path.c_str());
 	}
-	if (fseek(f, 0, SEEK_END) == -1) {
-		fclose(f);
-		return send404(path);
-	}
-	int fileSize = ftell(f);
-	if (fileSize < 0) {
-		fclose(f);
-		return send404(path);
-	}
-	if (fseek(f, 0, SEEK_SET) == -1) {
-		fclose(f);
-		return send404(path);
+	input.seekg(0, std::ios::end);
+	auto fileSize = static_cast<std::streamoff>(input.tellg());
+	input.seekg(0);
+	if (input.fail()) {
+		return send404(path.c_str());
 	}
 	writeLine("HTTP/1.1 200 OK");
 	char buf[ReadWriteBufferSize];
-	sprintf(buf, "Content-Type: %s", getContentType(path));
-	writeLine(buf);
+	writeLine("Content-Type: " + getContentType(path));
 	if (keepAlive) {
 		writeLine("Connection: keep-alive");
 	} else {
 		writeLine("Connection: close");
 	}
-	char contentLength[128];
-	sprintf(contentLength, "Content-Length: %d", fileSize);
-	writeLine(contentLength);
+	writeLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
 	writeLine("");
 
 	int total = 0;
-	for (;;) {
-		int bytesRead = fread(buf, 1, sizeof(buf), f);
-		total += bytesRead;
-		if (bytesRead == -1) {
-			_logger->error("%s : Error reading file: ", formatAddress(_address), getLastError());
-			fclose(f);
+	while (input) {
+		input.read(buf, sizeof(buf));
+		if (input.fail() && !input.eof()) {
+			_logger->error("%s : Error reading file", formatAddress(_address));
 			// We can't send an error document as we've sent the header.
 			return false;
 		}
-		if (bytesRead == 0) {
-			break;
-		}
+		auto bytesRead = input.gcount();
+		total += bytesRead;
 		if (!write(buf, bytesRead)) {
-			fclose(f);
 			return false;
 		}
 	}
-	fclose(f);
 	if (!keepAlive) {
 		_logger->debug("%s : Closing on empty", formatAddress(_address));
 		_closeOnEmpty = true;

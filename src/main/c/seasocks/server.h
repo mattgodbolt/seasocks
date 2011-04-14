@@ -31,7 +31,7 @@ public:
 	bool subscribeToWriteEvents(Connection* connection);
 	bool unsubscribeFromWriteEvents(Connection* connection);
 
-	const char* getStaticPath() const { return _staticPath; }
+	const std::string& getStaticPath() const { return _staticPath; }
 	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
 	bool isCrossOriginAllowed(const char* endpoint) const;
 
@@ -63,7 +63,7 @@ private:
 	Mutex _pendingRunnableMutex;
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 
-	const char* _staticPath;
+	std::string _staticPath;
     volatile bool _terminate;
 };
 
