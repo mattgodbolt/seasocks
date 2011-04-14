@@ -72,6 +72,7 @@ const std::string& getContentType(const std::string& path) {
 const size_t MaxBufferSize = 16 * 1024 * 1024;
 const size_t ReadWriteBufferSize = 16 * 1024;
 const size_t MaxWebsocketMessageSize = 16384;
+const size_t MaxHeadersSize = 64 * 1024;
 
 }  // namespace
 
@@ -165,14 +166,14 @@ bool Connection::writeLine(const char* line) {
 }
 
 bool Connection::writeLine(const std::string& line) {
-	return writeLine(line.c_str());
+	std::string lineAndCrlf = line + "\r\n";
+	return write(lineAndCrlf.c_str(), lineAndCrlf.length());
 }
 
 bool Connection::handleDataReadyForRead() {
 	if (closed()) {
 		return false;
 	}
-	// TODO: terrible buffer handling.
 	size_t curSize = _inBuf.size();
 	_inBuf.resize(curSize + ReadWriteBufferSize);
 	int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
@@ -254,13 +255,11 @@ bool Connection::handleHeaders() {
 			if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
 				return false;
 			}
-			/// XXX horrible
 			_inBuf.erase(_inBuf.begin(), _inBuf.begin() + i + 4);
 			return handleNewData();
 		}
 	}
-	const size_t MAX_HEADERS_SIZE = 65536;
-	if (_inBuf.size() > MAX_HEADERS_SIZE) {
+	if (_inBuf.size() > MaxHeadersSize) {
 		return sendUnsupportedError("Headers too big");
 	}
 	return true;
@@ -362,13 +361,16 @@ bool Connection::handleWebSocketMessage(const char* message) {
 	return true;
 }
 
-bool Connection::sendError(int errorCode, const char* message, const char* document) {
+bool Connection::sendError(int errorCode, const char* message, const char* body) {
 	assert(_state != HANDLING_WEBSOCKET);
-	_logger->info("%s : Sending error %d - %s (%s)", formatAddress(_address), errorCode, message, document);
-	char buf[1024];
-	sprintf(buf, "HTTP/1.1 %d %s", errorCode, message);
-	writeLine(buf);
-	sprintf(buf, "Content-Length: %d", static_cast<int>(strlen(document)));
+	_logger->info("%s : Sending error %d - %s (%s)", formatAddress(_address), errorCode, message, body);
+	writeLine("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
+	std::stringstream documentStr;
+	documentStr << "<html><head><title>" << errorCode << " - " << message << "</title></head>"
+			<< "<body><h1>" << errorCode << " - " << message << "</h1>"
+			<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
+	std::string document(documentStr.str());
+	writeLine("Content-Length: " + boost::lexical_cast<std::string>(document.length()));
 	writeLine("Connection: close");
 	writeLine("");
 	writeLine(document);
@@ -472,7 +474,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 	if (queryPos != path.npos) {
 		path.resize(queryPos);
 	}
-	if (path[path.length() - 1]== '/') {
+	if (*path.rbegin() == '/') {
 		path += "index.html";
 	}
 	std::ifstream input(path, std::ios::in | std::ios::binary);
