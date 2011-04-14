@@ -38,6 +38,7 @@ public:
 	bool respond(const char* webSocketResponse);
 
 private:
+	bool closed() const;
 	bool checkCloseConditions();
 
 	bool handleNewData();

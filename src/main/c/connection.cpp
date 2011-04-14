@@ -76,6 +76,10 @@ const char* getContentType(const char* path) {
 	return "text/html";
 }
 
+const size_t MaxBufferSize = 16 * 1024 * 1024;
+const size_t ReadWriteBufferSize = 16 * 1024;
+const size_t MaxWebsocketMessageSize = 16384;
+
 }  // namespace
 
 namespace SeaSocks {
@@ -103,6 +107,7 @@ Connection::~Connection() {
 void Connection::close() {
 	if (_webSocketHandler) {
 		_webSocketHandler->onDisconnect(this);
+		_webSocketHandler.reset();
 	}
 	if (_fd != -1) {
 		_server->unsubscribeFromAllEvents(this);
@@ -112,6 +117,9 @@ void Connection::close() {
 }
 
 bool Connection::write(const void* data, size_t size) {
+	if (closed()) {
+		return false;
+	}
 	assert(!_closeOnEmpty);
 	if (size == 0) {
 		return true;
@@ -138,7 +146,14 @@ bool Connection::write(const void* data, size_t size) {
 	}
 	size_t bytesToBuffer = size - bytesSent;
 	size_t endOfBuffer = _outBuf.size();
-	_outBuf.resize(endOfBuffer + bytesToBuffer);
+	size_t newBufferSize = endOfBuffer + bytesToBuffer;
+	if (newBufferSize >= MaxBufferSize) {
+		_logger->warning("Closing connection to %s: buffer size too large (%d>%d)",
+				formatAddress(_address), newBufferSize, MaxBufferSize);
+		close();
+		return false;
+	}
+	_outBuf.resize(newBufferSize);
 	memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
 	if (!_registeredForWriteEvents) {
 		if (!_server->subscribeToWriteEvents(this)) {
@@ -157,11 +172,13 @@ bool Connection::writeLine(const char* line) {
 }
 
 bool Connection::handleDataReadyForRead() {
-	const int READ_SIZE = 16384;
+	if (closed()) {
+		return false;
+	}
 	// TODO: terrible buffer handling.
 	size_t curSize = _inBuf.size();
-	_inBuf.resize(curSize + READ_SIZE);
-	int result = ::read(_fd, &_inBuf[curSize], READ_SIZE);
+	_inBuf.resize(curSize + ReadWriteBufferSize);
+	int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
 	if (result == -1) {
 		_logger->error("Unable to read from socket: %s", getLastError());
 		return false;
@@ -178,6 +195,9 @@ bool Connection::handleDataReadyForRead() {
 }
 
 bool Connection::handleDataReadyForWrite() {
+	if (closed()) {
+		return false;
+	}
 	if (!_outBuf.empty()) {
 		int numWritten = ::send(_fd, &_outBuf[0], _outBuf.size(), MSG_NOSIGNAL);
 		if (numWritten == -1) {
@@ -195,7 +215,14 @@ bool Connection::handleDataReadyForWrite() {
 	return checkCloseConditions();
 }
 
+bool Connection::closed() const {
+	return _fd == -1;
+}
+
 bool Connection::checkCloseConditions() {
+	if (closed()) {
+		return true;
+	}
 	if (_closeOnEmpty && _outBuf.empty()) {
 		_logger->debug("%s : Closing, now empty", formatAddress(_address));
 		close();
@@ -275,7 +302,9 @@ bool Connection::handleWebSocketKey3() {
 
 	_state = HANDLING_WEBSOCKET;
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
-	_webSocketHandler->onConnect(this);
+	if (_webSocketHandler) {
+		_webSocketHandler->onConnect(this);
+	}
 
 	return true;
 }
@@ -320,9 +349,9 @@ bool Connection::handleWebSocket() {
 	if (firstByteNotConsumed != 0) {
 		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + firstByteNotConsumed);
 	}
-	const size_t MAX_WEBSOCKET_MESSAGE_SIZE = 16384;
-	if (_inBuf.size() > MAX_WEBSOCKET_MESSAGE_SIZE) {
+	if (_inBuf.size() > MaxWebsocketMessageSize) {
 		_logger->error("%s : WebSocket message too long", formatAddress(_address));
+		close();
 		return false;
 	}
 	return true;
@@ -330,13 +359,15 @@ bool Connection::handleWebSocket() {
 
 bool Connection::handleWebSocketMessage(const char* message) {
 	_logger->debug("%s : Got web socket message: '%s'", formatAddress(_address), message);
-	_webSocketHandler->onData(this, message);
+	if (_webSocketHandler) {
+		_webSocketHandler->onData(this, message);
+	}
 	return true;
 }
 
 bool Connection::sendError(int errorCode, const char* message, const char* document) {
 	assert(_state != HANDLING_WEBSOCKET);
-	_logger->info("%s : Sending error %d - %s", formatAddress(_address), errorCode, message);
+	_logger->info("%s : Sending error %d - %s (%s)", formatAddress(_address), errorCode, message, document);
 	char buf[1024];
 	sprintf(buf, "HTTP/1.1 %d %s", errorCode, message);
 	writeLine(buf);
@@ -467,7 +498,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 		return send404(path);
 	}
 	writeLine("HTTP/1.1 200 OK");
-	char buf[16384];
+	char buf[ReadWriteBufferSize];
 	sprintf(buf, "Content-Type: %s", getContentType(path));
 	writeLine(buf);
 	if (keepAlive) {
