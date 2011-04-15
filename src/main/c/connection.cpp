@@ -110,7 +110,18 @@ void Connection::close() {
 	_fd = -1;
 }
 
-bool Connection::write(const void* data, size_t size) {
+int Connection::safeSend(const void* data, size_t size) const {
+	int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
+	if (sendResult == -1) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			// Treat this as if zero bytes were written.
+			return 0;
+		}
+	}
+	return sendResult;
+}
+
+bool Connection::write(const void* data, size_t size, bool flushIt) {
 	if (closed()) {
 		return false;
 	}
@@ -119,23 +130,16 @@ bool Connection::write(const void* data, size_t size) {
 		return true;
 	}
 	int bytesSent = 0;
-	if (_outBuf.empty()) {
+	if (_outBuf.empty() && flushIt) {
 		// Attempt fast path, send directly.
-		int writeResult = ::send(_fd, data, size, MSG_NOSIGNAL);
-		if (writeResult == static_cast<int>(size)) {
+		bytesSent = safeSend(data, size);
+		if (bytesSent == static_cast<int>(size)) {
 			// We sent directly.
 			return true;
 		}
-		if (writeResult == -1) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				// Treat this as if zero bytes were written.
-				bytesSent = 0;
-			} else {
-				_logger->error("Unable to write to socket: %s", getLastError());
-				return false;
-			}
-		} else {
-			bytesSent = writeResult;
+		if (bytesSent == -1) {
+			_logger->error("Unable to write to socket: %s", getLastError());
+			return false;
 		}
 	}
 	size_t bytesToBuffer = size - bytesSent;
@@ -149,25 +153,21 @@ bool Connection::write(const void* data, size_t size) {
 	}
 	_outBuf.resize(newBufferSize);
 	memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
-	if (!_registeredForWriteEvents) {
-		if (!_server->subscribeToWriteEvents(this)) {
-			return false;
-		}
-		_registeredForWriteEvents = true;
+	if (flushIt) {
+		flush();
 	}
 	return true;
 }
 
-// TODO: Argh, buffer this up, and send in one go. It's slow otherwise... (wireshark says so anyway)
-bool Connection::writeLine(const char* line) {
+bool Connection::bufferLine(const char* line) {
 	static const char crlf[] = { '\r', '\n' };
-	if (!write(line, strlen(line))) return false;
-	return write(crlf, 2);
+	if (!write(line, strlen(line), false)) return false;
+	return write(crlf, 2, false);
 }
 
-bool Connection::writeLine(const std::string& line) {
+bool Connection::bufferLine(const std::string& line) {
 	std::string lineAndCrlf = line + "\r\n";
-	return write(lineAndCrlf.c_str(), lineAndCrlf.length());
+	return write(lineAndCrlf.c_str(), lineAndCrlf.length(), false);
 }
 
 bool Connection::handleDataReadyForRead() {
@@ -196,21 +196,34 @@ bool Connection::handleDataReadyForWrite() {
 	if (closed()) {
 		return false;
 	}
-	if (!_outBuf.empty()) {
-		int numWritten = ::send(_fd, &_outBuf[0], _outBuf.size(), MSG_NOSIGNAL);
-		if (numWritten == -1) {
-			_logger->error("%s : Unable to write to socket: %s", formatAddress(_address), getLastError());
+	if (!flush()) {
+		return false;
+	}
+	return checkCloseConditions();
+}
+
+bool Connection::flush() {
+	if (_outBuf.empty()) {
+		return true;
+	}
+	int numSent = safeSend(&_outBuf[0], _outBuf.size());
+	if (numSent == -1) {
+		_logger->error("%s : Unable to write to socket: %s", formatAddress(_address), getLastError());
+		return false;
+	}
+	_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numSent);
+	if (_outBuf.size() > 0 && !_registeredForWriteEvents) {
+		if (!_server->subscribeToWriteEvents(this)) {
 			return false;
 		}
-		_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numWritten);
-	}
-	if (_outBuf.empty()) {
+		_registeredForWriteEvents = true;
+	} else if (_outBuf.empty() && _registeredForWriteEvents) {
 		if (!_server->unsubscribeFromWriteEvents(this)) {
 			return false;
 		}
 		_registeredForWriteEvents = false;
 	}
-	return checkCloseConditions();
+	return true;
 }
 
 bool Connection::closed() const {
@@ -288,13 +301,13 @@ bool Connection::handleWebSocketKey3() {
 
 	_logger->debug("%s : Attempting websocket upgrade", formatAddress(_address));
 
-	writeLine("HTTP/1.1 101 WebSocket Protocol Handshake");
-	writeLine("Upgrade: WebSocket");
-	writeLine("Connection: Upgrade");
-	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size());
-	writeLine("");
+	bufferLine("HTTP/1.1 101 WebSocket Protocol Handshake");
+	bufferLine("Upgrade: WebSocket");
+	bufferLine("Connection: Upgrade");
+	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size(), false);
+	bufferLine("");
 
-	write(&digest, 16);
+	write(&digest, 16, true);
 
 	_state = HANDLING_WEBSOCKET;
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
@@ -307,10 +320,10 @@ bool Connection::handleWebSocketKey3() {
 
 bool Connection::respond(const char* webSocketResponse) {
 	uint8_t zero = 0;
-	if (!write(&zero, 1)) return false;
-	if (!write(webSocketResponse, strlen(webSocketResponse))) return false;
+	if (!write(&zero, 1, false)) return false;
+	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return false;
 	uint8_t effeff = 0xff;
-	return write(&effeff, 1);
+	return write(&effeff, 1, true);
 }
 
 bool Connection::handleWebSocket() {
@@ -364,16 +377,17 @@ bool Connection::handleWebSocketMessage(const char* message) {
 bool Connection::sendError(int errorCode, const char* message, const char* body) {
 	assert(_state != HANDLING_WEBSOCKET);
 	_logger->info("%s : Sending error %d - %s (%s)", formatAddress(_address), errorCode, message, body);
-	writeLine("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
+	bufferLine("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
 	std::stringstream documentStr;
 	documentStr << "<html><head><title>" << errorCode << " - " << message << "</title></head>"
 			<< "<body><h1>" << errorCode << " - " << message << "</h1>"
 			<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
 	std::string document(documentStr.str());
-	writeLine("Content-Length: " + boost::lexical_cast<std::string>(document.length()));
-	writeLine("Connection: close");
-	writeLine("");
-	writeLine(document);
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(document.length()));
+	bufferLine("Connection: close");
+	bufferLine("");
+	bufferLine(document);
+	flush();
 	_closeOnEmpty = true;
 	return true;
 }
@@ -487,16 +501,17 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 	if (input.fail()) {
 		return send404(path.c_str());
 	}
-	writeLine("HTTP/1.1 200 OK");
+	bufferLine("HTTP/1.1 200 OK");
 	char buf[ReadWriteBufferSize];
-	writeLine("Content-Type: " + getContentType(path));
+	bufferLine("Content-Type: " + getContentType(path));
 	if (keepAlive) {
-		writeLine("Connection: keep-alive");
+		bufferLine("Connection: keep-alive");
 	} else {
-		writeLine("Connection: close");
+		bufferLine("Connection: close");
 	}
-	writeLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
-	writeLine("");
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
+	bufferLine("");
+	flush();
 
 	int total = 0;
 	while (input) {
@@ -508,7 +523,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 		}
 		auto bytesRead = input.gcount();
 		total += bytesRead;
-		if (!write(buf, bytesRead)) {
+		if (!write(buf, bytesRead, true)) {
 			return false;
 		}
 	}
