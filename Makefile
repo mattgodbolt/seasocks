@@ -34,8 +34,9 @@ fig: $(FIG_DEP)
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')	
 
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
+ALL_OBJS=$(OBJS) obj/app/main.o
 
--include $(OBJS:.o=.d)
+-include $(ALL_OBJS:.o=.d)
 
 obj/app/main.o : src/app/c/main.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
