@@ -2,6 +2,7 @@
 #define _SEASOCKS_CREDENTIALS_H_
 
 #include <string>
+#include <iostream>
 
 namespace SeaSocks {
 
@@ -26,7 +27,9 @@ struct Credentials {
 	
 };
 
-// TODO: override << operator
+inline std::ostream &operator<<(std::ostream &os, Credentials& credentials) {
+	return os << "{authenticated:" << credentials.authenticated << ", username:'" << credentials.username << "'}";
+}
 
 }  // namespace SeaSocks
 

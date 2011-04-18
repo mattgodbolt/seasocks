@@ -38,6 +38,7 @@ public:
 
 	// From WebSocket.
 	bool respond(const char* webSocketResponse);
+	boost::shared_ptr<Credentials> credentials();
 
 private:
 	bool checkCloseConditions();
@@ -55,6 +56,7 @@ private:
 	bool sendUnsupportedError(const char* reason);
 	bool send404(const char* path);
 	bool sendBadRequest(const char* reason);
+	bool sendDefaultFavicon();
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
 	bool sendStaticData(bool keepAlive, const char* requestUri);
@@ -72,6 +74,7 @@ private:
 	std::string _webSockExtraHeaders;
 	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
 	boost::shared_ptr<SsoAuthenticator> _sso;
+	boost::shared_ptr<Credentials> _credentials;
 
 	enum State {
 		INVALID,

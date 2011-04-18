@@ -8,9 +8,19 @@ namespace SeaSocks {
 
 class PrintfLogger : public Logger {
 public:
-	virtual void log(Level level, const char* message) {
-		printf("%s: %s\n", levelToString(level), message);
+	PrintfLogger(Level minLevelToLog = Level::DEBUG) : minLevelToLog(minLevelToLog) {
 	}
+
+	~PrintfLogger() {
+	}
+
+	virtual void log(Level level, const char* message) {
+		if (level >= minLevelToLog) {
+			printf("%s: %s\n", levelToString(level), message);
+		}
+	}
+
+	Level minLevelToLog;
 };
 
 }  // namespace SeaSocks

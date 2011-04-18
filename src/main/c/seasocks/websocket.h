@@ -1,12 +1,16 @@
 #ifndef _SEASOCKS_WEBSOCKET_H_
 #define _SEASOCKS_WEBSOCKET_H_
 
+#include <boost/shared_ptr.hpp>
+#include "seasocks/credentials.h"
+
 namespace SeaSocks {
 
 class WebSocket {
 public:
 	virtual ~WebSocket() {}
 	virtual bool respond(const char* webSocketResponse) = 0;
+	virtual boost::shared_ptr<Credentials> credentials() = 0;
 
 	class Handler {
 	public:

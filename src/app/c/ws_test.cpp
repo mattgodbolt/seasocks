@@ -6,6 +6,7 @@
 #include <sstream>
 #include <boost/shared_ptr.hpp>
 #include <set>
+#include <iostream>
 
 using namespace SeaSocks;
 
@@ -18,13 +19,14 @@ public:
 	virtual void onConnect(WebSocket* connection) {
 		_connections.insert(connection);
 		connection->respond(_currentSetValue.c_str());
+		std::cout << "Credentials: " << *connection->credentials() << std::endl;
 	}
 
 	virtual void onData(WebSocket* connection, const char* data) {
-        if (0 == std::strcmp("die", data)) {
-            _server->terminate();
-            return;
-        }
+		if (0 == std::strcmp("die", data)) {
+		    _server->terminate();
+		    return;
+		}
         
 		int value = atoi(data) + 1;
 		if (value > _currentValue) {
@@ -33,6 +35,7 @@ public:
 				(*iter)->respond(_currentSetValue.c_str());
 			}
 		}
+
 	}
 
 	virtual void onDisconnect(WebSocket* connection) {
@@ -54,10 +57,10 @@ private:
 };
 
 int main(int argc, const char* argv[]) {
-	boost::shared_ptr<Logger> logger(new PrintfLogger());
+	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::INFO));
 
 	Server server(logger);
-	server.enableSingleSignOn(SsoOptions::test());
+	//server.enableSingleSignOn(SsoOptions::test());
 	
 	boost::shared_ptr<MyHandler> handler(new MyHandler(&server));
 	server.addWebSocketHandler("/ws", handler);

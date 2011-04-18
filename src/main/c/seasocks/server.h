@@ -27,7 +27,7 @@ public:
 	// Serves static content from the given port on the current thread, until terminate is called
 	void serve(const char* staticPath, int port);
 
-    void terminate();
+	void terminate();
 
 	void unsubscribeFromAllEvents(Connection* connection);
 	bool subscribeToWriteEvents(Connection* connection);
