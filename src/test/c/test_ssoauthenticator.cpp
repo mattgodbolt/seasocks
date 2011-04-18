@@ -110,6 +110,23 @@ void parses_cookies() {
 	ASSERT_EQUALS("you", cookies["bye"]);
 }
 
+void redirects_to_sso_server() {
+	SsoOptions options = SsoOptions::test();
+	options.returnPath = "/__bounceback";
+	options.authServer = "https://the-auth-server:10000";
+	SsoAuthenticator sso(options);
+
+	std::stringstream response;
+	std::string error;
+	sso.respondWithRedirectToAuthenticationServer("/mypage?foo", "myserver:8080", response, error);
+
+	std::string expectedResponse = 
+		"HTTP/1.1 307 Temporary Redirect\r\n"
+		"Location: https://the-auth-server:10000/login?basePath=http%3A%2F%2Fmyserver%3A8080&target=http%3A%2F%2Fmyserver%3A8080%2F%5F%5Fbounceback%3Fcontinue%3D%252Fmypage%253Ffoo&version=1\r\n"
+		"\r\n";
+	ASSERT_EQUALS(expectedResponse, response.str());
+}
+
 void parses_bounceback_params_and_generates_redirect() {
 	SsoOptions options = SsoOptions::test();
 	options.returnPath = "/__bounceback";
@@ -118,7 +135,13 @@ void parses_bounceback_params_and_generates_redirect() {
 	std::stringstream response;
 	std::string error;
 	sso.respondWithLocalCookieAndRedirectToOriginalPage("/__bounceback?user=joe&continue=%2fpage", response, error);
-	std::cout << response.str();
+
+	std::string expectedResponse = 
+		"HTTP/1.1 307 Temporary Redirect\r\n"
+		"Location: /page\r\n"
+		"Set-Cookie: _auth=joe|HASH\r\n"
+		"\r\n";
+	ASSERT_EQUALS(expectedResponse, response.str());
 }
 
 int main(int argc, const char* argv[]) {
@@ -129,6 +152,7 @@ int main(int argc, const char* argv[]) {
 	RUN(extract_credentials_from_local_cookie);
 	RUN(parses_cookies);
 	RUN(parses_bounceback_params_and_generates_redirect);
+	RUN(redirects_to_sso_server);
 	return TEST_REPORT();
 }
  
