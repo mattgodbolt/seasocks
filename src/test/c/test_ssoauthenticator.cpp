@@ -54,6 +54,62 @@ void encodes_uri_components() {
                       SsoAuthenticator::encodeUriComponent("HELLO/&= WORLD +%  ;"));
 }
 
+void extract_credentials_from_local_cookie() {
+	SsoOptions options = SsoOptions::test();
+	SsoAuthenticator sso(options);
+	boost::shared_ptr<Credentials> credentials(new Credentials());
+
+	// happy path
+	sso.extractCredentialsFromLocalCookie("_auth=joe|HASH", credentials);
+	ASSERT_EQUALS(true, credentials->authenticated);
+	ASSERT_EQUALS("joe", credentials->username);
+
+	// no cookie 
+	credentials.reset(new Credentials());
+	sso.extractCredentialsFromLocalCookie("", credentials);
+	ASSERT_EQUALS(false, credentials->authenticated);
+	ASSERT_EQUALS("", credentials->username);
+
+	// invalid hash
+	credentials.reset(new Credentials());
+	sso.extractCredentialsFromLocalCookie("_auth=joe|BADHASH", credentials);
+	ASSERT_EQUALS(false, credentials->authenticated);
+	ASSERT_EQUALS("", credentials->username);
+
+	// other cookies (ignored)
+	credentials.reset(new Credentials());
+	sso.extractCredentialsFromLocalCookie("foo=bar;x=\" _auth=ignoreme \"_auth=joe|HASH;blah=x", credentials);
+	ASSERT_EQUALS(true, credentials->authenticated);
+	ASSERT_EQUALS("joe", credentials->username);
+}
+
+void parses_cookies() {
+	using namespace std;
+	map<string, string> cookies;
+
+	// single value
+	SsoAuthenticator::parseCookie("hello=world", cookies);
+	ASSERT_EQUALS("world", cookies["hello"]);
+
+	// multiple values
+	cookies.clear();
+	SsoAuthenticator::parseCookie("hello=world;bye=you;blah=foo", cookies);
+	ASSERT_EQUALS("world", cookies["hello"]);
+	ASSERT_EQUALS("you", cookies["bye"]);
+	ASSERT_EQUALS("foo", cookies["blah"]);
+
+	// trailing ';'
+	cookies.clear();
+	SsoAuthenticator::parseCookie("hello=world;", cookies);
+	ASSERT_EQUALS("world", cookies["hello"]);
+
+	// quoted values
+	cookies.clear();
+	SsoAuthenticator::parseCookie("hello=\"world ;\\\"%= \";bye=\"you\"", cookies);
+	ASSERT_EQUALS("world ;\"%= ", cookies["hello"]);
+	ASSERT_EQUALS("you", cookies["bye"]);
+}
+
 void parses_bounceback_params_and_generates_redirect() {
 	SsoOptions options = SsoOptions::test();
 	options.returnPath = "/__bounceback";
@@ -70,6 +126,8 @@ int main(int argc, const char* argv[]) {
 	RUN(parses_uri_parameters);
 	RUN(skips_bad_uri_encodings);
 	RUN(encodes_uri_components);
+	RUN(extract_credentials_from_local_cookie);
+	RUN(parses_cookies);
 	RUN(parses_bounceback_params_and_generates_redirect);
 	return TEST_REPORT();
 }

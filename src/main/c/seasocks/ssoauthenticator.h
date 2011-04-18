@@ -53,7 +53,8 @@ struct SsoOptions {
 	/**
 	 * Base path of this web-application. The default value "", which means the web-app will try to
 	 * figure it out itself. In some cases, this may be wrong, e.g. if using a DNS alias or other 
-	 * web-server frontend. Format should look like 'http://someserver/' or 'http://someserver/context'.
+	 * web-server frontend. Format should look like 'http://someserver' or 'http://someserver/context'.
+	 * NOTE: It should NEVER contain a trailing slash!
 	 */
 	std::string basePath;
 
@@ -150,8 +151,6 @@ struct SsoOptions {
 	}
 };
 
-// TODO: Implement this!
-	
 class SsoAuthenticator {
 public:
 	SsoAuthenticator(SsoOptions options);
@@ -159,13 +158,14 @@ public:
 	bool isBounceBackFromSsoServer(const char* requestUri);
 	bool validateSignature(const char* requestUri);
 	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error);
-	bool respondWithRedirectToAuthenticationServer(const char* requestUri, std::ostream& response, std::string& error);
-	void extractCredentialsFromLocalCookie(boost::shared_ptr<Credentials> target);
+	bool respondWithRedirectToAuthenticationServer(const char* requestUri, const std::string& requestHost, std::ostream& response, std::string& error);
+	void extractCredentialsFromLocalCookie(const std::string& cookie, boost::shared_ptr<Credentials> target);
 	bool requestExplicityForbidsDrwSsoRedirect();
 	std::string secureHash(const std::string& string);
 	static void parseUriParameters(const char* uri, std::map<std::string, std::string>& params);
 	static std::string decodeUriComponent(const char* value, const char* end);
 	static std::string encodeUriComponent(const std::string& value);
+	static void parseCookie(const std::string& cookieValue, std::map<std::string, std::string>& params);
 private:
 	SsoOptions _options;
 };

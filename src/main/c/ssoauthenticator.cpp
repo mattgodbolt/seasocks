@@ -2,13 +2,14 @@
 
 #include <string.h>
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <string>
-#include <sstream>
 #include <iomanip>
 
 namespace SeaSocks {
 
+static const int SSO_PROTOCOL_VERSION = 1;
 
 SsoAuthenticator::SsoAuthenticator(SsoOptions options) : _options(options) {
 }
@@ -30,6 +31,9 @@ bool SsoAuthenticator::enabledForPath(const char* requestUri) {
 
 bool SsoAuthenticator::validateSignature(const char* requestUri) {
 	// TODO: Implement this.
+	// get 'user' and 'signature' params
+	// token = user + '|' + determineBaseUrl
+	// return validate(token, signature, _options.authServerCert);
 	return true;
 }
 
@@ -65,14 +69,52 @@ bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const cha
 	return true;
 }
 
-bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* requestUri, std::ostream& response, std::string& error) {
-	return false;
+bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* requestUri, const std::string& requestHost, std::ostream& response, std::string& error) {
+	std::stringstream baseUrl;
+	if (_options.basePath.empty()) {
+		baseUrl	<< "http://" << requestHost;
+	} else {
+		baseUrl << _options.basePath;
+	}
+	std::stringstream targetUrl;
+	targetUrl << baseUrl.str() << _options.returnPath << "?continue=" << encodeUriComponent(requestUri);
+	std::stringstream redirectUrl;
+	redirectUrl << _options.authServer << "/login"
+		    << "?basePath=" << encodeUriComponent(baseUrl.str())
+		    << "&target=" << encodeUriComponent(targetUrl.str())
+		    << "&version=" << SSO_PROTOCOL_VERSION;
+	if (!_options.theme.empty()) {
+		redirectUrl << "&theme=" << encodeUriComponent(_options.theme);
+	}
+	response << "HTTP/1.1 307 Temporary Redirect\r\n"
+		 << "Location: " << redirectUrl.str() << "\r\n"
+		 << "\r\n";
+	return true;
 }
 
-void SsoAuthenticator::extractCredentialsFromLocalCookie(boost::shared_ptr<Credentials> target) {
+void SsoAuthenticator::extractCredentialsFromLocalCookie(const std::string& cookieString, boost::shared_ptr<Credentials> target) {
+	target->authenticated = false;
+	target->username = "";
+
+	std::map<std::string,std::string> cookieValues;
+	parseCookie(cookieString, cookieValues);
+	if (cookieValues.count(_options.authCookieName)) {
+		std::string authCookie = cookieValues[_options.authCookieName];
+		size_t delim = authCookie.find('|');
+		if (delim != std::string::npos) {
+			std::string username = authCookie.substr(0, delim);
+			std::string hash = authCookie.substr(delim + 1);
+			if (secureHash(username) == hash) {
+				target->authenticated = true;
+				target->username = username;
+			}
+		}	
+	}
 }
 
 bool SsoAuthenticator::requestExplicityForbidsDrwSsoRedirect() {
+	// TODO: Implement this
+	// return header['drw-sso-no-redirect'] == "true"
 	return false;
 }
 
@@ -109,6 +151,101 @@ std::string SsoAuthenticator::decodeUriComponent(const char* value, const char* 
 		}
 	}
 	return result;
+}
+
+void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std::string, std::string>& cookieValues) {
+	enum State {
+		BEFORE_KEY, KEY, EQUALS, VALUE, QUOTED_VALUE
+	};
+	State state = State::BEFORE_KEY;
+	const char* keyStart = NULL;
+	const char* keyEnd = NULL;
+	const char* valueStart = NULL;
+	const char* valueEnd = NULL;
+	std::stringstream quotedBuffer;
+	const char* cookieCStr = cookieString.c_str();
+	for (const char *pos = cookieCStr;; ++pos) {
+		switch (state) {
+		case State::BEFORE_KEY:
+			switch (*pos) {
+			case '\0':
+				return;
+			case ' ':
+			case ';':
+				break;
+			default:
+				state = State::KEY;
+				keyStart = pos;
+			}
+			break;
+		case State::KEY:
+			switch (*pos) {
+			case '\0':
+				return;
+			case '=':
+				keyEnd = pos;
+				state = State::EQUALS;
+				break;
+			}
+			break;
+		case State::EQUALS:
+			switch (*pos) {
+			case '\0':
+				return;
+			case '"':
+				if (*(pos + 1) == '\0') {
+					return;
+				} else {
+					quotedBuffer.str("");
+					state = State::QUOTED_VALUE;
+				}
+				break;
+			default:
+				valueStart = pos;
+				state = State::VALUE;
+			}
+			break;
+		case State::VALUE:
+			switch (*pos) {
+			case '\0':
+			case ';':
+				valueEnd = pos;
+				cookieValues[std::string(keyStart, keyEnd - keyStart)] = std::string(valueStart, valueEnd - valueStart);
+				if (*pos == '\0') {
+					return;
+				} else {
+					keyStart = pos;
+					state = State::BEFORE_KEY;
+					break;
+				}
+			}
+			break;
+		case State::QUOTED_VALUE: 
+			switch (*pos) {
+			case '\\':
+				pos++;
+				if (*pos == '\0') {
+					return;
+				} else {
+					quotedBuffer << *pos;
+				}
+				break;
+			case '\0':
+			case '"':
+				valueEnd = pos;
+				cookieValues[std::string(keyStart, keyEnd - keyStart)] = quotedBuffer.str();
+				if (*pos == '\0') {
+					return;
+				} else {
+					state = State::BEFORE_KEY;
+					break;
+				}
+			default:
+				quotedBuffer << *pos;
+			}
+			break;
+		}
+	}
 }
 
 void SsoAuthenticator::parseUriParameters(const char* uri, std::map<std::string, std::string>& params) {

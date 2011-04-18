@@ -57,6 +57,8 @@ int main(int argc, const char* argv[]) {
 	boost::shared_ptr<Logger> logger(new PrintfLogger());
 
 	Server server(logger);
+	server.enableSingleSignOn(SsoOptions::test());
+	
 	boost::shared_ptr<MyHandler> handler(new MyHandler(&server));
 	server.addWebSocketHandler("/ws", handler);
 	server.serve("src/web", 9090);

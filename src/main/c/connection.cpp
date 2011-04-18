@@ -393,6 +393,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUprade = false;
 	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
+	std::string host;
+	std::string cookie;
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -425,6 +427,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			}
 			_webSockExtraHeaders += "Sec-WebSocket-Location: ws://" + strValue + requestUri;
 			_webSockExtraHeaders += "\r\n";
+			host = strValue;
+		} else if (strcasecmp(key, "Cookie") == 0) {
+			cookie = strValue;
 		}
 	}
 
@@ -448,14 +453,14 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		}
 
 		if (_sso->enabledForPath(requestUri)) {
-			_sso->extractCredentialsFromLocalCookie(credentials);
+			_sso->extractCredentialsFromLocalCookie(cookie, credentials);
 			if (!credentials->authenticated) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
 					return sendError(403, "Not Authorized", requestUri);
 				} else {
 					std::stringstream response;
 					std::string error;
-					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, response, error)) {
+					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, host, response, error)) {
 						std::string content = response.str();
 						return write(content.c_str(), content.length());
 					} else {
