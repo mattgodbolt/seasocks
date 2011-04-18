@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <iostream>
+#include <sstream>
 
 #include "md5/md5.h"
 
@@ -433,9 +434,14 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (_sso) {
 		if (_sso->isBounceBackFromSsoServer(requestUri)) {
 			if (_sso->validateSignature(requestUri)) {
-				return _sso->respondWithLocalCookieAndRedirectToOriginalPage();
+				std::stringstream response;
+				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response)) {
+					// TODO: writeline
+				} else {
+					
+				}
 			} else {
-				return _sso->respondWithInvalidSignatureError();
+				return sendError(500, "Invalid SSO signature", requestUri);
 			}
 		}
 
@@ -445,7 +451,11 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
 					return sendError(403, "Not Authorized", requestUri);
 				} else {
-					return _sso->respondWithRedirectToAuthenticationServer();
+					std::stringstream response;
+					if (_sso->respondWithRedirectToAuthenticationServer(response)) {
+						// TODO: write response	
+					} else {
+					}
 				}
 			}
 		}

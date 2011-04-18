@@ -5,6 +5,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <string>
+#include <map>
+
 namespace SeaSocks {
 
 
@@ -155,11 +158,14 @@ public:
 	bool enabledForPath(const char* requestUri);
 	bool isBounceBackFromSsoServer(const char* requestUri);
 	bool validateSignature(const char* requestUri);
-	bool respondWithLocalCookieAndRedirectToOriginalPage();
-	bool respondWithInvalidSignatureError();
-	bool respondWithRedirectToAuthenticationServer();
+	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response);
+	bool respondWithRedirectToAuthenticationServer(std::ostream& response);
 	void extractCredentialsFromLocalCookie(boost::shared_ptr<Credentials> target);
 	bool requestExplicityForbidsDrwSsoRedirect();
+	std::string secureHash(const std::string& string);
+	static void parseUriParameters(const char* uri, std::map<std::string, std::string>& params);
+	static std::string decodeUriComponent(const char* value, const char* end);
+	static std::string encodeUriComponent(const std::string& value);
 private:
 	SsoOptions _options;
 };

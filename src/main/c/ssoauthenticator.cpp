@@ -2,8 +2,13 @@
 
 #include <string.h>
 #include <iostream>
+#include <map>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace SeaSocks {
+
 
 SsoAuthenticator::SsoAuthenticator(SsoOptions options) : _options(options) {
 }
@@ -28,15 +33,36 @@ bool SsoAuthenticator::validateSignature(const char* requestUri) {
 	return true;
 }
 
-bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage() {
-	return false;
+bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response) {
+	std::map<std::string, std::string> params;
+	parseUriParameters(requestUri, params);
+	if (params.count("user") == 0 || params.count("continue") == 0) {
+		// TODO: Error
+		return false;
+	}
+	std::string user = params["user"];
+	std::string continueUrl = params["continue"];
+	if (user.empty() || continueUrl.empty()) {
+		// TODO: Error
+		return false;
+	}
+	if (user.find("\r") != std::string::npos
+	    || user.find("\n") != std::string::npos
+	    || continueUrl.find("://") != std::string::npos
+	    || continueUrl.find("\r") != std::string::npos
+	    || continueUrl.find("\n") != std::string::npos) {
+		// TODO: Tampering detecting
+		return false;
+	}
+	response << "HTTP/1.1 302 Moved\r\n"
+		 << "Location: " << continueUrl << "\r\n"
+	         << "Set-Cookie: " << encodeUriComponent(_options.authCookieName)
+		 << "=" << encodeUriComponent(user) << "|" << encodeUriComponent(secureHash(user)) << "\r\n"
+		 << "\r\n";
+	return true;
 }
 
-bool SsoAuthenticator::respondWithInvalidSignatureError() {
-	return false;
-}
-
-bool SsoAuthenticator::respondWithRedirectToAuthenticationServer() {
+bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(std::ostream& response) {
 	return false;
 }
 
@@ -45,6 +71,99 @@ void SsoAuthenticator::extractCredentialsFromLocalCookie(boost::shared_ptr<Crede
 
 bool SsoAuthenticator::requestExplicityForbidsDrwSsoRedirect() {
 	return false;
+}
+
+std::string SsoAuthenticator::encodeUriComponent(const std::string& value) {
+	std::stringstream result;
+	for (int i = 0, l = value.length(); i < l; ++i) {
+		char c = value[i];
+		if (c == ' ') {
+			result << '+';
+		} else if (isalnum(c)) {
+			result << c;
+		} else {
+			result << '%' << std::hex << std::uppercase << std::setw(2) << (int)c << std::nouppercase;
+		}
+	}
+	return result.str();
+}
+
+std::string SsoAuthenticator::decodeUriComponent(const char* value, const char* end) {
+	std::string result;
+	char hexbuffer[3];
+	hexbuffer[2] = '\0';
+	while (value != end) {
+		if (*value == '%' && value + 1 != end && value + 2 != end && isxdigit(*(value + 1)) && isxdigit(*(value + 2))) {
+			value++;
+			hexbuffer[0] = tolower(*(value++));
+			hexbuffer[1] = tolower(*(value++));
+			result += (char)strtol(hexbuffer, (char**) NULL, 16);
+		} else if (*value == '+') {
+			value++;
+			result += ' ';
+		} else {
+			result += *(value++);
+		}
+	}
+	return result;
+}
+
+void SsoAuthenticator::parseUriParameters(const char* uri, std::map<std::string, std::string>& params) {
+	enum State {
+		INITIAL, KEY, VALUE
+	};
+	State state = State::INITIAL;
+	const char* keyStart = NULL;
+	const char* keyEnd = NULL;
+	const char* valueStart = NULL;
+	const char* valueEnd = NULL;
+	for (const char *pos = uri;; ++pos) {
+		switch (*pos) {
+		case '?':
+			switch (state) {
+			case State::INITIAL:
+				state = State::KEY;
+				keyStart = pos + 1;
+				break;
+			}
+			break;
+		case '&':
+		case '\0':
+			switch (state) {
+			case State::KEY:
+				break;
+			case State::VALUE:
+				valueEnd = pos;
+				if (keyStart && keyEnd && valueStart) {
+					std::string key = decodeUriComponent(keyStart, keyEnd);
+					std::string value = decodeUriComponent(valueStart, valueEnd);
+					params[key] = value;
+				}
+				// DO IT
+				break;
+			}
+			if (*pos == '\0') {
+				return;
+			} else {
+				state = State::KEY;
+				keyStart = pos + 1;
+				break;
+			}
+		case '=':
+			switch (state) {
+			case State::KEY:
+				keyEnd = pos;
+				state = State::VALUE;
+				valueStart = pos + 1;
+				break;
+			}
+			break;
+		}
+	}
+}
+
+std::string SsoAuthenticator::secureHash(const std::string& string) {
+	return "HASH"; // TODO
 }
 
 }
