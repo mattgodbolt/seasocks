@@ -1,4 +1,6 @@
+default: all
 C_SRC=src/main/c
+APPS_SRC=src/app/c
 
 INCLUDES=-I $(C_SRC) -Iinclude -Llib
 CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
@@ -27,18 +29,26 @@ $(FIG_DEP): package.fig
 	rm -rf lib include
 	fig -u --config $(PLATFORM) && touch $@
 
-all: $(BIN_DIR)/seasocks $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a
+CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
+APPS_CPP_SRCS=$(shell find $(APPS_SRC) -name '*.cpp')
+TARGETS=$(patsubst $(APPS_SRC)/%.cpp,$(BIN_DIR)/%,$(APPS_CPP_SRCS))
+
+apps: $(TARGETS)
+all: apps $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a
+
+debug:
+	echo $($(DEBUG_VAR))
 
 fig: $(FIG_DEP)
 
-CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')	
 
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
-ALL_OBJS=$(OBJS) obj/app/main.o
+APPS_OBJS=$(patsubst $(APPS_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(APPS_CPP_SRCS))
+ALL_OBJS=$(OBJS) $(APPS_OBJS)
 
 -include $(ALL_OBJS:.o=.d)
 
-obj/app/main.o : src/app/c/main.cpp $(FIG_DEP)
+$(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
 
@@ -46,7 +56,7 @@ $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
 
-$(BIN_DIR)/seasocks: $(OBJS) obj/app/main.o
+$(TARGETS) : $(BIN_DIR)/% : $(APPS_OBJS) $(OBJS)
 	mkdir -p $(BIN_DIR)
 	$(CC) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
