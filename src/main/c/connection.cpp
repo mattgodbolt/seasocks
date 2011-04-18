@@ -439,6 +439,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	assert(requestLine != NULL);
 
 	const char* verb = shift(requestLine);
+	if (verb == NULL) {
+		return sendBadRequest("Malformed request line");
+	}
 	if (strcmp(verb, "GET") != 0) {
 		return sendUnsupportedError("We only support GET");
 	}
