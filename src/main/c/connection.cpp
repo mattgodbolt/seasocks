@@ -124,7 +124,7 @@ bool Connection::write(const void* data, size_t size) {
 	int bytesSent = 0;
 	if (_outBuf.empty()) {
 		// Attempt fast path, send directly.
-		int writeResult = ::write(_fd, data, size);
+		int writeResult = ::send(_fd, data, size, MSG_NOSIGNAL);
 		if (writeResult == static_cast<int>(size)) {
 			// We sent directly.
 			return true;
@@ -184,7 +184,7 @@ bool Connection::handleDataReadyForRead() {
 
 bool Connection::handleDataReadyForWrite() {
 	if (!_outBuf.empty()) {
-		int numWritten = ::write(_fd, &_outBuf[0], _outBuf.size());
+		int numWritten = ::send(_fd, &_outBuf[0], _outBuf.size(), MSG_NOSIGNAL);
 		if (numWritten == -1) {
 			_logger->error("%s : Unable to write to socket: %s", formatAddress(_address), getLastError());
 			return false;
