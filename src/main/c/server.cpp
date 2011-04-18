@@ -17,7 +17,7 @@
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _staticPath(NULL),_terminate(false) {
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _terminate(false) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = boost::shared_ptr<SsoAuthenticator>();
 }

@@ -14,6 +14,10 @@
 #include <iostream>
 #include <sstream>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/unordered_map.hpp>
+#include <fstream>
+
 #include "md5/md5.h"
 
 namespace {
@@ -47,18 +51,7 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
-const char* skipAuthority(const char* value) {
-	const char* colonSlashSlash = strstr(value, "://");
-	if (colonSlashSlash) {
-		return colonSlashSlash + 3;
-	}
-	return value;
-}
-
-const struct {
-	const char* extension;
-	const char* contentType;
-} contentTypes[] = {
+const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "txt", "text/plain" },
 	{ "css", "text/css" },
 	{ "csv", "text/csv" },
@@ -82,18 +75,23 @@ const struct {
 	{ "swf", "application/x-shockwave-flash" },
 };
 
-const char* getContentType(const char* path) {
-	const char* extension = strrchr(path, '.');
-	if (extension) {
-		++extension;
-		for (size_t i = 0; i < sizeof(contentTypes) / sizeof(contentTypes[0]); ++i) {
-			if (strcasecmp(contentTypes[i].extension, extension) == 0) {
-				return contentTypes[i].contentType;
-			}
+const std::string& getContentType(const std::string& path) {
+	auto lastDot = path.find_last_of('.');
+	if (lastDot != path.npos) {
+		std::string extension = path.substr(lastDot + 1);
+		auto it = contentTypes.find(extension);
+		if (it != contentTypes.end()) {
+			return it->second;
 		}
 	}
-	return "text/html";
+	static const std::string defaultType("text/html");
+	return defaultType;
 }
+
+const size_t MaxBufferSize = 16 * 1024 * 1024;
+const size_t ReadWriteBufferSize = 16 * 1024;
+const size_t MaxWebsocketMessageSize = 16384;
+const size_t MaxHeadersSize = 64 * 1024;
 
 }  // namespace
 
@@ -114,7 +112,7 @@ Connection::Connection(
 	  _address(address),
 	  _sso(sso),
 	  _credentials(boost::shared_ptr<Credentials>(new Credentials())) {
-	assert(server->getStaticPath() != NULL);
+	assert(server->getStaticPath() != "");
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
@@ -125,6 +123,7 @@ Connection::~Connection() {
 void Connection::close() {
 	if (_webSocketHandler) {
 		_webSocketHandler->onDisconnect(this);
+		_webSocketHandler.reset();
 	}
 	if (_fd != -1) {
 		_server->unsubscribeFromAllEvents(this);
@@ -133,57 +132,73 @@ void Connection::close() {
 	_fd = -1;
 }
 
-bool Connection::write(const void* data, size_t size) {
+int Connection::safeSend(const void* data, size_t size) const {
+	int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
+	if (sendResult == -1) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			// Treat this as if zero bytes were written.
+			return 0;
+		}
+	}
+	return sendResult;
+}
+
+bool Connection::write(const void* data, size_t size, bool flushIt) {
+	if (closed()) {
+		return false;
+	}
 	assert(!_closeOnEmpty);
 	if (size == 0) {
 		return true;
 	}
 	int bytesSent = 0;
-	if (_outBuf.empty()) {
+	if (_outBuf.empty() && flushIt) {
 		// Attempt fast path, send directly.
-		int writeResult = ::send(_fd, data, size, MSG_NOSIGNAL);
-		if (writeResult == static_cast<int>(size)) {
+		bytesSent = safeSend(data, size);
+		if (bytesSent == static_cast<int>(size)) {
 			// We sent directly.
 			return true;
 		}
-		if (writeResult == -1) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				// Treat this as if zero bytes were written.
-				bytesSent = 0;
-			} else {
-				_logger->error("Unable to write to socket: %s", getLastError());
-				return false;
-			}
-		} else {
-			bytesSent = writeResult;
+		if (bytesSent == -1) {
+			_logger->error("Unable to write to socket: %s", getLastError());
+			return false;
 		}
 	}
 	size_t bytesToBuffer = size - bytesSent;
 	size_t endOfBuffer = _outBuf.size();
-	_outBuf.resize(endOfBuffer + bytesToBuffer);
+	size_t newBufferSize = endOfBuffer + bytesToBuffer;
+	if (newBufferSize >= MaxBufferSize) {
+		_logger->warning("Closing connection to %s: buffer size too large (%d>%d)",
+				formatAddress(_address), newBufferSize, MaxBufferSize);
+		close();
+		return false;
+	}
+	_outBuf.resize(newBufferSize);
 	memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
-	if (!_registeredForWriteEvents) {
-		if (!_server->subscribeToWriteEvents(this)) {
-			return false;
-		}
-		_registeredForWriteEvents = true;
+	if (flushIt) {
+		flush();
 	}
 	return true;
 }
 
-// TODO: Argh, buffer this up, and send in one go. It's slow otherwise... (wireshark says so anyway)
-bool Connection::writeLine(const char* line) {
+bool Connection::bufferLine(const char* line) {
 	static const char crlf[] = { '\r', '\n' };
-	if (!write(line, strlen(line))) return false;
-	return write(crlf, 2);
+	if (!write(line, strlen(line), false)) return false;
+	return write(crlf, 2, false);
+}
+
+bool Connection::bufferLine(const std::string& line) {
+	std::string lineAndCrlf = line + "\r\n";
+	return write(lineAndCrlf.c_str(), lineAndCrlf.length(), false);
 }
 
 bool Connection::handleDataReadyForRead() {
-	const int READ_SIZE = 16384;
-	// TODO: terrible buffer handling.
+	if (closed()) {
+		return false;
+	}
 	size_t curSize = _inBuf.size();
-	_inBuf.resize(curSize + READ_SIZE);
-	int result = ::read(_fd, &_inBuf[curSize], READ_SIZE);
+	_inBuf.resize(curSize + ReadWriteBufferSize);
+	int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
 	if (result == -1) {
 		_logger->error("Unable to read from socket: %s", getLastError());
 		return false;
@@ -200,24 +215,47 @@ bool Connection::handleDataReadyForRead() {
 }
 
 bool Connection::handleDataReadyForWrite() {
-	if (!_outBuf.empty()) {
-		int numWritten = ::send(_fd, &_outBuf[0], _outBuf.size(), MSG_NOSIGNAL);
-		if (numWritten == -1) {
-			_logger->error("%s : Unable to write to socket: %s", formatAddress(_address), getLastError());
+	if (closed()) {
+		return false;
+	}
+	if (!flush()) {
+		return false;
+	}
+	return checkCloseConditions();
+}
+
+bool Connection::flush() {
+	if (_outBuf.empty()) {
+		return true;
+	}
+	int numSent = safeSend(&_outBuf[0], _outBuf.size());
+	if (numSent == -1) {
+		_logger->error("%s : Unable to write to socket: %s", formatAddress(_address), getLastError());
+		return false;
+	}
+	_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numSent);
+	if (_outBuf.size() > 0 && !_registeredForWriteEvents) {
+		if (!_server->subscribeToWriteEvents(this)) {
 			return false;
 		}
-		_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numWritten);
-	}
-	if (_outBuf.empty()) {
+		_registeredForWriteEvents = true;
+	} else if (_outBuf.empty() && _registeredForWriteEvents) {
 		if (!_server->unsubscribeFromWriteEvents(this)) {
 			return false;
 		}
 		_registeredForWriteEvents = false;
 	}
-	return checkCloseConditions();
+	return true;
+}
+
+bool Connection::closed() const {
+	return _fd == -1;
 }
 
 bool Connection::checkCloseConditions() {
+	if (closed()) {
+		return true;
+	}
 	if (_closeOnEmpty && _outBuf.empty()) {
 		_logger->debug("%s : Closing, now empty", formatAddress(_address));
 		close();
@@ -252,13 +290,11 @@ bool Connection::handleHeaders() {
 			if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
 				return false;
 			}
-			/// XXX horrible
 			_inBuf.erase(_inBuf.begin(), _inBuf.begin() + i + 4);
 			return handleNewData();
 		}
 	}
-	const size_t MAX_HEADERS_SIZE = 65536;
-	if (_inBuf.size() > MAX_HEADERS_SIZE) {
+	if (_inBuf.size() > MaxHeadersSize) {
 		return sendUnsupportedError("Headers too big");
 	}
 	return true;
@@ -287,27 +323,29 @@ bool Connection::handleWebSocketKey3() {
 
 	_logger->debug("%s : Attempting websocket upgrade", formatAddress(_address));
 
-	writeLine("HTTP/1.1 101 WebSocket Protocol Handshake");
-	writeLine("Upgrade: WebSocket");
-	writeLine("Connection: Upgrade");
-	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size());
-	writeLine("");
+	bufferLine("HTTP/1.1 101 WebSocket Protocol Handshake");
+	bufferLine("Upgrade: WebSocket");
+	bufferLine("Connection: Upgrade");
+	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size(), false);
+	bufferLine("");
 
-	write(&digest, 16);
+	write(&digest, 16, true);
 
 	_state = HANDLING_WEBSOCKET;
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
-	_webSocketHandler->onConnect(this);
+	if (_webSocketHandler) {
+		_webSocketHandler->onConnect(this);
+	}
 
 	return true;
 }
 
 bool Connection::respond(const char* webSocketResponse) {
 	uint8_t zero = 0;
-	if (!write(&zero, 1)) return false;
-	if (!write(webSocketResponse, strlen(webSocketResponse))) return false;
+	if (!write(&zero, 1, false)) return false;
+	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return false;
 	uint8_t effeff = 0xff;
-	return write(&effeff, 1);
+	return write(&effeff, 1, true);
 }
 
 boost::shared_ptr<Credentials> Connection::credentials() {
@@ -346,9 +384,9 @@ bool Connection::handleWebSocket() {
 	if (firstByteNotConsumed != 0) {
 		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + firstByteNotConsumed);
 	}
-	const size_t MAX_WEBSOCKET_MESSAGE_SIZE = 16384;
-	if (_inBuf.size() > MAX_WEBSOCKET_MESSAGE_SIZE) {
+	if (_inBuf.size() > MaxWebsocketMessageSize) {
 		_logger->error("%s : WebSocket message too long", formatAddress(_address));
+		close();
 		return false;
 	}
 	return true;
@@ -356,20 +394,26 @@ bool Connection::handleWebSocket() {
 
 bool Connection::handleWebSocketMessage(const char* message) {
 	_logger->debug("%s : Got web socket message: '%s'", formatAddress(_address), message);
-	_webSocketHandler->onData(this, message);
+	if (_webSocketHandler) {
+		_webSocketHandler->onData(this, message);
+	}
 	return true;
 }
 
-bool Connection::sendError(int errorCode, const char* message, const char* document) {
+bool Connection::sendError(int errorCode, const char* message, const char* body) {
 	assert(_state != HANDLING_WEBSOCKET);
-	_logger->info("%s : Sending error %d - %s", formatAddress(_address), errorCode, message);
-	char buf[1024];
-	sprintf(buf, "HTTP/1.1 %d %s", errorCode, message);
-	writeLine(buf);
-	sprintf(buf, "Content-Length: %d", static_cast<int>(strlen(document)));
-	writeLine("Connection: close");
-	writeLine("");
-	writeLine(document);
+	_logger->info("%s : Sending error %d - %s (%s)", formatAddress(_address), errorCode, message, body);
+	bufferLine("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
+	std::stringstream documentStr;
+	documentStr << "<html><head><title>" << errorCode << " - " << message << "</title></head>"
+			<< "<body><h1>" << errorCode << " - " << message << "</h1>"
+			<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
+	std::string document(documentStr.str());
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(document.length()));
+	bufferLine("Connection: close");
+	bufferLine("");
+	bufferLine(document);
+	flush();
 	_closeOnEmpty = true;
 	return true;
 }
@@ -466,7 +510,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 				std::string error;
 				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response, error)) {
 					std::string content = response.str();
-					return write(content.c_str(), content.length());
+					return write(content.c_str(), content.length(), true);
 				} else {
 					return sendError(500, error.c_str(), requestUri);
 				}
@@ -485,7 +529,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 					std::string error;
 					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, host, response, error)) {
 						std::string content = response.str();
-						return write(content.c_str(), content.length());
+						return write(content.c_str(), content.length(), true);
 					} else {
 						return sendError(500, error.c_str(), requestUri);
 					}
@@ -510,67 +554,51 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 }
 
 bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
-	char path[1024]; // xx horrible
-	strcpy(path, _server->getStaticPath());
-	strcat(path, requestUri);
+	std::string path = _server->getStaticPath() + requestUri;
 	// Trim any trailing queries.
-	char* query = strchr(path, '?');
-	if (query != NULL) {
-		*query = 0;
+	size_t queryPos = path.find('?');
+	if (queryPos != path.npos) {
+		path.resize(queryPos);
 	}
-	if (path[strlen(path)-1] == '/') {
-		strcat(path, "index.html");
+	if (*path.rbegin() == '/') {
+		path += "index.html";
 	}
-	FILE* f = fopen(path, "rb");
-	if (f == NULL) {
+	std::ifstream input(path, std::ios::in | std::ios::binary);
+	if (!input) {
 		return send404(requestUri);
 	}
-	if (fseek(f, 0, SEEK_END) == -1) {
-		fclose(f);
+	input.seekg(0, std::ios::end);
+	auto fileSize = static_cast<std::streamoff>(input.tellg());
+	input.seekg(0);
+	if (input.fail()) {
 		return send404(requestUri);
 	}
-	int fileSize = ftell(f);
-	if (fileSize < 0) {
-		fclose(f);
-		return send404(requestUri);
-	}
-	if (fseek(f, 0, SEEK_SET) == -1) {
-		fclose(f);
-		return send404(requestUri);
-	}
-	writeLine("HTTP/1.1 200 OK");
-	char buf[16384];
-	sprintf(buf, "Content-Type: %s", getContentType(path));
-	writeLine(buf);
+	bufferLine("HTTP/1.1 200 OK");
+	char buf[ReadWriteBufferSize];
+	bufferLine("Content-Type: " + getContentType(path));
 	if (keepAlive) {
-		writeLine("Connection: keep-alive");
+		bufferLine("Connection: keep-alive");
 	} else {
-		writeLine("Connection: close");
+		bufferLine("Connection: close");
 	}
-	char contentLength[128];
-	sprintf(contentLength, "Content-Length: %d", fileSize);
-	writeLine(contentLength);
-	writeLine("");
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
+	bufferLine("");
+	flush();
 
 	int total = 0;
-	for (;;) {
-		int bytesRead = fread(buf, 1, sizeof(buf), f);
-		total += bytesRead;
-		if (bytesRead == -1) {
-			_logger->error("%s : Error reading file: ", formatAddress(_address), getLastError());
-			fclose(f);
+	while (input) {
+		input.read(buf, sizeof(buf));
+		if (input.fail() && !input.eof()) {
+			_logger->error("%s : Error reading file", formatAddress(_address));
 			// We can't send an error document as we've sent the header.
 			return false;
 		}
-		if (bytesRead == 0) {
-			break;
-		}
-		if (!write(buf, bytesRead)) {
-			fclose(f);
+		auto bytesRead = input.gcount();
+		total += bytesRead;
+		if (!write(buf, bytesRead, true)) {
 			return false;
 		}
 	}
-	fclose(f);
 	if (!keepAlive) {
 		_logger->debug("%s : Closing on empty", formatAddress(_address));
 		_closeOnEmpty = true;
@@ -652,13 +680,11 @@ bool Connection::sendDefaultFavicon() {
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" 
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" 
 		"\x00\x00\x00\x00\x00\x00";
-	writeLine("HTTP/1.1 200 OK");
-	writeLine("Content-Type: image/x-icon");
-	writeLine("");
-
-	write(data, dataLength);
-	close();
-	return true;
+	bufferLine("HTTP/1.1 200 OK");
+	bufferLine("Content-Type: image/x-icon");
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(dataLength));
+	bufferLine("");
+	return write(data, dataLength, true);
 }
 
 }  // SeaSocks

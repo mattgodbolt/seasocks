@@ -28,8 +28,7 @@ public:
 	~Connection();
 
 	void close();
-	bool write(const void* data, size_t size);
-	bool writeLine(const char* line);
+	bool write(const void* data, size_t size, bool flush);
 	bool handleDataReadyForRead();
 	bool handleDataReadyForWrite();
 
@@ -41,6 +40,7 @@ public:
 	boost::shared_ptr<Credentials> credentials();
 
 private:
+	bool closed() const;
 	bool checkCloseConditions();
 
 	bool handleNewData();
@@ -48,6 +48,10 @@ private:
 	bool handleWebSocketKey3();
 	bool handleWebSocket();
 	bool handleWebSocketMessage(const char* message);
+
+	bool bufferLine(const char* line);
+	bool bufferLine(const std::string& line);
+	bool flush();
 
 	// Send an error document. Returns 'true' for convenience in handle*() routines.
 	bool sendError(int errorCode, const char* message, const char* document);
@@ -60,6 +64,8 @@ private:
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
 	bool sendStaticData(bool keepAlive, const char* requestUri);
+
+	int safeSend(const void* data, size_t size) const;
 
 	boost::shared_ptr<Logger> _logger;
 	Server* _server;

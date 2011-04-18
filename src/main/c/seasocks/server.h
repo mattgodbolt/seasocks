@@ -33,7 +33,7 @@ public:
 	bool subscribeToWriteEvents(Connection* connection);
 	bool unsubscribeFromWriteEvents(Connection* connection);
 
-	const char* getStaticPath() const { return _staticPath; }
+	const std::string& getStaticPath() const { return _staticPath; }
 	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
 	bool isCrossOriginAllowed(const char* endpoint) const;
 
@@ -66,8 +66,8 @@ private:
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 	boost::shared_ptr<SsoAuthenticator> _sso;
 
-	const char* _staticPath;
-	volatile bool _terminate;
+	std::string _staticPath;
+    volatile bool _terminate;
 };
 
 
