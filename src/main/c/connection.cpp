@@ -435,10 +435,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		if (_sso->isBounceBackFromSsoServer(requestUri)) {
 			if (_sso->validateSignature(requestUri)) {
 				std::stringstream response;
-				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response)) {
-					// TODO: writeline
+				std::string error;
+				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response, error)) {
+					std::string content = response.str();
+					return write(content.c_str(), content.length());
 				} else {
-					
+					return sendError(500, error.c_str(), requestUri);
 				}
 			} else {
 				return sendError(500, "Invalid SSO signature", requestUri);
@@ -452,9 +454,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 					return sendError(403, "Not Authorized", requestUri);
 				} else {
 					std::stringstream response;
-					if (_sso->respondWithRedirectToAuthenticationServer(response)) {
-						// TODO: write response	
+					std::string error;
+					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, response, error)) {
+						std::string content = response.str();
+						return write(content.c_str(), content.length());
 					} else {
+						return sendError(500, error.c_str(), requestUri);
 					}
 				}
 			}

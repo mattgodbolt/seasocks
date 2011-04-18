@@ -33,17 +33,19 @@ bool SsoAuthenticator::validateSignature(const char* requestUri) {
 	return true;
 }
 
-bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response) {
+bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error) {
 	std::map<std::string, std::string> params;
 	parseUriParameters(requestUri, params);
 	if (params.count("user") == 0 || params.count("continue") == 0) {
-		// TODO: Error
+		// Tampering detected.
+		error = "Invalid response from SSO server (require user and continue params)";
 		return false;
 	}
 	std::string user = params["user"];
 	std::string continueUrl = params["continue"];
 	if (user.empty() || continueUrl.empty()) {
-		// TODO: Error
+		// Tampering detected.
+		error = "Invalid response from SSO server (require user and continue param values)";
 		return false;
 	}
 	if (user.find("\r") != std::string::npos
@@ -51,18 +53,19 @@ bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const cha
 	    || continueUrl.find("://") != std::string::npos
 	    || continueUrl.find("\r") != std::string::npos
 	    || continueUrl.find("\n") != std::string::npos) {
-		// TODO: Tampering detecting
+		// Tampering detected.
+		error = "Invalid response from SSO server (user or continue params contain invalid chars)";
 		return false;
 	}
-	response << "HTTP/1.1 302 Moved\r\n"
+	response << "HTTP/1.1 307 Temporary Redirect\r\n"
 		 << "Location: " << continueUrl << "\r\n"
-	         << "Set-Cookie: " << encodeUriComponent(_options.authCookieName)
+	         << "Set-Cookie: " << _options.authCookieName
 		 << "=" << encodeUriComponent(user) << "|" << encodeUriComponent(secureHash(user)) << "\r\n"
 		 << "\r\n";
 	return true;
 }
 
-bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(std::ostream& response) {
+bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* requestUri, std::ostream& response, std::string& error) {
 	return false;
 }
 

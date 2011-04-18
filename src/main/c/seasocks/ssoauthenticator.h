@@ -158,8 +158,8 @@ public:
 	bool enabledForPath(const char* requestUri);
 	bool isBounceBackFromSsoServer(const char* requestUri);
 	bool validateSignature(const char* requestUri);
-	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response);
-	bool respondWithRedirectToAuthenticationServer(std::ostream& response);
+	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error);
+	bool respondWithRedirectToAuthenticationServer(const char* requestUri, std::ostream& response, std::string& error);
 	void extractCredentialsFromLocalCookie(boost::shared_ptr<Credentials> target);
 	bool requestExplicityForbidsDrwSsoRedirect();
 	std::string secureHash(const std::string& string);

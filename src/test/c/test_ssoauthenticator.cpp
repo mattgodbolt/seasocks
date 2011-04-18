@@ -60,7 +60,8 @@ void parses_bounceback_params_and_generates_redirect() {
 	SsoAuthenticator sso(options);
 
 	std::stringstream response;
-	sso.respondWithLocalCookieAndRedirectToOriginalPage("/__bounceback?user=joe&continue=%2fpage", response);
+	std::string error;
+	sso.respondWithLocalCookieAndRedirectToOriginalPage("/__bounceback?user=joe&continue=%2fpage", response, error);
 	std::cout << response.str();
 }
 
