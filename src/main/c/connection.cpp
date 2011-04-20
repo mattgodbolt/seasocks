@@ -13,8 +13,12 @@
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <fstream>
 
@@ -63,15 +67,37 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
 	return result;
 }
 
-std::string now() {
-	time_t now = time(NULL);
+std::string webtime(time_t time) {
 	struct tm tm;
-	gmtime_r(&now, &tm);
+	gmtime_r(&time, &tm);
 	char buf[1024];
 	// Wed, 20 Apr 2011 17:31:28 GMT
 	strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
 	return buf;
 }
+
+std::string now() {
+	return webtime(time(NULL));
+}
+
+class RaiiFd : public boost::noncopyable {
+	int _fd;
+public:
+	RaiiFd(const char* filename) {
+		_fd = ::open(filename, O_RDONLY);
+	}
+	~RaiiFd() {
+		if (_fd != -1) {
+			::close(_fd);
+		}
+	}
+	bool ok() const {
+		return _fd != -1;
+	}
+	operator int() const {
+		return _fd;
+	}
+};
 
 const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "txt", "text/plain" },
@@ -636,12 +662,12 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 	if (*path.rbegin() == '/') {
 		path += "index.html";
 	}
-	std::ifstream input(path, std::ios::in | std::ios::binary);
-	if (!input) {
+	RaiiFd input(path.c_str());
+	struct stat stat;
+	if (!input.ok() || ::fstat(input, &stat) == -1) {
 		return send404(requestUri);
 	}
-	input.seekg(0, std::ios::end);
-	auto fileSize = static_cast<std::streamoff>(input.tellg());
+	auto fileSize = stat.st_size;
 	std::list<Range> sendRanges;
 	if (!origRanges.empty()) {
 		bufferLine("HTTP/1.1 206 OK");
@@ -681,24 +707,24 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 	bufferLine("Server: SeaSocks");
 	bufferLine("Accept-Ranges: bytes");
 	bufferLine("Date: " + now());
+	bufferLine("Last-Modified: " + webtime(stat.st_mtime));
 	bufferLine("");
 	flush();
 
 	for (auto rangeIter = sendRanges.cbegin(); rangeIter != sendRanges.cend(); ++rangeIter) {
-		input.seekg(rangeIter->start);
-		if (input.fail()) {
+		if (::lseek(input, rangeIter->start, SEEK_SET) == -1) {
 			// We've (probably) already sent data.
 			return false;
 		}
 		auto bytesLeft = rangeIter->length();
 		while (bytesLeft) {
-			input.read(buf, std::min(sizeof(buf), bytesLeft));
-			if (input.fail() && !input.eof()) {
-				_logger->error("%s : Error reading file", formatAddress(_address));
+			auto bytesRead = ::read(input, buf, std::min(sizeof(buf), bytesLeft));
+			if (bytesRead <= 0) {
+				_logger->error("%s : Error reading file: %s", formatAddress(_address),
+						bytesRead == 0 ? "Unexpected EOF" : getLastError());
 				// We can't send an error document as we've sent the header.
 				return false;
 			}
-			auto bytesRead = input.gcount();
 			bytesLeft -= bytesRead;
 			if (!write(buf, bytesRead, true)) {
 				return false;
