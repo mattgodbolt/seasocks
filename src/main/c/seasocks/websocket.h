@@ -15,11 +15,6 @@ public:
 	virtual boost::shared_ptr<Credentials> credentials() = 0;
 	virtual const sockaddr_in& getRemoteAddress() const = 0;
 
-	// Deprecated... use send() instead. 	
-	virtual bool respond(const char* data) {
-	       return send(data);
-      	};
-
 	class Handler {
 	public:
 		virtual ~Handler() { }
