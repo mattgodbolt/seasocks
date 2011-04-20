@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <strings.h>
 
 namespace SeaSocks {
 
@@ -149,6 +150,26 @@ struct SsoOptions {
 		options.authServer = "http://localhost:5003";
 		return options;
 	}
+
+  /**
+   * Returns SsoOptions for "production", "test", or "local" environment
+   * based on string. Useful for apps that configure SSO from a config file.
+   */
+  static SsoOptions environment(std::string name) {
+    if (::strcasecmp(name.c_str(), "prod") == 0 || 
+        ::strcasecmp(name.c_str(), "production") == 0) {
+      return production();
+    } else if (::strcasecmp(name.c_str(), "test") == 0) {
+      return test();
+    } else if (::strcasecmp(name.c_str(), "dev") == 0 ||
+               ::strcasecmp(name.c_str(), "development" == 0) ||
+               ::strcasecmp(name.c_str(), "local" == 0)) {
+      return local();
+    } else {
+      return SsoOptions();
+    }
+  }
+
 };
 
 class SsoAuthenticator {
