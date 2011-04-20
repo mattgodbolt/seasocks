@@ -10,6 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <string>
+#include <list>
 #include <vector>
 
 namespace SeaSocks {
@@ -63,7 +64,15 @@ private:
 	bool sendDefaultFavicon();
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
-	bool sendStaticData(bool keepAlive, const char* requestUri);
+	struct Range {
+		long start;
+		long end;
+		size_t length() const { return end - start + 1; }
+	};
+
+	bool parseRange(const std::string& rangeStr, Range& range) const;
+	bool parseRanges(const std::string& range, std::list<Range>& ranges) const;
+	bool sendStaticData(bool keepAlive, const char* requestUri, const std::list<Range>& ranges);
 
 	int safeSend(const void* data, size_t size) const;
 

@@ -51,6 +51,18 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
 	return NULL;
 }
 
+std::vector<std::string> split(const std::string& input, char splitChar) {
+	std::vector<std::string> result;
+	size_t pos = 0;
+	size_t newPos;
+	while ((newPos = input.find(splitChar, pos)) != std::string::npos) {
+		result.push_back(input.substr(pos, newPos - pos));
+		pos = newPos + 1;
+	}
+	result.push_back(input.substr(pos));
+	return result;
+}
+
 const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "txt", "text/plain" },
 	{ "css", "text/css" },
@@ -469,6 +481,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
 	std::string host;
 	std::string cookie;
+	std::list<Range> ranges;
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -504,6 +517,10 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			host = strValue;
 		} else if (strcasecmp(key, "Cookie") == 0) {
 			cookie = strValue;
+		} else if (strcasecmp(key, "Range") == 0) {
+			if (!parseRanges(strValue, ranges)) {
+				return sendBadRequest("Bad range header");
+			}
 		}
 	}
 
@@ -554,11 +571,51 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		_state = READING_WEBSOCKET_KEY3;
 		return true;
 	} else {
-		return sendStaticData(keepAlive, requestUri);
+		return sendStaticData(keepAlive, requestUri, ranges);
 	}
 }
 
-bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
+bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
+	size_t minusPos = rangeStr.find('-');
+	if (minusPos == std::string::npos) {
+		_logger->error("Bad range: '%s'", rangeStr.c_str());
+		return false;
+	}
+	if (minusPos == 0) {
+		// A range like "-500" means 500 bytes from end of file to end.
+		range.start = boost::lexical_cast<int>(rangeStr);
+		range.end = std::numeric_limits<long>::max();
+		return true;
+	} else {
+		range.start = boost::lexical_cast<int>(rangeStr.substr(0, minusPos));
+		if (minusPos == rangeStr.size()-1) {
+			range.end = std::numeric_limits<long>::max();
+		} else {
+			range.end = boost::lexical_cast<int>(rangeStr.substr(minusPos + 1));
+		}
+		return true;
+	}
+	return false;
+}
+
+bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges) const {
+	static const std::string expectedPrefix = "bytes=";
+	if (range.length() < expectedPrefix.length() || range.substr(0, expectedPrefix.length()) != expectedPrefix) {
+		_logger->error("Bad range request prefix: '%s'", range.c_str());
+		return false;
+	}
+	auto rangesText = split(range.substr(expectedPrefix.length()), ',');
+	for (auto it = rangesText.begin(); it != rangesText.end(); ++it) {
+		Range r;
+		if (!parseRange(*it, r)) {
+			return false;
+		}
+		ranges.push_back(r);
+	}
+	return !ranges.empty();
+}
+
+bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const std::list<Range>& origRanges) {
 	std::string path = _server->getStaticPath() + requestUri;
 	// Trim any trailing queries.
 	size_t queryPos = path.find('?');
@@ -574,11 +631,35 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 	}
 	input.seekg(0, std::ios::end);
 	auto fileSize = static_cast<std::streamoff>(input.tellg());
-	input.seekg(0);
-	if (input.fail()) {
-		return send404(requestUri);
+	std::list<Range> sendRanges;
+	if (!origRanges.empty()) {
+		bufferLine("HTTP/1.1 206 OK");
+		int contentLength = 0;
+		std::ostringstream rangeLine;
+		rangeLine << "Content-Range: ";
+		for (auto rangeIter = origRanges.cbegin(); rangeIter != origRanges.cend(); ++rangeIter) {
+			Range actualRange = *rangeIter;
+			if (actualRange.start < 0) {
+				actualRange.start += fileSize;
+			}
+			if (actualRange.start >= fileSize) {
+				actualRange.start = fileSize - 1;
+			}
+			if (actualRange.end >= fileSize) {
+				actualRange.end = fileSize - 1;
+			}
+			contentLength += actualRange.length();
+			sendRanges.push_back(actualRange);
+			rangeLine << actualRange.start << "-" << actualRange.end;
+		}
+		rangeLine << "/" << fileSize;
+		bufferLine(rangeLine.str());
+		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(contentLength));
+	} else {
+		bufferLine("HTTP/1.1 200 OK");
+		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
+		sendRanges.push_back(Range { 0, fileSize - 1 });
 	}
-	bufferLine("HTTP/1.1 200 OK");
 	char buf[ReadWriteBufferSize];
 	bufferLine("Content-Type: " + getContentType(path));
 	if (keepAlive) {
@@ -586,22 +667,32 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri) {
 	} else {
 		bufferLine("Connection: close");
 	}
-	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
 	bufferLine("");
 	flush();
 
-	int total = 0;
-	while (input) {
-		input.read(buf, sizeof(buf));
-		if (input.fail() && !input.eof()) {
-			_logger->error("%s : Error reading file", formatAddress(_address));
-			// We can't send an error document as we've sent the header.
+	for (auto rangeIter = sendRanges.cbegin(); rangeIter != sendRanges.cend(); ++rangeIter) {
+		input.seekg(rangeIter->start);
+		if (input.fail()) {
+			// We've (probably) already sent data.
 			return false;
 		}
-		auto bytesRead = input.gcount();
-		total += bytesRead;
-		if (!write(buf, bytesRead, true)) {
-			return false;
+		_logger->info("Sending range %d-%d", rangeIter->start, rangeIter->end);
+		auto bytesLeft = rangeIter->length();
+		_logger->info("Length of block: %d", bytesLeft);
+		while (bytesLeft) {
+			_logger->info("Bytes left: %d", bytesLeft);
+			input.read(buf, std::min(sizeof(buf), bytesLeft));
+			if (input.fail() && !input.eof()) {
+				_logger->error("%s : Error reading file", formatAddress(_address));
+				// We can't send an error document as we've sent the header.
+				return false;
+			}
+			auto bytesRead = input.gcount();
+			_logger->info("Bytes read: %d", bytesRead);
+			bytesLeft -= bytesRead;
+			if (!write(buf, bytesRead, true)) {
+				return false;
+			}
 		}
 	}
 	if (!keepAlive) {
