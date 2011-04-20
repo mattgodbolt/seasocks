@@ -2,6 +2,8 @@
 #define _SEASOCKS_STRINGUTIL_H_
 
 #include <netinet/in.h>
+#include <vector>
+#include <string>
 
 namespace SeaSocks {
 
@@ -9,9 +11,10 @@ char* skipWhitespace(char* str);
 char* skipNonWhitespace(char* str);
 char* shift(char*& str);
 
-const char* getLastError();
+std::string getLastError();
+std::string formatAddress(const sockaddr_in& address);
 
-const char* formatAddress(const sockaddr_in& address);
+std::vector<std::string> split(const std::string& input, char splitChar);
 
 }  // namespace SeaSocks
 

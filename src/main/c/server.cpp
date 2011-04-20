@@ -4,6 +4,8 @@
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
 
+#include "internal/LogStream.h"
+
 #include <string.h>
 
 #include <netinet/in.h>
@@ -45,11 +47,11 @@ Server::~Server() {
 bool Server::configureSocket(int fd) const {
 	int yesPlease = 1;
 	if (ioctl(fd, FIONBIO, &yesPlease) != 0) {
-		_logger->error("Unable to make socket non-blocking: %s", getLastError());
+		LS_ERROR(_logger, "Unable to make socket non-blocking: " << getLastError());
 		return false;
 	}
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
-		_logger->error("Unable to set reuse socket option: %s", getLastError());
+		LS_ERROR(_logger, "Unable to set reuse socket option: " << getLastError());
 		return false;
 	}
 	return true;
@@ -59,7 +61,7 @@ void Server::terminate() {
     _terminate = true;
     uint64_t one = 1;
 	if (::write(_pipes[1], &one, sizeof(one)) == -1) {
-		_logger->error("Unable to post a wake event: %s", getLastError());
+		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
 	}
 }
 
@@ -67,7 +69,7 @@ void Server::serve(const char* staticPath, int port) {
 	_staticPath = staticPath;
 	_listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listenSock == -1) {
-		_logger->error("Unable to create listen socket: %s", getLastError());
+		LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
 		return;
 	}
 	if (!configureSocket(_listenSock)) {
@@ -79,39 +81,39 @@ void Server::serve(const char* staticPath, int port) {
 	sock.sin_addr.s_addr = INADDR_ANY;
 	sock.sin_family = AF_INET;
 	if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
-		_logger->error("Unable to bind socket: %s", getLastError());
+		LS_ERROR(_logger, "Unable to bind socket: " << getLastError());
 		return;
 	}
 	if (listen(_listenSock, 5) == -1) {
-		_logger->error("Unable to listen on socket: %s", getLastError());
+		LS_ERROR(_logger, "Unable to listen on socket: " << getLastError());
 		return;
 	}
 
 	_epollFd = epoll_create(10);
 	if (_epollFd == -1) {
-		_logger->error("Unable to create epoll: %s", getLastError());
+		LS_ERROR(_logger, "Unable to create epoll: " << getLastError());
 		return;
 	}
 
 	/* TASK: once RH5 is dead and gone, use: _wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC); instead. It's lower overhead than this. */
 	if (pipe(_pipes) != 0) {
-		_logger->error("Unable to create event signal pipe: %s", getLastError());
+		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
 		return;
 	}
 
 	epoll_event event = { EPOLLIN, this };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
-		_logger->error("Unable to add listen socket to epoll: %s", getLastError());
+		LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
 		return;
 	}
 
 	epoll_event eventWake = { EPOLLIN, &_pipes[0] };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _pipes[0], &eventWake) == -1) {
-		_logger->error("Unable to add wake socket to epoll: %s", getLastError());
+		LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
 		return;
 	}
 
-	_logger->info("Listening on http://%s", formatAddress(sock));
+	LS_INFO(_logger, "Listening on http://" << formatAddress(sock));
 
 	const int maxEvents = 20;
 	epoll_event events[maxEvents];
@@ -121,7 +123,7 @@ void Server::serve(const char* staticPath, int port) {
 		int numEvents = epoll_wait(_epollFd, events, maxEvents, -1);
 		if (numEvents == -1) {
 			if (errno == EINTR) continue;
-			_logger->error("Error from epoll_wait: %s", getLastError());
+			LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
 			return;
 		}
 		for (int i = 0; i < numEvents; ++i) {
@@ -130,7 +132,7 @@ void Server::serve(const char* staticPath, int port) {
 			} else if (events[i].data.ptr == &_pipes[0]) {
 				uint64_t dummy;
 				if (::read(_pipes[0], &dummy, sizeof(dummy)) == -1) {
-					_logger->error("Error from wakeFd read: %s", getLastError());
+					LS_ERROR(_logger, "Error from wakeFd read: " <<getLastError());
 				}
 				// It's a "wake up" event; just process any runnables.
 			} else {
@@ -143,7 +145,7 @@ void Server::serve(const char* staticPath, int port) {
 					keepAlive &= connection->handleDataReadyForWrite();
 				}
 				if (!keepAlive) {
-					_logger->debug("Deleting connection: %s", formatAddress(connection->getRemoteAddress()));
+					LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
 					delete connection;
 				}
 			}
@@ -168,14 +170,14 @@ void Server::handleAccept() {
 			reinterpret_cast<sockaddr*>(&address),
 			&addrLen);
 	if (fd == -1) {
-		_logger->error("Unable to accept: %s", getLastError());
+		LS_ERROR(_logger, "Unable to accept: " << getLastError());
 		return;
 	}
 	struct linger linger;
 	linger.l_linger = 500; // 5 seconds
 	linger.l_onoff = true;
 	if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
-		_logger->error("Unable to set linger socket option: %s", getLastError());
+		LS_ERROR(_logger, "Unable to set linger socket option: " << getLastError());
 		::close(fd);
 		return;
 	}
@@ -183,12 +185,12 @@ void Server::handleAccept() {
 		::close(fd);
 		return;
 	}
-	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address), fd);
+	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address).c_str(), fd);
 	// TODO: track all connections?
 	Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
 	epoll_event event = { EPOLLIN, newConnection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
-		_logger->error("Unable to add socket to epoll: %s", getLastError());
+		LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
 		delete newConnection;
 		::close(fd);
 		return;
@@ -198,14 +200,14 @@ void Server::handleAccept() {
 void Server::unsubscribeFromAllEvents(Connection* connection) {
 	epoll_event event = { 0, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
-		_logger->error("Unable to remove from epoll: %s", getLastError());
+		LS_ERROR(_logger, "Unable to remove from epoll: " << getLastError());
 	}
 }
 
 bool Server::subscribeToWriteEvents(Connection* connection) {
 	epoll_event event = { EPOLLIN | EPOLLOUT, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
-		_logger->error("Unable to subscribe to write events: %s", getLastError());
+		LS_ERROR(_logger, "Unable to subscribe to write events: " << getLastError());
 		return false;
 	}
 	return true;
@@ -214,7 +216,7 @@ bool Server::subscribeToWriteEvents(Connection* connection) {
 bool Server::unsubscribeFromWriteEvents(Connection* connection) {
 	epoll_event event = { EPOLLIN, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
-		_logger->error("Unable to unsubscribe from write events: %s", getLastError());
+		LS_ERROR(_logger, "Unable to unsubscribe from write events: " << getLastError());
 		return false;
 	}
 	return true;
@@ -246,7 +248,7 @@ void Server::schedule(boost::shared_ptr<Runnable> runnable) {
 	_pendingRunnables.push_back(runnable);
 	uint64_t one = 1;
 	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
-		_logger->error("Unable to post a wake event: %s", getLastError());
+		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
 	}
 }
 

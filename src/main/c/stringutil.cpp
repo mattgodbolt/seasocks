@@ -37,13 +37,13 @@ char* shift(char*& str) {
 	return startOfWord;
 }
 
-const char* getLastError() {
-	static char errbuf[128];
+std::string getLastError(){
+	char errbuf[1024];
 	return strerror_r(errno, errbuf, sizeof(errbuf));
 }
 
-const char* formatAddress(const sockaddr_in& address) {
-	static char ipBuffer[24];
+std::string formatAddress(const sockaddr_in& address) {
+	char ipBuffer[24];
 	sprintf(ipBuffer,
 			"%d.%d.%d.%d:%d",
 			(address.sin_addr.s_addr >> 0) & 0xff,
@@ -52,6 +52,18 @@ const char* formatAddress(const sockaddr_in& address) {
 			(address.sin_addr.s_addr >> 24) & 0xff,
 			htons(address.sin_port));
 	return ipBuffer;
+}
+
+std::vector<std::string> split(const std::string& input, char splitChar) {
+	std::vector<std::string> result;
+	size_t pos = 0;
+	size_t newPos;
+	while ((newPos = input.find(splitChar, pos)) != std::string::npos) {
+		result.push_back(input.substr(pos, newPos - pos));
+		pos = newPos + 1;
+	}
+	result.push_back(input.substr(pos));
+	return result;
 }
 
 }

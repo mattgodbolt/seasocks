@@ -1,4 +1,5 @@
 #include "seasocks/logger.h"
+#include "internal/Debug.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -15,8 +16,10 @@ const int MAX_MESSAGE_LENGTH = 1024;
 	va_end(args)
 
 void Logger::debug(const char* message, ...) {
+#ifdef LOG_DEBUG_INFO
 	PRINT_TO_MESSAGEBUF();
 	log(DEBUG, messageBuf);
+#endif
 }
 
 void Logger::info(const char* message, ...) {

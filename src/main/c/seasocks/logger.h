@@ -11,7 +11,7 @@ public:
 	virtual ~Logger() {}
 
 	enum Level {
-		DEBUG,
+		DEBUG,  // NB DEBUG is usually opted-out of at compile-time.
 		INFO,
 		WARNING,
 		ERROR,

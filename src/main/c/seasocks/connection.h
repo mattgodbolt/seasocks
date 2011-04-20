@@ -73,9 +73,11 @@ private:
 
 	bool parseRange(const std::string& rangeStr, Range& range) const;
 	bool parseRanges(const std::string& range, std::list<Range>& ranges) const;
-	bool sendStaticData(bool keepAlive, const char* requestUri, const std::list<Range>& ranges);
+	bool sendStaticData(bool keepAlive, const char* requestUri, const std::string& rangeHeader);
 
 	int safeSend(const void* data, size_t size) const;
+
+	std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 
 	boost::shared_ptr<Logger> _logger;
 	Server* _server;
