@@ -9,7 +9,7 @@ CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gn
 STATIC_LIBS= 
 APP_LIBS=
 
-.PHONY: all clean run test
+.PHONY: all clean run test clobber
 
 OBJ_DIR=obj
 BIN_DIR=bin
@@ -24,6 +24,7 @@ else
   GCC_DIR=/site/apps/gcc-4.5.0
   CC=$(GCC_DIR)/bin/g++
   GCC_LIB_PATH=$(GCC_DIR)/lib64
+  LD_LIBRARY_PATH=$(GCC_LIB_PATH)
 endif
 
 $(FIG_DEP): package.fig
@@ -85,3 +86,6 @@ test: .tests-pass
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) *.tar.gz .tests-pass
+
+clobber: clean
+	rm -rf lib include $(FIG_DEP)
