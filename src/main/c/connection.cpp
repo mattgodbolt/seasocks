@@ -63,6 +63,16 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
 	return result;
 }
 
+std::string now() {
+	time_t now = time(NULL);
+	struct tm tm;
+	gmtime_r(&now, &tm);
+	char buf[1024];
+	// Wed, 20 Apr 2011 17:31:28 GMT
+	strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+	return buf;
+}
+
 const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "txt", "text/plain" },
 	{ "css", "text/css" },
@@ -668,6 +678,9 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 	} else {
 		bufferLine("Connection: close");
 	}
+	bufferLine("Server: SeaSocks");
+	bufferLine("Accept-Ranges: bytes");
+	bufferLine("Date: " + now());
 	bufferLine("");
 	flush();
 
@@ -677,11 +690,8 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 			// We've (probably) already sent data.
 			return false;
 		}
-		_logger->info("Sending range %d-%d", rangeIter->start, rangeIter->end);
 		auto bytesLeft = rangeIter->length();
-		_logger->info("Length of block: %d", bytesLeft);
 		while (bytesLeft) {
-			_logger->info("Bytes left: %d", bytesLeft);
 			input.read(buf, std::min(sizeof(buf), bytesLeft));
 			if (input.fail() && !input.eof()) {
 				_logger->error("%s : Error reading file", formatAddress(_address));
@@ -689,7 +699,6 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 				return false;
 			}
 			auto bytesRead = input.gcount();
-			_logger->info("Bytes read: %d", bytesRead);
 			bytesLeft -= bytesRead;
 			if (!write(buf, bytesRead, true)) {
 				return false;
