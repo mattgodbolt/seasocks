@@ -1,5 +1,6 @@
 #include "seasocks/printflogger.h"
 #include "seasocks/server.h"
+#include "seasocks/stringutil.h"
 #include "seasocks/websocket.h"
 #include <string>
 #include <cstring>
@@ -19,6 +20,7 @@ public:
 	virtual void onConnect(WebSocket* connection) {
 		_connections.insert(connection);
 		connection->send(_currentSetValue.c_str());
+    std::cout << "Connected: " << formatAddress(connection->getRemoteAddress()) << std::endl;
 		std::cout << "Credentials: " << *connection->credentials() << std::endl;
 	}
 
@@ -27,7 +29,11 @@ public:
 		    _server->terminate();
 		    return;
 		}
-        
+		if (0 == std::strcmp("close", data)) {
+		    connection->close();
+		    return;
+		}
+
 		int value = atoi(data) + 1;
 		if (value > _currentValue) {
 			setValue(value);
@@ -40,6 +46,7 @@ public:
 
 	virtual void onDisconnect(WebSocket* connection) {
 		_connections.erase(connection);
+    std::cout << "Disconnected: " << formatAddress(connection->getRemoteAddress()) << std::endl;
 	}
 
 private:

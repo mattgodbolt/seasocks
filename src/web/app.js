@@ -20,9 +20,12 @@ $(function() {
     $('#count').click(function() {
     	ws.send($('#count').val());
     });
+    $('#close').click(function() {
+      ws.send('close');
+    });
     $('#die').click(function() {
-        ws.send('die');
-     });
+      ws.send('die');
+    });
 });
 
 set = function(value) {
