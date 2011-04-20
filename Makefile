@@ -24,7 +24,7 @@ else
   GCC_DIR=/site/apps/gcc-4.5.0
   CC=$(GCC_DIR)/bin/g++
   GCC_LIB_PATH=$(GCC_DIR)/lib64
-  LD_LIBRARY_PATH=$(GCC_LIB_PATH)
+  export LD_LIBRARY_PATH=$(GCC_LIB_PATH)
 endif
 
 $(FIG_DEP): package.fig
