@@ -58,7 +58,7 @@ $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
 
-$(TARGETS) : $(BIN_DIR)/% : $(APPS_OBJS) $(OBJS)
+$(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS)
 	mkdir -p $(BIN_DIR)
 	$(CC) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
