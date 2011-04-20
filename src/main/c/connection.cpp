@@ -73,6 +73,8 @@ const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "svg", "image/svg+xml" },
 	{ "ico", "image/x-icon" },
 	{ "swf", "application/x-shockwave-flash" },
+	{ "mp3", "audio/mpeg" },
+	{ "wav", "audio/x-wav" },
 };
 
 const std::string& getContentType(const std::string& path) {
