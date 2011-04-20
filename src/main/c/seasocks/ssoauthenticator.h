@@ -165,8 +165,8 @@ struct SsoOptions {
     } else if (::strcasecmp(name.c_str(), "test") == 0) {
       return test();
     } else if (::strcasecmp(name.c_str(), "dev") == 0 ||
-               ::strcasecmp(name.c_str(), "development" == 0) ||
-               ::strcasecmp(name.c_str(), "local" == 0)) {
+               ::strcasecmp(name.c_str(), "development") == 0 ||
+               ::strcasecmp(name.c_str(), "local") == 0) {
       return local();
     } else {
       return SsoOptions();
