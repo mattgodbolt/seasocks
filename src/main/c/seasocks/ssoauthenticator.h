@@ -158,7 +158,7 @@ struct SsoOptions {
    * Returns SsoOptions for "production", "test", or "local" environment
    * based on string. Useful for apps that configure SSO from a config file.
    */
-  static SsoOptions environment(std::string name) {
+  static SsoOptions environment(const std::string& name) {
     if (::strcasecmp(name.c_str(), "prod") == 0 || 
         ::strcasecmp(name.c_str(), "production") == 0) {
       return production();
@@ -178,14 +178,14 @@ struct SsoOptions {
 class SsoAuthenticator {
 public:
 	SsoAuthenticator(SsoOptions options);
-	bool enabledForPath(const char* requestUri);
-	bool isBounceBackFromSsoServer(const char* requestUri);
-	bool validateSignature(const char* requestUri);
+	bool enabledForPath(const char* requestUri) const;
+	bool isBounceBackFromSsoServer(const char* requestUri) const;
+	bool validateSignature(const char* requestUri) const;
 	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error);
 	bool respondWithRedirectToAuthenticationServer(const char* requestUri, const std::string& requestHost, std::ostream& response, std::string& error);
-	void extractCredentialsFromLocalCookie(const std::string& cookie, boost::shared_ptr<Credentials> target);
-	bool requestExplicityForbidsDrwSsoRedirect();
-	std::string secureHash(const std::string& string);
+	void extractCredentialsFromLocalCookie(const std::string& cookie, boost::shared_ptr<Credentials> target) const;
+	bool requestExplicityForbidsDrwSsoRedirect() const;
+	std::string secureHash(const std::string& string) const;
 	static void parseUriParameters(const char* uri, std::map<std::string, std::string>& params);
 	static std::string decodeUriComponent(const char* value, const char* end);
 	static std::string encodeUriComponent(const std::string& value);

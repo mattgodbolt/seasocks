@@ -4,8 +4,19 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <vector>
 #include <string>
 #include <iomanip>
+
+namespace {
+
+int hexDigit(char digit) {
+	char c = toupper(digit);
+	if (c >= '0' && c < '9') return c - '0';
+	return c - 'A' + 10;
+}
+
+}
 
 namespace SeaSocks {
 
@@ -14,7 +25,7 @@ static const int SSO_PROTOCOL_VERSION = 1;
 SsoAuthenticator::SsoAuthenticator(SsoOptions options) : _options(options) {
 }
 
-bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) {
+bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) const {
 	bool prefixMatch = _options.returnPath.compare(0, _options.returnPath.length(), requestUri,  _options.returnPath.length()) == 0;
 	if (prefixMatch) {
 		char nextChar = requestUri[_options.returnPath.length()];
@@ -24,12 +35,12 @@ bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) {
 	}
 }
 
-bool SsoAuthenticator::enabledForPath(const char* requestUri) {
+bool SsoAuthenticator::enabledForPath(const char* requestUri) const {
 	// TODO: Provide API hooks to customize this.
 	return true;
 }
 
-bool SsoAuthenticator::validateSignature(const char* requestUri) {
+bool SsoAuthenticator::validateSignature(const char* requestUri) const {
 	// TODO: Implement this.
 	// get 'user' and 'signature' params
 	// token = user + '|' + determineBaseUrl
@@ -92,7 +103,7 @@ bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* req
 	return true;
 }
 
-void SsoAuthenticator::extractCredentialsFromLocalCookie(const std::string& cookieString, boost::shared_ptr<Credentials> target) {
+void SsoAuthenticator::extractCredentialsFromLocalCookie(const std::string& cookieString, boost::shared_ptr<Credentials> target) const {
 	target->authenticated = false;
 	target->username = "";
 
@@ -112,25 +123,29 @@ void SsoAuthenticator::extractCredentialsFromLocalCookie(const std::string& cook
 	}
 }
 
-bool SsoAuthenticator::requestExplicityForbidsDrwSsoRedirect() {
+bool SsoAuthenticator::requestExplicityForbidsDrwSsoRedirect() const {
 	// TODO: Implement this
 	// return header['drw-sso-no-redirect'] == "true"
 	return false;
 }
 
 std::string SsoAuthenticator::encodeUriComponent(const std::string& value) {
-	std::stringstream result;
+	std::vector<char> result;
+	result.reserve(value.size() * 2);
 	for (int i = 0, l = value.length(); i < l; ++i) {
 		char c = value[i];
 		if (c == ' ') {
-			result << '+';
+			result.push_back('+');
 		} else if (isalnum(c)) {
-			result << c;
+			result.push_back(c);
 		} else {
-			result << '%' << std::hex << std::uppercase << std::setw(2) << (int)c << std::nouppercase;
+			static const char hex[] = "0123456789ABCDEF";
+			result.push_back('%');
+			result.push_back(hex[(c>>4) & 0xf]);
+			result.push_back(hex[c & 0xf]);
 		}
 	}
-	return result.str();
+	return std::string(result.data(), result.size());
 }
 
 std::string SsoAuthenticator::decodeUriComponent(const char* value, const char* end) {
@@ -138,11 +153,9 @@ std::string SsoAuthenticator::decodeUriComponent(const char* value, const char* 
 	char hexbuffer[3];
 	hexbuffer[2] = '\0';
 	while (value != end) {
-		if (*value == '%' && value + 1 != end && value + 2 != end && isxdigit(*(value + 1)) && isxdigit(*(value + 2))) {
-			value++;
-			hexbuffer[0] = tolower(*(value++));
-			hexbuffer[1] = tolower(*(value++));
-			result += (char)strtol(hexbuffer, (char**) NULL, 16);
+		if (*value == '%' && value + 2 < end && isxdigit(*(value + 1)) && isxdigit(*(value + 2))) {
+			result += (char) (hexDigit(value[1]) << 4 | hexDigit(value[2]));
+			value += 3;
 		} else if (*value == '+') {
 			value++;
 			result += ' ';
@@ -302,7 +315,7 @@ void SsoAuthenticator::parseUriParameters(const char* uri, std::map<std::string,
 	}
 }
 
-std::string SsoAuthenticator::secureHash(const std::string& string) {
+std::string SsoAuthenticator::secureHash(const std::string& string) const {
 	return "HASH"; // TODO
 }
 

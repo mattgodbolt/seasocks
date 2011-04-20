@@ -4,6 +4,7 @@
 #include "seasocks/ssoauthenticator.h"
 #include <iostream>
 #include <sstream>
+#include <string.h>
 
 using namespace SeaSocks;
 
@@ -52,6 +53,19 @@ void encodes_uri_components() {
 	ASSERT_EQUALS("hello", SsoAuthenticator::encodeUriComponent("hello"));
 	ASSERT_EQUALS("HELLO%2F%26%3D+WORLD+%2B%25++%3B",
                       SsoAuthenticator::encodeUriComponent("HELLO/&= WORLD +%  ;"));
+	ASSERT_EQUALS("%01%02%03%FF", SsoAuthenticator::encodeUriComponent("\x01\x02\x03\xff"));
+	ASSERT_EQUALS("%01%02%03%FFhElLoMuM", SsoAuthenticator::encodeUriComponent("\x01\x02\x03\xff" "hElLoMuM"));
+}
+
+void decodes_uri_components() {
+	static const char hello[] = "hello";
+	ASSERT_EQUALS("hello", SsoAuthenticator::decodeUriComponent(hello, hello + strlen(hello)));
+	static const char hello_world[] = "hello%2c+world";
+	ASSERT_EQUALS("hello, world", SsoAuthenticator::decodeUriComponent(hello_world, hello_world + strlen(hello_world)));
+	static const char truncated[] = "%1";
+	ASSERT_EQUALS("%1", SsoAuthenticator::decodeUriComponent(truncated, truncated + strlen(truncated)));
+	static const char helloMum[] = "%01%02%03%FFhElLoMuM";
+	ASSERT_EQUALS("\x01\x02\x03\xff" "hElLoMuM", SsoAuthenticator::decodeUriComponent(helloMum, helloMum + strlen(helloMum)));
 }
 
 void extract_credentials_from_local_cookie() {
@@ -149,6 +163,7 @@ int main(int argc, const char* argv[]) {
 	RUN(parses_uri_parameters);
 	RUN(skips_bad_uri_encodings);
 	RUN(encodes_uri_components);
+	RUN(decodes_uri_components);
 	RUN(extract_credentials_from_local_cookie);
 	RUN(parses_cookies);
 	RUN(parses_bounceback_params_and_generates_redirect);
