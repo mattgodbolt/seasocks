@@ -33,10 +33,10 @@ public:
 	bool handleDataReadyForWrite();
 
 	int getFd() const { return _fd; }
-	const sockaddr_in& getAddress() const { return _address; }
+	const sockaddr_in& getRemoteAddress() const { return _address; }
 
 	// From WebSocket.
-	bool respond(const char* webSocketResponse);
+	bool send(const char* webSocketResponse);
 	boost::shared_ptr<Credentials> credentials();
 
 private:

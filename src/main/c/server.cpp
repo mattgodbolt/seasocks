@@ -143,7 +143,7 @@ void Server::serve(const char* staticPath, int port) {
 					keepAlive &= connection->handleDataReadyForWrite();
 				}
 				if (!keepAlive) {
-					_logger->debug("Deleting connection: %s", formatAddress(connection->getAddress()));
+					_logger->debug("Deleting connection: %s", formatAddress(connection->getRemoteAddress()));
 					delete connection;
 				}
 			}

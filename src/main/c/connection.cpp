@@ -340,7 +340,7 @@ bool Connection::handleWebSocketKey3() {
 	return true;
 }
 
-bool Connection::respond(const char* webSocketResponse) {
+bool Connection::send(const char* webSocketResponse) {
 	uint8_t zero = 0;
 	if (!write(&zero, 1, false)) return false;
 	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return false;

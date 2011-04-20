@@ -18,7 +18,7 @@ public:
 
 	virtual void onConnect(WebSocket* connection) {
 		_connections.insert(connection);
-		connection->respond(_currentSetValue.c_str());
+		connection->send(_currentSetValue.c_str());
 		std::cout << "Credentials: " << *connection->credentials() << std::endl;
 	}
 
@@ -32,7 +32,7 @@ public:
 		if (value > _currentValue) {
 			setValue(value);
 			for (auto iter = _connections.cbegin(); iter != _connections.cend(); ++iter) {
-				(*iter)->respond(_currentSetValue.c_str());
+				(*iter)->send(_currentSetValue.c_str());
 			}
 		}
 
@@ -60,7 +60,7 @@ int main(int argc, const char* argv[]) {
 	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::INFO));
 
 	Server server(logger);
-	server.enableSingleSignOn(SsoOptions::test());
+	//server.enableSingleSignOn(SsoOptions::test());
 	
 	boost::shared_ptr<MyHandler> handler(new MyHandler(&server));
 	server.addWebSocketHandler("/ws", handler);
