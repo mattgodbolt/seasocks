@@ -29,6 +29,9 @@ namespace SeaSocks {
  *                              This is useful if you're making changes to the SSO server and
  *                              want to test locally.
  *
+ * This can also be selected using a string: SsoOptions::environment(string) - this is useful
+ * for apps that configure the environment using a config file.
+ *
  * In addition, you may override specific fields for more control. Commonly overridden fields
  * are 'basePath' and 'theme' - see comments below.
  */
