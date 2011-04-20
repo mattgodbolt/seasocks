@@ -20,8 +20,8 @@ public:
 	virtual void onConnect(WebSocket* connection) {
 		_connections.insert(connection);
 		connection->send(_currentSetValue.c_str());
-    std::cout << "Connected: " << formatAddress(connection->getRemoteAddress()) << std::endl;
-		std::cout << "Credentials: " << *connection->credentials() << std::endl;
+    std::cout << "Connected: " << connection->getRequestUri() << " : " << formatAddress(connection->getRemoteAddress()) << std::endl;
+		std::cout << "Credentials: " << *(connection->credentials()) << std::endl;
 	}
 
 	virtual void onData(WebSocket* connection, const char* data) {
@@ -46,7 +46,7 @@ public:
 
 	virtual void onDisconnect(WebSocket* connection) {
 		_connections.erase(connection);
-    std::cout << "Disconnected: " << formatAddress(connection->getRemoteAddress()) << std::endl;
+    std::cout << "Disconnected: " << connection->getRequestUri() << " : " << formatAddress(connection->getRemoteAddress()) << std::endl;
 	}
 
 private:

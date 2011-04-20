@@ -39,6 +39,7 @@ public:
 	// From WebSocket.
 	bool send(const char* webSocketResponse);
 	boost::shared_ptr<Credentials> credentials();
+  const std::string& getRequestUri() const { return _requestUri; }
 
 private:
 	bool closed() const;
@@ -90,6 +91,7 @@ private:
 	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
 	boost::shared_ptr<SsoAuthenticator> _sso;
 	boost::shared_ptr<Credentials> _credentials;
+  std::string _requestUri;
 
 	enum State {
 		INVALID,
