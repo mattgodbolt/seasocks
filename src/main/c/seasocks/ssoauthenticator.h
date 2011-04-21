@@ -112,7 +112,7 @@ struct SsoOptions {
 		options.basePath = "";
 		options.theme = "";
 		options.authCookieName = "_auth";
-		options.localAuthKey = "TODO: generate random key"; // TODO!
+		options.localAuthKey = createRandomLocalKey();
 		return options;
 	}
 
@@ -173,6 +173,7 @@ struct SsoOptions {
     }
   }
 
+  static std::string createRandomLocalKey();
 };
 
 class SsoAuthenticator {

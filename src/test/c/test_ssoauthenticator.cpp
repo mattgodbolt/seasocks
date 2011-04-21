@@ -70,11 +70,12 @@ void decodes_uri_components() {
 
 void extract_credentials_from_local_cookie() {
 	SsoOptions options = SsoOptions::test();
+	options.localAuthKey = "I AM NOT SECURE";
 	SsoAuthenticator sso(options);
 	boost::shared_ptr<Credentials> credentials(new Credentials());
 
 	// happy path
-	sso.extractCredentialsFromLocalCookie("_auth=joe|HASH", credentials);
+	sso.extractCredentialsFromLocalCookie("_auth=joe|49A85A78D89CE4D36997C5B48940A2C6", credentials);
 	ASSERT_EQUALS(true, credentials->authenticated);
 	ASSERT_EQUALS("joe", credentials->username);
 
@@ -92,7 +93,7 @@ void extract_credentials_from_local_cookie() {
 
 	// other cookies (ignored)
 	credentials.reset(new Credentials());
-	sso.extractCredentialsFromLocalCookie("foo=bar;x=\" _auth=ignoreme \"_auth=joe|HASH;blah=x", credentials);
+	sso.extractCredentialsFromLocalCookie("foo=bar;x=\" _auth=ignoreme \"_auth=joe|49A85A78D89CE4D36997C5B48940A2C6;blah=x", credentials);
 	ASSERT_EQUALS(true, credentials->authenticated);
 	ASSERT_EQUALS("joe", credentials->username);
 }
@@ -143,6 +144,7 @@ void redirects_to_sso_server() {
 
 void parses_bounceback_params_and_generates_redirect() {
 	SsoOptions options = SsoOptions::test();
+	options.localAuthKey = "I AM NOT SECURE";
 	options.returnPath = "/__bounceback";
 	SsoAuthenticator sso(options);
 
@@ -153,9 +155,23 @@ void parses_bounceback_params_and_generates_redirect() {
 	std::string expectedResponse = 
 		"HTTP/1.1 307 Temporary Redirect\r\n"
 		"Location: /page\r\n"
-		"Set-Cookie: _auth=joe|HASH\r\n"
+		"Set-Cookie: _auth=joe|49A85A78D89CE4D36997C5B48940A2C6\r\n"
 		"\r\n";
 	ASSERT_EQUALS(expectedResponse, response.str());
+}
+
+void returns_same_hash_each_time() {
+	SsoOptions options = SsoOptions::test();
+	SsoAuthenticator sso(options);
+	std::string hash = sso.secureHash("Wallaby");
+	ASSERT_EQUALS(hash, sso.secureHash("Wallaby"));
+	ASSERT("Not expecting a hash collision", hash != sso.secureHash("A different string"));
+}
+
+void uses_a_random_hash() {
+	SsoOptions options1 = SsoOptions::production();
+	SsoOptions options2 = SsoOptions::production();
+	ASSERT("Expecting different hashes", options1.localAuthKey != options2.localAuthKey);
 }
 
 int main(int argc, const char* argv[]) {
@@ -167,6 +183,8 @@ int main(int argc, const char* argv[]) {
 	RUN(extract_credentials_from_local_cookie);
 	RUN(parses_cookies);
 	RUN(parses_bounceback_params_and_generates_redirect);
+	RUN(returns_same_hash_each_time);
+	RUN(uses_a_random_hash);
 	RUN(redirects_to_sso_server);
 	return TEST_REPORT();
 }

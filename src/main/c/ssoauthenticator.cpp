@@ -1,5 +1,7 @@
 #include "seasocks/ssoauthenticator.h"
 
+#include "md5/md5.h"
+
 #include <string.h>
 #include <iostream>
 #include <sstream>
@@ -7,6 +9,8 @@
 #include <vector>
 #include <string>
 #include <iomanip>
+#include <fstream>
+#include <stdexcept>
 
 namespace {
 
@@ -14,6 +18,19 @@ int hexDigit(char digit) {
 	char c = toupper(digit);
 	if (c >= '0' && c < '9') return c - '0';
 	return c - 'A' + 10;
+}
+
+const char hex[] = "0123456789ABCDEF";
+
+template<int length>
+std::string hexStringOf(uint8_t (&data)[length]) {
+	std::string s;
+	s.resize(length * 2);
+	for (int i = 0; i < length; ++i) {
+		s[i * 2] = hex[(data[i]>>4) & 0xf];
+		s[i * 2 + 1] = hex[data[i] & 0xf];
+	}
+	return s;
 }
 
 }
@@ -139,7 +156,6 @@ std::string SsoAuthenticator::encodeUriComponent(const std::string& value) {
 		} else if (isalnum(c)) {
 			result.push_back(c);
 		} else {
-			static const char hex[] = "0123456789ABCDEF";
 			result.push_back('%');
 			result.push_back(hex[(c>>4) & 0xf]);
 			result.push_back(hex[c & 0xf]);
@@ -316,7 +332,29 @@ void SsoAuthenticator::parseUriParameters(const char* uri, std::map<std::string,
 }
 
 std::string SsoAuthenticator::secureHash(const std::string& string) const {
-	return "HASH"; // TODO
+	md5_state_t state;
+	md5_init(&state);
+	md5_byte_t pipe = '|';
+	md5_append(&state, reinterpret_cast<const md5_byte_t*>(_options.localAuthKey.c_str()), _options.localAuthKey.size());
+	md5_append(&state, &pipe, 1);
+	md5_append(&state, reinterpret_cast<const md5_byte_t*>(string.c_str()), string.size());
+	md5_append(&state, &pipe, 1);
+	md5_append(&state, reinterpret_cast<const md5_byte_t*>(_options.localAuthKey.c_str()), _options.localAuthKey.size());
+	uint8_t digest[16];
+	md5_finish(&state, digest);
+	return hexStringOf(digest);
+}
+
+std::string SsoOptions::createRandomLocalKey() {
+	std::ifstream ifs("/dev/urandom", std::ios::binary);
+	if (!ifs) {
+		throw std::runtime_error("Unable to get random seed");
+	}
+	uint8_t buf[32];
+	if (ifs.read(reinterpret_cast<char*>(&buf[0]), sizeof(buf)).gcount() != sizeof(buf)) {
+		throw std::runtime_error("Unable to read from random source");
+	}
+	return hexStringOf(buf);
 }
 
 }
