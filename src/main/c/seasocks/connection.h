@@ -73,7 +73,7 @@ private:
 
 	bool parseRange(const std::string& rangeStr, Range& range) const;
 	bool parseRanges(const std::string& range, std::list<Range>& ranges) const;
-	bool sendStaticData(bool keepAlive, const char* requestUri, const std::string& rangeHeader);
+	bool sendStaticData(const char* requestUri, const std::string& rangeHeader);
 
 	int safeSend(const void* data, size_t size) const;
 

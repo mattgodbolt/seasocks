@@ -514,7 +514,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		return sendBadRequest("Trailing crap after http version");
 	}
 
-	bool keepAlive = false;
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUprade = false;
 	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
@@ -534,9 +533,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		LS_DEBUG(_logger, "Key: " << key << " || " << value);
 		std::string strValue(value);
 		if (strcasecmp(key, "Connection") == 0) {
-			if (strcasecmp(value, "keep-alive") == 0) {
-				keepAlive = true;
-			} else if (strcasecmp(value, "upgrade") == 0) {
+			if (strcasecmp(value, "upgrade") == 0) {
 				haveConnectionUpgrade = true;
 			}
 		} else if (strcasecmp(key, "Upgrade") == 0 && strcasecmp(value, "websocket") == 0) {
@@ -608,7 +605,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		_state = READING_WEBSOCKET_KEY3;
 		return true;
 	} else {
-		return sendStaticData(keepAlive, requestUri, rangeHeader);
+		return sendStaticData(requestUri, rangeHeader);
 	}
 }
 
@@ -689,7 +686,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 	return sendRanges;
 }
 
-bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const std::string& rangeHeader) {
+bool Connection::sendStaticData(const char* requestUri, const std::string& rangeHeader) {
 	std::string path = _server->getStaticPath() + requestUri;
 	// Trim any trailing queries.
 	size_t queryPos = path.find('?');
@@ -710,11 +707,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 	}
 	ranges = processRangesForStaticData(ranges, stat.st_size);
 	bufferLine("Content-Type: " + getContentType(path));
-	if (keepAlive) {
-		bufferLine("Connection: keep-alive");
-	} else {
-		bufferLine("Connection: close");
-	}
+	bufferLine("Connection: close");
 	bufferLine("Server: SeaSocks");
 	bufferLine("Accept-Ranges: bytes");
 	auto nowTime = now();
@@ -747,10 +740,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 			}
 		}
 	}
-	if (!keepAlive) {
-		LS_DEBUG(_logger, "Closing on empty");
-		_closeOnEmpty = true;
-	}
+	_closeOnEmpty = true;
 	return true;
 }
 
@@ -758,8 +748,11 @@ bool Connection::sendDefaultFavicon() {
 	bufferLine("HTTP/1.1 200 OK");
 	bufferLine("Content-Type: image/x-icon");
 	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(faviconDataLength));
+	bufferLine("Connection: close");
 	bufferLine("");
-	return write(faviconData, faviconDataLength, true);
+	bool result = write(faviconData, faviconDataLength, true);
+	_closeOnEmpty = true;
+	return result;
 }
 
 }  // SeaSocks
