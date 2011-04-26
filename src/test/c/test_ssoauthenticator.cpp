@@ -138,6 +138,7 @@ void redirects_to_sso_server() {
 	std::string expectedResponse = 
 		"HTTP/1.1 307 Temporary Redirect\r\n"
 		"Location: https://the-auth-server:10000/login?basePath=http%3A%2F%2Fmyserver%3A8080&target=http%3A%2F%2Fmyserver%3A8080%2F%5F%5Fbounceback%3Fcontinue%3D%252Fmypage%253Ffoo&version=1\r\n"
+		"Connection: close\r\n"
 		"\r\n";
 	ASSERT_EQUALS(expectedResponse, response.str());
 }
@@ -156,6 +157,7 @@ void parses_bounceback_params_and_generates_redirect() {
 		"HTTP/1.1 307 Temporary Redirect\r\n"
 		"Location: /page\r\n"
 		"Set-Cookie: _auth=joe|49A85A78D89CE4D36997C5B48940A2C6\r\n"
+		"Connection: close\r\n"
 		"\r\n";
 	ASSERT_EQUALS(expectedResponse, response.str());
 }

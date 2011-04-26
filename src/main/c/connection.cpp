@@ -566,7 +566,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 				std::string error;
 				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response, error)) {
 					std::string content = response.str();
-					return write(content.c_str(), content.length(), true);
+					bool result = write(content.c_str(), content.length(), true);
+					_closeOnEmpty = true;
+					return result;
 				} else {
 					return sendError(500, error.c_str(), requestUri);
 				}
@@ -585,7 +587,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 					std::string error;
 					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, host, response, error)) {
 						std::string content = response.str();
-						return write(content.c_str(), content.length(), true);
+						bool result = write(content.c_str(), content.length(), true);
+						_closeOnEmpty = true;
+						return result;
 					} else {
 						return sendError(500, error.c_str(), requestUri);
 					}

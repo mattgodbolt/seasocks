@@ -93,6 +93,7 @@ bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const cha
 		 << "Location: " << continueUrl << "\r\n"
 	         << "Set-Cookie: " << _options.authCookieName
 		 << "=" << encodeUriComponent(user) << "|" << encodeUriComponent(secureHash(user)) << "\r\n"
+		 << "Connection: close\r\n"
 		 << "\r\n";
 	return true;
 }
@@ -116,6 +117,7 @@ bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* req
 	}
 	response << "HTTP/1.1 307 Temporary Redirect\r\n"
 		 << "Location: " << redirectUrl.str() << "\r\n"
+		 << "Connection: close\r\n"
 		 << "\r\n";
 	return true;
 }
