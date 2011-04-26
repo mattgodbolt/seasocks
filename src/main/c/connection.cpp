@@ -717,8 +717,12 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 	}
 	bufferLine("Server: SeaSocks");
 	bufferLine("Accept-Ranges: bytes");
-	bufferLine("Date: " + now());
+	auto nowTime = now();
+	bufferLine("Date: " + nowTime);
 	bufferLine("Last-Modified: " + webtime(stat.st_mtime));
+	bufferLine("Cache-Control: no-cache");
+	bufferLine("Pragma: no-cache");
+	bufferLine("Expires: " + nowTime);
 	bufferLine("");
 	flush();
 
