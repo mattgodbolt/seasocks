@@ -116,17 +116,32 @@ const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "wav", "audio/x-wav" },
 };
 
-const std::string& getContentType(const std::string& path) {
+std::string getExt(const std::string& path) {
 	auto lastDot = path.find_last_of('.');
 	if (lastDot != path.npos) {
-		std::string extension = path.substr(lastDot + 1);
-		auto it = contentTypes.find(extension);
-		if (it != contentTypes.end()) {
-			return it->second;
-		}
+		return path.substr(lastDot + 1);
+	}
+	return "";
+}
+
+const std::string& getContentType(const std::string& path) {
+	auto it = contentTypes.find(getExt(path));
+	if (it != contentTypes.end()) {
+		return it->second;
 	}
 	static const std::string defaultType("text/html");
 	return defaultType;
+}
+
+// Cacheability is only set for resources that *REQUIRE* caching for browser support reasons.
+// It's off for everything else to save on browser reload headaches during development, at
+// least until we support ETags or If-Modified-Since: type checking, which we may never do.
+bool isCacheable(const std::string& path) {
+	std::string extension = getExt(path);
+	if (extension == "mp3" || extension == "wav") {
+		return true;
+	}
+	return false;
 }
 
 const size_t MaxBufferSize = 16 * 1024 * 1024;
@@ -501,7 +516,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (requestUri == NULL) {
 		return sendBadRequest("Malformed request line");
 	}
-  _requestUri = std::string(requestUri);
+	_requestUri = std::string(requestUri);
 	
 	const char* httpVersion = shift(requestLine);
 	if (httpVersion == NULL) {
@@ -717,9 +732,11 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 	auto nowTime = now();
 	bufferLine("Date: " + nowTime);
 	bufferLine("Last-Modified: " + webtime(stat.st_mtime));
-	bufferLine("Cache-Control: no-store");
-	bufferLine("Pragma: no-cache");
-	bufferLine("Expires: " + nowTime);
+	if (!isCacheable(path)) {
+		bufferLine("Cache-Control: no-store");
+		bufferLine("Pragma: no-cache");
+		bufferLine("Expires: " + nowTime);
+	}
 	bufferLine("");
 	flush();
 
