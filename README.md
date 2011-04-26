@@ -3,7 +3,7 @@ SeaSocks - A tiny embeddable C++ HTTP and WebSocket server
 
 Features
 --------
-*   Simple C++ API (built on top of Boost)
+*   Simple C++ API
 *   Serves static content from disk
 *   API for building WebSocket servers
 *   Integration with [DRW Single Sign On](http://go/sso)
