@@ -720,7 +720,7 @@ bool Connection::sendStaticData(bool keepAlive, const char* requestUri, const st
 	auto nowTime = now();
 	bufferLine("Date: " + nowTime);
 	bufferLine("Last-Modified: " + webtime(stat.st_mtime));
-	bufferLine("Cache-Control: no-cache");
+	bufferLine("Cache-Control: no-store");
 	bufferLine("Pragma: no-cache");
 	bufferLine("Expires: " + nowTime);
 	bufferLine("");
