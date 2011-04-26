@@ -89,3 +89,6 @@ clean:
 
 clobber: clean
 	rm -rf lib include $(FIG_DEP)
+
+publish: all
+	fig --publish seasocks/$(VERSION)
