@@ -9,6 +9,7 @@ config default
   append LIBPATH=@/bin/libseasocks.so
   append LIBPATH=@/bin/libseasocks.a
   append INCLUDEPATH=@/src/main/c//seasocks
+  include tclap/1.2.0
 end
 
 config ubuntu
