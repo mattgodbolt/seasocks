@@ -72,7 +72,7 @@ $(BIN_DIR)/libseasocks.a: $(OBJS)
 	ar cq $@ $^
 
 EMBEDDED_CONTENT:=$(shell find src/main/web -type f)
-$(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) src/main/c/internal/Embedded.h
+$(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) $(FIG_DEP) src/main/c/internal/Embedded.h
 	@mkdir -p $(dir $@)
 	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CC) $(CPPFLAGS) -x c++ -c -o "$@" -
 
