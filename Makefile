@@ -62,11 +62,11 @@ $(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
 	$(CC) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
-$(BIN_DIR)/libseasocks.so: $(OBJS)
+$(BIN_DIR)/libseasocks.so: $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
 	$(CC) -shared $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
 
-$(BIN_DIR)/libseasocks.a: $(OBJS)
+$(BIN_DIR)/libseasocks.a: $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
 	-rm -f $(BIN_DIR)/libseasocks.a
 	ar cq $@ $^
