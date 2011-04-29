@@ -1,0 +1,22 @@
+body {
+    font-family: segoe ui, tahoma, arial, sans-serif;
+    font-size: 12px;
+    color: #ffffff;
+    background-color: #333333;
+    margin: 0;
+}
+
+a {
+    color: #ffff00;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    text-align: center;
+}
+
+.template {
+    display: none;
+}
+

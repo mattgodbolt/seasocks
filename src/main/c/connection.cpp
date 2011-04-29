@@ -5,7 +5,7 @@
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
 
-#include "internal/Favicon.h"
+#include "internal/Embedded.h"
 #include "internal/LogStream.h"
 
 #include <assert.h>
@@ -177,6 +177,8 @@ Connection::Connection(
 	  _state(READING_HEADERS),
 	  _closeOnEmpty(false),
 	  _registeredForWriteEvents(false),
+	  _bytesSent(0),
+	  _bytesReceived(0),
 	  _address(address),
 	  _sso(sso),
 	  _credentials(boost::shared_ptr<Credentials>(new Credentials())) {
@@ -194,19 +196,21 @@ void Connection::close() {
 		_webSocketHandler.reset();
 	}
 	if (_fd != -1) {
-		_server->unsubscribeFromAllEvents(this);
+		_server->remove(this);
 		::close(_fd);
 	}
 	_fd = -1;
 }
 
-int Connection::safeSend(const void* data, size_t size) const {
+int Connection::safeSend(const void* data, size_t size) {
 	int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
 	if (sendResult == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			// Treat this as if zero bytes were written.
 			return 0;
 		}
+	} else {
+		_bytesSent += sendResult;
 	}
 	return sendResult;
 }
@@ -274,6 +278,7 @@ bool Connection::handleDataReadyForRead() {
 		LS_INFO(_logger, "Remote end closed connection");
 		return false;
 	}
+	_bytesReceived += result;
 	_inBuf.resize(curSize + result);
 	if (!handleNewData()) {
 		return false;
@@ -489,11 +494,15 @@ bool Connection::sendUnsupportedError(const char* reason) {
 	return sendError(501, "Not Implemented", reason);
 }
 
-bool Connection::send404(const char* path) {
-	if (strcmp(path, "/favicon.ico") == 0) {
-		return sendDefaultFavicon();
+bool Connection::send404(const std::string& path) {
+	auto embedded = findEmbeddedContent(path);
+	if (embedded) {
+		return sendData(getContentType(path), embedded->data, embedded->length);
+	} else if (strcmp(path.c_str(), "/_livestats.js") == 0) {
+		auto stats = _server->getStatsDocument();
+		return sendData("text/javascript", stats.c_str(), stats.length());
 	} else {
-		return sendError(404, "Not Found", path);
+		return sendError(404, "Not Found", path.c_str());
 	}
 }
 
@@ -764,14 +773,14 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 	_closeOnEmpty = true;
 	return true;
 }
-
-bool Connection::sendDefaultFavicon() {
+bool Connection::sendData(const std::string& type, const char* start, size_t size) {
 	bufferLine("HTTP/1.1 200 OK");
-	bufferLine("Content-Type: image/x-icon");
-	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(faviconDataLength));
+	bufferLine("Content-Type: " + type);
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(size));
+	bufferLine("Server: SeaSocks");
 	bufferLine("Connection: close");
 	bufferLine("");
-	bool result = write(faviconData, faviconDataLength, true);
+	bool result = write(start, size, true);
 	_closeOnEmpty = true;
 	return result;
 }

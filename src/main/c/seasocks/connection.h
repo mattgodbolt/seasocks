@@ -39,8 +39,13 @@ public:
 	// From WebSocket.
 	bool send(const char* webSocketResponse);
 	boost::shared_ptr<Credentials> credentials();
-  const std::string& getRequestUri() const { return _requestUri; }
+	const std::string& getRequestUri() const { return _requestUri; }
 
+	size_t inputBufferSize() const { return _inBuf.size(); }
+	size_t outputBufferSize() const { return _outBuf.size(); }
+
+	size_t bytesReceived() const { return _bytesReceived; }
+	size_t bytesSent() const { return _bytesSent; }
 private:
 	bool closed() const;
 	bool checkCloseConditions();
@@ -60,9 +65,9 @@ private:
 
 	// Send individual errors. Again all return true for convenience.
 	bool sendUnsupportedError(const char* reason);
-	bool send404(const char* path);
+	bool send404(const std::string& path);
 	bool sendBadRequest(const char* reason);
-	bool sendDefaultFavicon();
+	bool sendData(const std::string& type, const char* start, size_t size);
 	bool processHeaders(uint8_t* first, uint8_t* last);
 
 	struct Range {
@@ -75,7 +80,7 @@ private:
 	bool parseRanges(const std::string& range, std::list<Range>& ranges) const;
 	bool sendStaticData(const char* requestUri, const std::string& rangeHeader);
 
-	int safeSend(const void* data, size_t size) const;
+	int safeSend(const void* data, size_t size);
 
 	std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 
@@ -86,6 +91,8 @@ private:
 	bool _registeredForWriteEvents;
 	sockaddr_in _address;
 	uint32_t _webSocketKeys[2];
+	size_t _bytesSent;
+	size_t _bytesReceived;
 	std::vector<uint8_t> _inBuf;
 	std::vector<uint8_t> _outBuf;
 	// Populated only during web socket header parsing.
@@ -93,7 +100,7 @@ private:
 	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
 	boost::shared_ptr<SsoAuthenticator> _sso;
 	boost::shared_ptr<Credentials> _credentials;
-  std::string _requestUri;
+	std::string _requestUri;
 
 	enum State {
 		INVALID,

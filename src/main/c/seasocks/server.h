@@ -8,6 +8,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <list>
+#include <set>
 #include <string>
 
 namespace SeaSocks {
@@ -29,13 +30,15 @@ public:
 
 	void terminate();
 
-	void unsubscribeFromAllEvents(Connection* connection);
+	void remove(Connection* connection);
 	bool subscribeToWriteEvents(Connection* connection);
 	bool unsubscribeFromWriteEvents(Connection* connection);
 
 	const std::string& getStaticPath() const { return _staticPath; }
 	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
 	bool isCrossOriginAllowed(const char* endpoint) const;
+
+	std::string getStatsDocument() const;
 
 	class Runnable {
 	public:
@@ -50,6 +53,7 @@ private:
 	boost::shared_ptr<Runnable> popNextRunnable();
 	void processEventQueue();
 
+	std::set<Connection*> _connections;
 	boost::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;
@@ -69,7 +73,6 @@ private:
 	std::string _staticPath;
     volatile bool _terminate;
 };
-
 
 }  // namespace SeaSocks
 

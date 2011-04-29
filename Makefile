@@ -43,10 +43,10 @@ debug:
 
 fig: $(FIG_DEP)
 
-
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
 APPS_OBJS=$(patsubst $(APPS_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(APPS_CPP_SRCS))
 ALL_OBJS=$(OBJS) $(APPS_OBJS)
+GEN_OBJS=$(OBJ_DIR)/embedded.o
 
 -include $(ALL_OBJS:.o=.d)
 
@@ -58,7 +58,7 @@ $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
 
-$(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS)
+$(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
 	$(CC) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
@@ -70,6 +70,11 @@ $(BIN_DIR)/libseasocks.a: $(OBJS)
 	mkdir -p $(BIN_DIR)
 	-rm -f $(BIN_DIR)/libseasocks.a
 	ar cq $@ $^
+
+EMBEDDED_CONTENT:=$(shell find src/main/web -type f)
+$(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) src/main/c/internal/Embedded.h
+	@mkdir -p $(dir $@)
+	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CC) $(CPPFLAGS) -x c++ -c -o "$@" -
 
 run: $(BIN_DIR)/ws_test
 	$(BIN_DIR)/ws_test

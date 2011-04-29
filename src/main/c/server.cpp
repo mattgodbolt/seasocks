@@ -3,6 +3,7 @@
 #include "seasocks/connection.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
+#include "seasocks/json.h"
 
 #include "internal/LogStream.h"
 
@@ -30,6 +31,10 @@ void Server::enableSingleSignOn(SsoOptions ssoOptions) {
 
 Server::~Server() {
 	_logger->info("Server shutting down");
+	while (!_connections.empty()) {
+		// Deleting the connection closes it and removes it from 'this'.
+		delete *_connections.begin();
+	}
 	if (_listenSock != -1) {
 		close(_listenSock);
 	}
@@ -186,7 +191,6 @@ void Server::handleAccept() {
 		return;
 	}
 	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address).c_str(), fd);
-	// TODO: track all connections?
 	Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
 	epoll_event event = { EPOLLIN, newConnection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
@@ -195,13 +199,15 @@ void Server::handleAccept() {
 		::close(fd);
 		return;
 	}
+	_connections.insert(newConnection);
 }
 
-void Server::unsubscribeFromAllEvents(Connection* connection) {
+void Server::remove(Connection* connection) {
 	epoll_event event = { 0, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to remove from epoll: " << getLastError());
 	}
+	_connections.erase(connection);
 }
 
 bool Server::subscribeToWriteEvents(Connection* connection) {
@@ -260,6 +266,28 @@ boost::shared_ptr<Server::Runnable> Server::popNextRunnable() {
 		_pendingRunnables.pop_front();
 	}
 	return runnable;
+}
+
+std::string Server::getStatsDocument() const {
+	std::ostringstream doc;
+	doc << "clear();" << std::endl;
+	for (auto it = _connections.begin(); it != _connections.end(); ++it) {
+		doc << "connection({";
+		auto connection = *it;
+		jsonKeyPairToStream(doc,
+				"fd", connection->getFd(),
+				"id", reinterpret_cast<uint64_t>(connection),
+				"uri", connection->getRequestUri(),
+				"addr", formatAddress(connection->getRemoteAddress()),
+				"user", connection->credentials()->username,
+				"input", connection->inputBufferSize(),
+				"read", connection->bytesReceived(),
+				"output", connection->outputBufferSize(),
+				"written", connection->bytesSent()
+				);
+		doc << "});" << std::endl;
+	}
+	return doc.str();
 }
 
 }  // namespace SeaSocks
