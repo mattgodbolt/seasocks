@@ -472,15 +472,24 @@ bool Connection::handleWebSocketMessage(const char* message) {
 	return true;
 }
 
-bool Connection::sendError(int errorCode, const char* message, const char* body) {
+bool Connection::sendError(int errorCode, const std::string& message, const std::string& body) {
 	assert(_state != HANDLING_WEBSOCKET);
 	LS_INFO(_logger, "Sending error " << errorCode << " - " << message << " (" << body << ")");
 	bufferLine("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
-	std::stringstream documentStr;
-	documentStr << "<html><head><title>" << errorCode << " - " << message << "</title></head>"
-			<< "<body><h1>" << errorCode << " - " << message << "</h1>"
-			<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
-	std::string document(documentStr.str());
+	auto errorContent = findEmbeddedContent("/_error.html");
+	std::string document;
+	if (errorContent) {
+		document.assign(errorContent->data, errorContent->data + errorContent->length);
+		replace(document, "%%ERRORCODE%%", boost::lexical_cast<std::string>(errorCode));
+		replace(document, "%%MESSAGE%%", message);
+		replace(document, "%%BODY%%", body);
+	} else {
+		std::stringstream documentStr;
+		documentStr << "<html><head><title>" << errorCode << " - " << message << "</title></head>"
+				<< "<body><h1>" << errorCode << " - " << message << "</h1>"
+				<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
+		document = documentStr.str();
+	}
 	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(document.length()));
 	bufferLine("Connection: close");
 	bufferLine("");
@@ -490,7 +499,7 @@ bool Connection::sendError(int errorCode, const char* message, const char* body)
 	return true;
 }
 
-bool Connection::sendUnsupportedError(const char* reason) {
+bool Connection::sendUnsupportedError(const std::string& reason) {
 	return sendError(501, "Not Implemented", reason);
 }
 
@@ -502,11 +511,11 @@ bool Connection::send404(const std::string& path) {
 		auto stats = _server->getStatsDocument();
 		return sendData("text/javascript", stats.c_str(), stats.length());
 	} else {
-		return sendError(404, "Not Found", path.c_str());
+		return sendError(404, "Not Found", "Unable to find resource for: " + path);
 	}
 }
 
-bool Connection::sendBadRequest(const char* reason) {
+bool Connection::sendBadRequest(const std::string& reason) {
 	return sendError(400, "Bad Request", reason);
 }
 

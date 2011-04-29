@@ -61,14 +61,15 @@ private:
 	bool flush();
 
 	// Send an error document. Returns 'true' for convenience in handle*() routines.
-	bool sendError(int errorCode, const char* message, const char* document);
+	bool sendError(int errorCode, const std::string& message, const std::string& document);
 
 	// Send individual errors. Again all return true for convenience.
-	bool sendUnsupportedError(const char* reason);
+	bool sendUnsupportedError(const std::string& reason);
 	bool send404(const std::string& path);
-	bool sendBadRequest(const char* reason);
-	bool sendData(const std::string& type, const char* start, size_t size);
+	bool sendBadRequest(const std::string& reason);
+
 	bool processHeaders(uint8_t* first, uint8_t* last);
+	bool sendData(const std::string& type, const char* start, size_t size);
 
 	struct Range {
 		long start;

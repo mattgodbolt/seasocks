@@ -66,4 +66,14 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
 	return result;
 }
 
+void replace(std::string& string, const std::string& find, const std::string& replace) {
+	size_t pos = 0;
+	const size_t findLen = find.length();
+	const size_t replaceLen = replace.length();
+	while ((pos = string.find(find, pos)) != std::string::npos) {
+		string = string.substr(0, pos) + replace + string.substr(pos + findLen);
+		pos += replaceLen;
+	}
+}
+
 }

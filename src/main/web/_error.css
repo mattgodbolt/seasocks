@@ -1,0 +1,33 @@
+body {
+    font-family: segoe ui, tahoma, arial, sans-serif;
+    color: #ffffff;
+    background-color: #c21e29;
+    text-align: center;
+}
+
+a {
+    color: #ffff00;
+}
+
+.footer {
+    font-style: italic;
+}
+
+.message {
+    display: inline-block;
+    border: 1px solid white;
+    padding: 50px;
+    font-size: 20px;
+}
+
+.headline {
+    padding: 50px;
+    font-weight: bold;
+    font-size: 32px;
+}
+
+.footer {
+    padding-top: 50px;
+    font-size: 12px;
+}
+
