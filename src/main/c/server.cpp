@@ -38,7 +38,9 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
     DO_BIT(EPOLLMSG);
     DO_BIT(EPOLLERR);
     DO_BIT(EPOLLHUP);
+#ifdef EPOLLRDHUP
     DO_BIT(EPOLLRDHUP);
+#endif
     DO_BIT(EPOLLONESHOT);
     DO_BIT(EPOLLET);
 #undef DO_BIT
