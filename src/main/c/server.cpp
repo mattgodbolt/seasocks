@@ -45,12 +45,17 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 	return o;
 }
 
+const int EpollTimeoutMillis = 5000;
+// If we haven't heard anything ever on a connection for this long, kill it.
+// This is possibly caused by bad WebSocket implementation in Chrome.
+const int LameConnectionTimeoutSeconds = 10;
+
 }
 
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _terminate(false) {
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _terminate(false), _nextDeadConnectionCheck(0) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = boost::shared_ptr<SsoAuthenticator>();
 }
@@ -63,7 +68,7 @@ Server::~Server() {
 	LS_INFO(_logger, "Server shutting down");
 	while (!_connections.empty()) {
 		// Deleting the connection closes it and removes it from 'this'.
-		delete *_connections.begin();
+		delete _connections.begin()->first;
 	}
 	if (_listenSock != -1) {
 		close(_listenSock);
@@ -155,7 +160,7 @@ void Server::serve(const char* staticPath, int port) {
 
 	processEventQueue(); // For any events before startup.
 	for (;;) {
-		int numEvents = epoll_wait(_epollFd, events, maxEvents, -1);
+		int numEvents = epoll_wait(_epollFd, events, maxEvents, EpollTimeoutMillis);
 		if (numEvents == -1) {
 			if (errno == EINTR) continue;
 			LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
@@ -215,6 +220,22 @@ void Server::processEventQueue() {
 		if (!runnable) break;
 		runnable->run();
 	}
+	time_t now = time(NULL);
+	if (now >= _nextDeadConnectionCheck) {
+		std::vector<Connection*> toRemove;
+		for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
+			time_t numSecondsSinceConnection = now - it->second;
+			auto connection = it->first;
+			if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= LameConnectionTimeoutSeconds) {
+				LS_WARNING(_logger, formatAddress(connection->getRemoteAddress())
+						<< " : Killing lame connection - no bytes received after " << numSecondsSinceConnection << "s");
+				toRemove.push_back(connection);
+			}
+		}
+		for (auto it = toRemove.begin(); it != toRemove.end(); ++it) {
+			delete *it;
+		}
+	}
 }
 
 void Server::handleAccept() {
@@ -248,7 +269,7 @@ void Server::handleAccept() {
 		::close(fd);
 		return;
 	}
-	_connections.insert(newConnection);
+	_connections.insert(std::make_pair(newConnection, time(NULL)));
 }
 
 void Server::remove(Connection* connection) {
@@ -322,8 +343,9 @@ std::string Server::getStatsDocument() const {
 	doc << "clear();" << std::endl;
 	for (auto it = _connections.begin(); it != _connections.end(); ++it) {
 		doc << "connection({";
-		auto connection = *it;
+		auto connection = it->first;
 		jsonKeyPairToStream(doc,
+				"since", EpochTimeAsLocal(it->second),
 				"fd", connection->getFd(),
 				"id", reinterpret_cast<uint64_t>(connection),
 				"uri", connection->getRequestUri(),

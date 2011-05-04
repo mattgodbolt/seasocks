@@ -6,8 +6,14 @@
 
 namespace SeaSocks {
 
+struct EpochTimeAsLocal {
+	time_t t;
+	EpochTimeAsLocal(time_t t) : t(t) {}
+};
+
 inline void jsonToStream(std::ostream& str) {}
 void jsonToStream(std::ostream& str, const char* t);
+void jsonToStream(std::ostream& str, const EpochTimeAsLocal& t);
 inline void jsonToStream(std::ostream& str, const std::string& t) {
 	jsonToStream(str, t.c_str());
 }

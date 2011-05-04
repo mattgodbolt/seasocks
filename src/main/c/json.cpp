@@ -19,4 +19,8 @@ void jsonToStream(std::ostream& str, const char* t) {
 	str << '"';
 }
 
+void jsonToStream(std::ostream& str, const EpochTimeAsLocal& t) {
+	str << "new Date(" << t.t * 1000 << ").toLocaleString()";
+}
+
 }  // SeaSocks

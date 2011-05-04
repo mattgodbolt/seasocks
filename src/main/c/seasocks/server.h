@@ -8,7 +8,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <list>
-#include <set>
+#include <map>
 #include <string>
 
 namespace SeaSocks {
@@ -53,7 +53,9 @@ private:
 	boost::shared_ptr<Runnable> popNextRunnable();
 	void processEventQueue();
 
-	std::set<Connection*> _connections;
+	// Connections, mapped to initial connection time.
+	std::map<Connection*, time_t> _connections;
+	time_t _nextDeadConnectionCheck;
 	boost::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;

@@ -17,7 +17,6 @@
   		var stats = new XMLHttpRequest();
 		stats.open("GET", "_livestats.js", false);
 		stats.send(null);
-		console.log(stats.responseText);
 		eval(stats.responseText);
   }
   $(function() {
@@ -32,6 +31,7 @@
 <table id="cx">
   <thead>
     <tr>
+      <th>Connection time</th>
       <th>Fd</th>
       <th>Addr</th>
       <th>URI</th>
@@ -44,6 +44,7 @@
   </thead>
   <tbody>
     <tr class="template">
+      <td class="since"></td>
       <td class="fd"></td>
       <td class="addr"></td>
       <td class="uri"></td>
