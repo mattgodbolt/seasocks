@@ -1,5 +1,7 @@
 #include "seasocks/ssoauthenticator.h"
 
+#include "seasocks/AccessControl.h"
+
 #include "md5/md5.h"
 
 #include <string.h>
@@ -33,13 +35,27 @@ std::string hexStringOf(uint8_t (&data)[length]) {
 	return s;
 }
 
+class DefaultAccessControl : public SeaSocks::AccessControl {
+public:
+	virtual bool requiresAuthentication(const char* requestUri) {
+		return true;
+	}
+
+	bool hasAccess(boost::shared_ptr<SeaSocks::Credentials> credentials, const char* requestUri) {
+		return true;
+	}
+};
+
 }
 
 namespace SeaSocks {
 
 static const int SSO_PROTOCOL_VERSION = 1;
 
-SsoAuthenticator::SsoAuthenticator(SsoOptions options) : _options(options) {
+SsoAuthenticator::SsoAuthenticator(const SsoOptions& options) : _options(options) {
+	if (!_options.accessController) {
+		_options.accessController.reset(new DefaultAccessControl);
+	}
 }
 
 bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) const {
@@ -53,8 +69,11 @@ bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) const {
 }
 
 bool SsoAuthenticator::enabledForPath(const char* requestUri) const {
-	// TODO: Provide API hooks to customize this.
-	return true;
+	return _options.accessController->requiresAuthentication(requestUri);
+}
+
+bool SsoAuthenticator::hasAccess(boost::shared_ptr<Credentials> credentials, const char* requestUri) const {
+	return _options.accessController->hasAccess(credentials, requestUri);
 }
 
 bool SsoAuthenticator::validateSignature(const char* requestUri) const {

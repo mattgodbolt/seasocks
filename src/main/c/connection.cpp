@@ -1,5 +1,6 @@
 #include "seasocks/connection.h"
 
+#include "seasocks/AccessControl.h"
 #include "seasocks/credentials.h"
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
@@ -619,7 +620,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			}
 		}
 
-		if (_sso->enabledForPath(requestUri)) {
+		if (findEmbeddedContent(requestUri) == NULL && _sso->enabledForPath(requestUri)) {
+			// TODO: Merge enabledForPath with the AccessControl; perhaps merge them.
 			_sso->extractCredentialsFromLocalCookie(cookie, _credentials);
 			if (!_credentials->authenticated) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
@@ -636,6 +638,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 						return sendError(500, error.c_str(), requestUri);
 					}
 				}
+			}
+			if (!_sso->hasAccess(_credentials, requestUri)) {
+				return sendError(403, "Forbidden", requestUri);
 			}
 		}
 	}

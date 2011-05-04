@@ -2,6 +2,7 @@
 #define _SEASOCKS_SSO_AUTHENTICATOR_H_
 
 #include "seasocks/credentials.h"
+#include "seasocks/AccessControl.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -83,6 +84,14 @@ struct SsoOptions {
 	 * server, though this is transparent to the user.
 	 */
 	std::string localAuthKey;
+
+	/**
+	 * Smart pointer to an object that will perform access control.
+	 *
+	 * The default value is null, which creates an access control object that requires
+	 * login for all domains, but doesn't restrict by username.
+	 */
+	boost::shared_ptr<AccessControl> accessController;
 
 	/**
 	 * Create options that will 'just work' for default SSO server: https://signon.drwholdings.com. 
@@ -178,8 +187,9 @@ struct SsoOptions {
 
 class SsoAuthenticator {
 public:
-	SsoAuthenticator(SsoOptions options);
+	SsoAuthenticator(const SsoOptions& options);
 	bool enabledForPath(const char* requestUri) const;
+	bool hasAccess(boost::shared_ptr<Credentials> credentials, const char* requestUri) const;
 	bool isBounceBackFromSsoServer(const char* requestUri) const;
 	bool validateSignature(const char* requestUri) const;
 	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error);
