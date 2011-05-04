@@ -2,6 +2,8 @@
 #include "seasocks/server.h"
 #include "seasocks/ssoauthenticator.h"
 
+#include "internal/Version.h"
+
 #include <tclap/CmdLine.h>
 
 #include <boost/shared_ptr.hpp>
@@ -14,7 +16,7 @@ static const char description[] =
 		"Serve static files over HTTP.";
 
 int main(int argc, const char* argv[]) {
-	CmdLine cmd(description, ' ', "0.0");
+	CmdLine cmd(description, ' ', SEASOCKS_VERSION_STRING);
 	ValueArg<int> portArg("p", "port", "Listen for incoming connections on PORT", false, 80, "PORT", cmd);
 	SwitchArg ssoArg("s", "enable-sso", "Protect content with Single Sign On", cmd);
 	SwitchArg verboseArg("v", "verbose", "Output verbose debug information", cmd);
