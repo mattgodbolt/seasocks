@@ -17,6 +17,36 @@
 
 #include <memory>
 
+namespace {
+
+struct EventBits {
+	uint32_t bits;
+	explicit EventBits(uint32_t bits) : bits(bits) {}
+};
+
+std::ostream& operator <<(std::ostream& o, const EventBits& b) {
+	uint32_t bits = b.bits;
+#define DO_BIT(NAME) \
+	do { if (bits & (NAME)) { if (bits != b.bits) {o << ", "; } o << #NAME; bits &= ~(NAME); } } while (0)
+    DO_BIT(EPOLLIN);
+    DO_BIT(EPOLLPRI);
+    DO_BIT(EPOLLOUT);
+    DO_BIT(EPOLLRDNORM);
+    DO_BIT(EPOLLRDBAND);
+    DO_BIT(EPOLLWRNORM);
+    DO_BIT(EPOLLWRBAND);
+    DO_BIT(EPOLLMSG);
+    DO_BIT(EPOLLERR);
+    DO_BIT(EPOLLHUP);
+    DO_BIT(EPOLLRDHUP);
+    DO_BIT(EPOLLONESHOT);
+    DO_BIT(EPOLLET);
+#undef DO_BIT
+	return o;
+}
+
+}
+
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
@@ -30,7 +60,7 @@ void Server::enableSingleSignOn(SsoOptions ssoOptions) {
 }
 
 Server::~Server() {
-	_logger->info("Server shutting down");
+	LS_INFO(_logger, "Server shutting down");
 	while (!_connections.empty()) {
 		// Deleting the connection closes it and removes it from 'this'.
 		delete *_connections.begin();
@@ -133,9 +163,23 @@ void Server::serve(const char* staticPath, int port) {
 		}
 		for (int i = 0; i < numEvents; ++i) {
 			if (events[i].data.ptr == this) {
-				handleAccept();
+				if (events[i].events & ~EPOLLIN) {
+					LS_SEVERE(_logger, "Got unexpected event on listening socket ("
+							<< EventBits(events[i].events) << ") - terminating");
+					_terminate = true;
+					break;
+				}
+				if (events[i].events & EPOLLIN) {
+					handleAccept();
+				}
 			} else if (events[i].data.ptr == &_pipes[0]) {
 				uint64_t dummy;
+				if (events[i].events & ~EPOLLIN) {
+					LS_SEVERE(_logger, "Got unexpected event on management pipe ("
+							<< EventBits(events[i].events) << ") - terminating");
+					_terminate = true;
+					break;
+				}
 				if (::read(_pipes[0], &dummy, sizeof(dummy)) == -1) {
 					LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
 				}
@@ -143,8 +187,9 @@ void Server::serve(const char* staticPath, int port) {
 			} else {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 				bool keepAlive = true;
-				if (events[i].events & EPOLLERR) {
-					LS_WARNING(_logger, "Got epoll error on connection: " << formatAddress(connection->getRemoteAddress()));
+				if (events[i].events & ~(EPOLLIN|EPOLLOUT)) {
+					LS_WARNING(_logger, "Got epoll error event (" << EventBits(events[i].events)
+							<< ") on connection: " << formatAddress(connection->getRemoteAddress()));
 					keepAlive = false;
 				}
 				if (keepAlive && events[i].events & EPOLLIN) {
@@ -194,9 +239,9 @@ void Server::handleAccept() {
 		::close(fd);
 		return;
 	}
-	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address).c_str(), fd);
+	LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
 	Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
-	epoll_event event = { EPOLLIN | EPOLLERR, newConnection };
+	epoll_event event = { EPOLLIN, newConnection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
 		LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
 		delete newConnection;
@@ -215,7 +260,7 @@ void Server::remove(Connection* connection) {
 }
 
 bool Server::subscribeToWriteEvents(Connection* connection) {
-	epoll_event event = { EPOLLIN | EPOLLERR | EPOLLOUT, connection };
+	epoll_event event = { EPOLLIN | EPOLLOUT, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to subscribe to write events: " << getLastError());
 		return false;
@@ -224,7 +269,7 @@ bool Server::subscribeToWriteEvents(Connection* connection) {
 }
 
 bool Server::unsubscribeFromWriteEvents(Connection* connection) {
-	epoll_event event = { EPOLLIN | EPOLLERR, connection };
+	epoll_event event = { EPOLLIN, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to unsubscribe from write events: " << getLastError());
 		return false;

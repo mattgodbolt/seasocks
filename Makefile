@@ -3,8 +3,10 @@ C_SRC=src/main/c
 TEST_SRC=src/test/c
 APPS_SRC=src/app/c
 
+VERSION_STRING=SeaSocks/$(or $(VERSION),unversioned) ($(shell git rev-parse HEAD))
+
 INCLUDES=-I $(C_SRC) -Iinclude -Llib
-CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x
+CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -W -Werror $(INCLUDES) -std=gnu++0x '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"'
 
 STATIC_LIBS= 
 APP_LIBS=

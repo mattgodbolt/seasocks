@@ -27,6 +27,11 @@
 
 #include "md5/md5.h"
 
+#ifndef SEASOCKS_VERSION_STRING
+// This stops Eclipse freaking out as it doesn't know this is set on GCC command line.
+#define SEASOCKS_VERSION_STRING "SeaSocks/unversioned"
+#endif
+
 namespace {
 
 uint32_t parseWebSocketKey(const char* key) {
@@ -197,18 +202,25 @@ void Connection::close() {
 	}
 	if (_fd != -1) {
 		_server->remove(this);
+		LS_INFO(_logger, "Closing socket");
 		::close(_fd);
 	}
 	_fd = -1;
 }
 
 int Connection::safeSend(const void* data, size_t size) {
+	if (_fd == -1) {
+		// Ignore further writes to the socket, it's already closed.
+		return -1;
+	}
 	int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
 	if (sendResult == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			// Treat this as if zero bytes were written.
 			return 0;
 		}
+		LS_WARNING(_logger, "Unable to write to socket : " << getLastError() << " - disabling further writes");
+		close();
 	} else {
 		_bytesSent += sendResult;
 	}
@@ -232,7 +244,6 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
 			return true;
 		}
 		if (bytesSent == -1) {
-			LS_ERROR(_logger, "Unable to write to socket: " << getLastError());
 			return false;
 		}
 	}
@@ -302,7 +313,6 @@ bool Connection::flush() {
 	}
 	int numSent = safeSend(&_outBuf[0], _outBuf.size());
 	if (numSent == -1) {
-		LS_ERROR(_logger, "Unable to write to socket : " << getLastError());
 		return false;
 	}
 	_outBuf.erase(_outBuf.begin(), _outBuf.begin() + numSent);
@@ -474,8 +484,7 @@ bool Connection::handleWebSocketMessage(const char* message) {
 
 bool Connection::sendError(int errorCode, const std::string& message, const std::string& body) {
 	assert(_state != HANDLING_WEBSOCKET);
-	LS_INFO(_logger, "Sending error " << errorCode << " - " << message << " (" << body << ")");
-	bufferLine("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
+	bufferResponseAndCommonHeaders("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
 	auto errorContent = findEmbeddedContent("/_error.html");
 	std::string document;
 	if (errorContent) {
@@ -524,6 +533,8 @@ bool Connection::sendBadRequest(const std::string& reason) {
 bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	char* requestLine = extractLine(first, last);
 	assert(requestLine != NULL);
+
+	LS_INFO(_logger, "Request: " << requestLine);
 
 	const char* verb = shift(requestLine);
 	if (verb == NULL) {
@@ -693,13 +704,13 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
 std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, long fileSize) {
 	if (origRanges.empty()) {
 		// Easy case: a non-range request.
-		bufferLine("HTTP/1.1 200 OK");
+		bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
 		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
 		return { Range { 0, fileSize - 1 } };
 	}
 
 	// Partial content request.
-	bufferLine("HTTP/1.1 206 OK");
+	bufferResponseAndCommonHeaders("HTTP/1.1 206 OK");
 	int contentLength = 0;
 	std::ostringstream rangeLine;
 	rangeLine << "Content-Range: ";
@@ -747,15 +758,12 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 	ranges = processRangesForStaticData(ranges, stat.st_size);
 	bufferLine("Content-Type: " + getContentType(path));
 	bufferLine("Connection: close");
-	bufferLine("Server: SeaSocks");
 	bufferLine("Accept-Ranges: bytes");
-	auto nowTime = now();
-	bufferLine("Date: " + nowTime);
 	bufferLine("Last-Modified: " + webtime(stat.st_mtime));
 	if (!isCacheable(path)) {
 		bufferLine("Cache-Control: no-store");
 		bufferLine("Pragma: no-cache");
-		bufferLine("Expires: " + nowTime);
+		bufferLine("Expires: " + now());
 	}
 	bufferLine("");
 	if (!flush()) {
@@ -786,16 +794,23 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 	_closeOnEmpty = true;
 	return true;
 }
+
 bool Connection::sendData(const std::string& type, const char* start, size_t size) {
-	bufferLine("HTTP/1.1 200 OK");
+	bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
 	bufferLine("Content-Type: " + type);
 	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(size));
-	bufferLine("Server: SeaSocks");
 	bufferLine("Connection: close");
 	bufferLine("");
 	bool result = write(start, size, true);
 	_closeOnEmpty = true;
 	return result;
+}
+
+void Connection::bufferResponseAndCommonHeaders(const std::string& response) {
+	LS_INFO(_logger, "Response: " << response);
+	bufferLine(response);
+	bufferLine("Server: " SEASOCKS_VERSION_STRING);
+	bufferLine("Date: " + now());
 }
 
 }  // SeaSocks

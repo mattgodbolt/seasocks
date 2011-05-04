@@ -83,6 +83,8 @@ private:
 
 	int safeSend(const void* data, size_t size);
 
+	void bufferResponseAndCommonHeaders(const std::string& response);
+
 	std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 
 	boost::shared_ptr<Logger> _logger;
