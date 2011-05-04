@@ -37,7 +37,7 @@ public:
 	const sockaddr_in& getRemoteAddress() const { return _address; }
 
 	// From WebSocket.
-	bool send(const char* webSocketResponse);
+	void send(const char* webSocketResponse);
 	boost::shared_ptr<Credentials> credentials();
 	const std::string& getRequestUri() const { return _requestUri; }
 

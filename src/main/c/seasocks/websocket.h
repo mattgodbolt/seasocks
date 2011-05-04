@@ -10,7 +10,7 @@ namespace SeaSocks {
 class WebSocket {
 public:
 	virtual ~WebSocket() {}
-	virtual bool send(const char* data) = 0;
+	virtual void send(const char* data) = 0;
 	virtual void close() = 0;
 	virtual boost::shared_ptr<Credentials> credentials() = 0;
 	virtual const sockaddr_in& getRemoteAddress() const = 0;

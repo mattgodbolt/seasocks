@@ -137,17 +137,21 @@ void Server::serve(const char* staticPath, int port) {
 			} else if (events[i].data.ptr == &_pipes[0]) {
 				uint64_t dummy;
 				if (::read(_pipes[0], &dummy, sizeof(dummy)) == -1) {
-					LS_ERROR(_logger, "Error from wakeFd read: " <<getLastError());
+					LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
 				}
 				// It's a "wake up" event; just process any runnables.
 			} else {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 				bool keepAlive = true;
-				if (events[i].events & EPOLLIN) {
-					keepAlive &= connection->handleDataReadyForRead();
+				if (events[i].events & EPOLLERR) {
+					LS_WARNING(_logger, "Got epoll error on connection: " << formatAddress(connection->getRemoteAddress()));
+					keepAlive = false;
 				}
-				if (events[i].events & EPOLLOUT) {
-					keepAlive &= connection->handleDataReadyForWrite();
+				if (keepAlive && events[i].events & EPOLLIN) {
+					keepAlive = connection->handleDataReadyForRead();
+				}
+				if (keepAlive && (events[i].events & EPOLLOUT)) {
+					keepAlive = connection->handleDataReadyForWrite();
 				}
 				if (!keepAlive) {
 					LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
@@ -192,7 +196,7 @@ void Server::handleAccept() {
 	}
 	_logger->debug("%s : Accepted on descriptor %d", formatAddress(address).c_str(), fd);
 	Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
-	epoll_event event = { EPOLLIN, newConnection };
+	epoll_event event = { EPOLLIN | EPOLLERR, newConnection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
 		LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
 		delete newConnection;
@@ -211,7 +215,7 @@ void Server::remove(Connection* connection) {
 }
 
 bool Server::subscribeToWriteEvents(Connection* connection) {
-	epoll_event event = { EPOLLIN | EPOLLOUT, connection };
+	epoll_event event = { EPOLLIN | EPOLLERR | EPOLLOUT, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to subscribe to write events: " << getLastError());
 		return false;
@@ -220,7 +224,7 @@ bool Server::subscribeToWriteEvents(Connection* connection) {
 }
 
 bool Server::unsubscribeFromWriteEvents(Connection* connection) {
-	epoll_event event = { EPOLLIN, connection };
+	epoll_event event = { EPOLLIN | EPOLLERR, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to unsubscribe from write events: " << getLastError());
 		return false;

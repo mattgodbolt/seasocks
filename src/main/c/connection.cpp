@@ -247,7 +247,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
 	_outBuf.resize(newBufferSize);
 	memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
 	if (flushIt) {
-		flush();
+		return flush();
 	}
 	return true;
 }
@@ -412,12 +412,12 @@ bool Connection::handleWebSocketKey3() {
 	return true;
 }
 
-bool Connection::send(const char* webSocketResponse) {
+void Connection::send(const char* webSocketResponse) {
 	uint8_t zero = 0;
-	if (!write(&zero, 1, false)) return false;
-	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return false;
+	if (!write(&zero, 1, false)) return;
+	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return;
 	uint8_t effeff = 0xff;
-	return write(&effeff, 1, true);
+	write(&effeff, 1, true);
 }
 
 boost::shared_ptr<Credentials> Connection::credentials() {
@@ -494,7 +494,9 @@ bool Connection::sendError(int errorCode, const std::string& message, const std:
 	bufferLine("Connection: close");
 	bufferLine("");
 	bufferLine(document);
-	flush();
+	if (!flush()) {
+		return false;
+	}
 	_closeOnEmpty = true;
 	return true;
 }
@@ -756,7 +758,9 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 		bufferLine("Expires: " + nowTime);
 	}
 	bufferLine("");
-	flush();
+	if (!flush()) {
+		return false;
+	}
 
 	for (auto rangeIter = ranges.cbegin(); rangeIter != ranges.cend(); ++rangeIter) {
 		if (::lseek(input, rangeIter->start, SEEK_SET) == -1) {
