@@ -47,17 +47,17 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 	return o;
 }
 
-const int EpollTimeoutMillis = 5000;
-// If we haven't heard anything ever on a connection for this long, kill it.
-// This is possibly caused by bad WebSocket implementation in Chrome.
-const int LameConnectionTimeoutSeconds = 10;
+const int EpollTimeoutMillis = 500;  // Twice a second is ample.
+const int DefaultLameConnectionTimeoutSeconds = 10;
 
 }
 
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _terminate(false), _nextDeadConnectionCheck(0) {
+	: _logger(logger), _listenSock(-1), _epollFd(-1),
+	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
+	  _terminate(false), _nextDeadConnectionCheck(0) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = boost::shared_ptr<SsoAuthenticator>();
 }
@@ -228,7 +228,7 @@ void Server::processEventQueue() {
 		for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
 			time_t numSecondsSinceConnection = now - it->second;
 			auto connection = it->first;
-			if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= LameConnectionTimeoutSeconds) {
+			if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
 				LS_WARNING(_logger, formatAddress(connection->getRemoteAddress())
 						<< " : Killing lame connection - no bytes received after " << numSecondsSinceConnection << "s");
 				toRemove.push_back(connection);
@@ -361,6 +361,11 @@ std::string Server::getStatsDocument() const {
 		doc << "});" << std::endl;
 	}
 	return doc.str();
+}
+
+void Server::setLameConnectionTimeoutSeconds(int seconds) {
+	LS_INFO(_logger, "Setting lame connection timeout to " << seconds);
+	_lameConnectionTimeoutSeconds = seconds;
 }
 
 }  // namespace SeaSocks

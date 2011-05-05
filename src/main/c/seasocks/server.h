@@ -24,6 +24,9 @@ public:
 	void enableSingleSignOn(SsoOptions ssoOptions);
 	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
 			bool allowCrossOriginRequests = false);
+	// If we haven't heard anything ever on a connection for this long, kill it.
+	// This is possibly caused by bad WebSocket implementation in Chrome.
+	void setLameConnectionTimeoutSeconds(int seconds);
 
 	// Serves static content from the given port on the current thread, until terminate is called
 	void serve(const char* staticPath, int port);
@@ -60,6 +63,7 @@ private:
 	int _listenSock;
 	int _epollFd;
 	int _pipes[2];
+	int _lameConnectionTimeoutSeconds;
 
 	struct Entry {
 		boost::shared_ptr<WebSocket::Handler> handler;

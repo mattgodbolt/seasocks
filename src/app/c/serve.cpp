@@ -32,6 +32,9 @@ int main(int argc, const char* argv[]) {
 	ValueArg<std::string> authorizedUsersArg(
 			"u", "authorized-users", "Serve content only to USERS (comma-separated)",
 			false, "", "USERS", cmd);
+	ValueArg<int> lameTimeoutArg(
+			"", "lame-connection-timeout", "Time out lame connections after SECS seconds",
+			false, 0, "SECS", cmd);
 
 	UnlabeledValueArg<std::string> rootArg("serve-from-dir", "Use DIR as file serving root", true, "", "DIR", cmd);
 	cmd.parse(argc, argv);
@@ -39,6 +42,9 @@ int main(int argc, const char* argv[]) {
 	boost::shared_ptr<Logger> logger(
 			new PrintfLogger(verboseArg.getValue() ? Logger::Level::DEBUG : Logger::Level::INFO));
 	Server server(logger);
+	if (lameTimeoutArg.isSet()) {
+		server.setLameConnectionTimeoutSeconds(lameTimeoutArg.getValue());
+	}
 	if (ssoArg.getValue()) {
 		auto ssoOptions = SsoOptions::environment(ssoEnvironmentArg.getValue());
 		if (ssoOptions.authServer.size() == 0) {
