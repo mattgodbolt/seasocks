@@ -714,7 +714,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 	bufferResponseAndCommonHeaders("HTTP/1.1 206 OK");
 	int contentLength = 0;
 	std::ostringstream rangeLine;
-	rangeLine << "Content-Range: ";
+	rangeLine << "Content-Range: bytes ";
 	std::list<Range> sendRanges;
 	for (auto rangeIter = origRanges.cbegin(); rangeIter != origRanges.cend(); ++rangeIter) {
 		Range actualRange = *rangeIter;
