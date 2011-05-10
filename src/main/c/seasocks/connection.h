@@ -90,6 +90,7 @@ private:
 	boost::shared_ptr<Logger> _logger;
 	Server* _server;
 	int _fd;
+  bool _hadSendError;
 	bool _closeOnEmpty;
 	bool _registeredForWriteEvents;
 	sockaddr_in _address;

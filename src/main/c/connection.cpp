@@ -177,6 +177,7 @@ Connection::Connection(
 	  _server(server),
 	  _fd(fd),
 	  _state(READING_HEADERS),
+      _hadSendError(false),
 	  _closeOnEmpty(false),
 	  _registeredForWriteEvents(false),
 	  _bytesSent(0),
@@ -206,8 +207,8 @@ void Connection::close() {
 }
 
 int Connection::safeSend(const void* data, size_t size) {
-	if (_fd == -1) {
-		// Ignore further writes to the socket, it's already closed.
+	if (_fd == -1 || _hadSendError) {
+		// Ignore further writes to the socket, it's already closed or had an error.
 		return -1;
 	}
 	int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
@@ -217,7 +218,7 @@ int Connection::safeSend(const void* data, size_t size) {
 			return 0;
 		}
 		LS_WARNING(_logger, "Unable to write to socket : " << getLastError() << " - disabling further writes");
-		close();
+    _hadSendError = true;
 	} else {
 		_bytesSent += sendResult;
 	}
@@ -332,6 +333,11 @@ bool Connection::closed() const {
 }
 
 bool Connection::checkCloseConditions() {
+  if (_hadSendError) {
+    LS_DEBUG(_logger, "Closing, had an error on send");
+    close();
+    return false;
+  }
 	if (closed()) {
 		return true;
 	}
