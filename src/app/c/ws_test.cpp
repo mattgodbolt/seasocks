@@ -30,7 +30,9 @@ public:
 		    return;
 		}
 		if (0 == std::strcmp("close", data)) {
+			std::cout << "Closing.." << std::endl;
 		    connection->close();
+			std::cout << "Closed." << std::endl;
 		    return;
 		}
 

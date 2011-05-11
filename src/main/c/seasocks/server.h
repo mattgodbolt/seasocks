@@ -7,6 +7,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+#include <sys/types.h>
 #include <list>
 #include <map>
 #include <string>
@@ -50,6 +51,7 @@ public:
 	};
 	void schedule(boost::shared_ptr<Runnable> runnable);
 
+	void checkThread() const;
 private:
 	bool makeNonBlocking(int fd) const;
 	bool configureSocket(int fd) const;
@@ -59,12 +61,12 @@ private:
 
 	// Connections, mapped to initial connection time.
 	std::map<Connection*, time_t> _connections;
-	time_t _nextDeadConnectionCheck;
 	boost::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;
 	int _pipes[2];
 	int _lameConnectionTimeoutSeconds;
+	time_t _nextDeadConnectionCheck;
 
 	struct Entry {
 		boost::shared_ptr<WebSocket::Handler> handler;
@@ -76,6 +78,8 @@ private:
 	Mutex _pendingRunnableMutex;
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
 	boost::shared_ptr<SsoAuthenticator> _sso;
+
+	pid_t _threadId;
 
 	std::string _staticPath;
     volatile bool _terminate;

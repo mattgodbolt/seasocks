@@ -177,6 +177,7 @@ Connection::Connection(
 	  _server(server),
 	  _fd(fd),
 	  _state(READING_HEADERS),
+      _shutdown(false),
       _hadSendError(false),
 	  _closeOnEmpty(false),
 	  _registeredForWriteEvents(false),
@@ -190,10 +191,21 @@ Connection::Connection(
 }
 
 Connection::~Connection() {
-	close();
+	_server->checkThread();
+	finalise();
 }
 
 void Connection::close() {
+	// This is the user-side close request. It only actually only calls shutdown on the socket,
+	// leaving the close of the FD and the cleanup until the destructor runs.
+	_server->checkThread();
+	if (_fd != -1 && ::shutdown(_fd, SHUT_RDWR) == -1) {
+		LS_ERROR(_logger, "Unable to shutdown socket : " << getLastError());
+	}
+	_shutdown = true;
+}
+
+void Connection::finalise() {
 	if (_webSocketHandler) {
 		_webSocketHandler->onDisconnect(this);
 		_webSocketHandler.reset();
@@ -207,8 +219,8 @@ void Connection::close() {
 }
 
 int Connection::safeSend(const void* data, size_t size) {
-	if (_fd == -1 || _hadSendError) {
-		// Ignore further writes to the socket, it's already closed or had an error.
+	if (_fd == -1 || _hadSendError || _shutdown) {
+		// Ignore further writes to the socket, it's already closed or has been shutdown
 		return -1;
 	}
 	int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
@@ -218,7 +230,7 @@ int Connection::safeSend(const void* data, size_t size) {
 			return 0;
 		}
 		LS_WARNING(_logger, "Unable to write to socket : " << getLastError() << " - disabling further writes");
-    _hadSendError = true;
+		close();
 	} else {
 		_bytesSent += sendResult;
 	}
@@ -333,10 +345,6 @@ bool Connection::closed() const {
 }
 
 bool Connection::checkCloseConditions() const {
-  if (_hadSendError) {
-    LS_DEBUG(_logger, "Ready for close, had an error on send");
-    return false;
-  }
 	if (closed()) {
 		return true;
 	}
@@ -424,6 +432,11 @@ bool Connection::handleWebSocketKey3() {
 }
 
 void Connection::send(const char* webSocketResponse) {
+	_server->checkThread();
+	if (_shutdown) {
+		LS_ERROR(_logger, "Client wrote to connection after closing it");
+		return;
+	}
 	uint8_t zero = 0;
 	if (!write(&zero, 1, false)) return;
 	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return;
@@ -432,6 +445,7 @@ void Connection::send(const char* webSocketResponse) {
 }
 
 boost::shared_ptr<Credentials> Connection::credentials() {
+	_server->checkThread();
 	return _credentials;
 }
 

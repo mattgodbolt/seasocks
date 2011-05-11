@@ -26,20 +26,20 @@ public:
 			int fd,
 			const sockaddr_in& address,
 			boost::shared_ptr<SsoAuthenticator> sso);
-	~Connection();
+	virtual ~Connection();
 
-	void close();
 	bool write(const void* data, size_t size, bool flush);
 	bool handleDataReadyForRead();
 	bool handleDataReadyForWrite();
 
 	int getFd() const { return _fd; }
-	const sockaddr_in& getRemoteAddress() const { return _address; }
 
 	// From WebSocket.
-	void send(const char* webSocketResponse);
-	boost::shared_ptr<Credentials> credentials();
-	const std::string& getRequestUri() const { return _requestUri; }
+	virtual void send(const char* webSocketResponse);
+	virtual void close();
+	virtual boost::shared_ptr<Credentials> credentials();
+	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
+	virtual const std::string& getRequestUri() const { return _requestUri; }
 
 	size_t inputBufferSize() const { return _inBuf.size(); }
 	size_t outputBufferSize() const { return _outBuf.size(); }
@@ -47,6 +47,7 @@ public:
 	size_t bytesReceived() const { return _bytesReceived; }
 	size_t bytesSent() const { return _bytesSent; }
 private:
+	void finalise();
 	bool closed() const;
 	bool checkCloseConditions() const;
 
@@ -90,7 +91,8 @@ private:
 	boost::shared_ptr<Logger> _logger;
 	Server* _server;
 	int _fd;
-  bool _hadSendError;
+	bool _shutdown;
+    bool _hadSendError;
 	bool _closeOnEmpty;
 	bool _registeredForWriteEvents;
 	sockaddr_in _address;

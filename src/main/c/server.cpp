@@ -13,9 +13,12 @@
 #include <sys/ioctl.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <stdexcept>
 #include <unistd.h>
 
 #include <memory>
+
+#include <sys/syscall.h>
 
 namespace {
 
@@ -50,6 +53,10 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 const int EpollTimeoutMillis = 500;  // Twice a second is ample.
 const int DefaultLameConnectionTimeoutSeconds = 10;
 
+int gettid() {
+	return syscall(SYS_gettid);
+}
+
 }
 
 namespace SeaSocks {
@@ -57,7 +64,7 @@ namespace SeaSocks {
 Server::Server(boost::shared_ptr<Logger> logger)
 	: _logger(logger), _listenSock(-1), _epollFd(-1),
 	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
-	  _terminate(false), _nextDeadConnectionCheck(0) {
+	  _nextDeadConnectionCheck(0), _terminate(false), _threadId(0) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = boost::shared_ptr<SsoAuthenticator>();
 }
@@ -116,6 +123,7 @@ void Server::terminate() {
 }
 
 void Server::serve(const char* staticPath, int port) {
+	_threadId = gettid();
 	_staticPath = staticPath;
 	_listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listenSock == -1) {
@@ -212,9 +220,13 @@ void Server::serve(const char* staticPath, int port) {
 			} else {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 				bool keepAlive = true;
-				if (events[i].events & ~(EPOLLIN|EPOLLOUT)) {
+				if (events[i].events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP)) {
 					LS_WARNING(_logger, "Got epoll error event (" << EventBits(events[i].events)
 							<< ") on connection: " << formatAddress(connection->getRemoteAddress()));
+					keepAlive = false;
+				}
+				if (keepAlive && events[i].events & EPOLLHUP) {
+					LS_INFO(_logger, "Graceful hang-up of socket");
 					keepAlive = false;
 				}
 				if (keepAlive && events[i].events & EPOLLIN) {
@@ -302,6 +314,7 @@ void Server::handleAccept() {
 }
 
 void Server::remove(Connection* connection) {
+	checkThread();
 	epoll_event event = { 0, connection };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to remove from epoll: " << getLastError());
@@ -393,6 +406,16 @@ std::string Server::getStatsDocument() const {
 void Server::setLameConnectionTimeoutSeconds(int seconds) {
 	LS_INFO(_logger, "Setting lame connection timeout to " << seconds);
 	_lameConnectionTimeoutSeconds = seconds;
+}
+
+void Server::checkThread() const {
+	auto thisTid = gettid();
+	if (thisTid != _threadId) {
+		std::ostringstream o;
+		o << "SeaSocks called on wrong thread : " << thisTid << " instead of " << _threadId;
+		LS_SEVERE(_logger, o.str());
+		throw std::runtime_error(o.str());
+	}
 }
 
 }  // namespace SeaSocks
