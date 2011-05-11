@@ -13,12 +13,7 @@
 	LOG->log(Logger::LEVEL, o.str().c_str()); \
 }
 
-#ifdef LOG_DEBUG_INFO
 #define LS_DEBUG(LOG, STUFF) 	LS_LOG(LOG, DEBUG, STUFF)
-#else
-#define LS_DEBUG(LOG, STUFF)
-#endif
-
 #define LS_INFO(LOG, STUFF) 	LS_LOG(LOG, INFO, STUFF)
 #define LS_WARNING(LOG, STUFF) 	LS_LOG(LOG, WARNING, STUFF)
 #define LS_ERROR(LOG, STUFF) 	LS_LOG(LOG, ERROR, STUFF)
