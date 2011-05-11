@@ -332,18 +332,16 @@ bool Connection::closed() const {
 	return _fd == -1;
 }
 
-bool Connection::checkCloseConditions() {
+bool Connection::checkCloseConditions() const {
   if (_hadSendError) {
-    LS_DEBUG(_logger, "Closing, had an error on send");
-    close();
+    LS_DEBUG(_logger, "Ready for close, had an error on send");
     return false;
   }
 	if (closed()) {
 		return true;
 	}
 	if (_closeOnEmpty && _outBuf.empty()) {
-		LS_DEBUG(_logger, "Closing, now empty");
-		close();
+		LS_DEBUG(_logger, "Ready for close, now empty");
 		return false;
 	}
 	return true;
@@ -408,7 +406,7 @@ bool Connection::handleWebSocketKey3() {
 
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
-	bufferLine("HTTP/1.1 101 WebSocket Protocol Handshake");
+	bufferResponseAndCommonHeaders("HTTP/1.1 101 WebSocket Protocol Handshake");
 	bufferLine("Upgrade: WebSocket");
 	bufferLine("Connection: Upgrade");
 	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size(), false);

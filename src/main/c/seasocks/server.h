@@ -51,6 +51,7 @@ public:
 	void schedule(boost::shared_ptr<Runnable> runnable);
 
 private:
+	bool makeNonBlocking(int fd) const;
 	bool configureSocket(int fd) const;
 	void handleAccept();
 	boost::shared_ptr<Runnable> popNextRunnable();

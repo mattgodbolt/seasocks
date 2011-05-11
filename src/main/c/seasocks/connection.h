@@ -48,7 +48,7 @@ public:
 	size_t bytesSent() const { return _bytesSent; }
 private:
 	bool closed() const;
-	bool checkCloseConditions();
+	bool checkCloseConditions() const;
 
 	bool handleNewData();
 	bool handleHeaders();

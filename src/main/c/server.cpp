@@ -86,12 +86,20 @@ Server::~Server() {
 	}
 }
 
-bool Server::configureSocket(int fd) const {
+bool Server::makeNonBlocking(int fd) const {
 	int yesPlease = 1;
 	if (ioctl(fd, FIONBIO, &yesPlease) != 0) {
-		LS_ERROR(_logger, "Unable to make socket non-blocking: " << getLastError());
+		LS_ERROR(_logger, "Unable to make FD non-blocking: " << getLastError());
 		return false;
 	}
+	return true;
+}
+
+bool Server::configureSocket(int fd) const {
+	if (!makeNonBlocking(fd)) {
+		return false;
+	}
+	int yesPlease = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
 		LS_ERROR(_logger, "Unable to set reuse socket option: " << getLastError());
 		return false;
@@ -142,6 +150,10 @@ void Server::serve(const char* staticPath, int port) {
 		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
 		return;
 	}
+	if (!makeNonBlocking(_pipes[0]) || !makeNonBlocking(_pipes[1])) {
+		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
+		return;
+	}
 
 	epoll_event event = { EPOLLIN, this };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
@@ -160,8 +172,10 @@ void Server::serve(const char* staticPath, int port) {
 	const int maxEvents = 20;
 	epoll_event events[maxEvents];
 
-	processEventQueue(); // For any events before startup.
-	for (;;) {
+	while (!_terminate) {
+		// Always process events first to catch start up events.
+		processEventQueue();
+		std::list<Connection*> toBeDeleted;
 		int numEvents = epoll_wait(_epollFd, events, maxEvents, EpollTimeoutMillis);
 		if (numEvents == -1) {
 			if (errno == EINTR) continue;
@@ -187,10 +201,14 @@ void Server::serve(const char* staticPath, int port) {
 					_terminate = true;
 					break;
 				}
-				if (::read(_pipes[0], &dummy, sizeof(dummy)) == -1) {
-					LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
+				while (::read(_pipes[0], &dummy, sizeof(dummy)) != -1) {
+					// Spin, draining the pipe until it returns EWOULDBLOCK or similar.
 				}
-				// It's a "wake up" event; just process any runnables.
+				if (errno != EAGAIN || errno != EWOULDBLOCK) {
+					LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
+                    _terminate = true;
+				}
+				// It's a "wake up" event; we will process any runnables at the top of the loop.
 			} else {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 				bool keepAlive = true;
@@ -206,13 +224,22 @@ void Server::serve(const char* staticPath, int port) {
 					keepAlive = connection->handleDataReadyForWrite();
 				}
 				if (!keepAlive) {
-					LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
-					delete connection;
+					LS_DEBUG(_logger, "Queuing for delete connection: " << formatAddress(connection->getRemoteAddress()));
+					toBeDeleted.push_back(connection);
 				}
 			}
 		}
-		processEventQueue();
-		if (_terminate) break;
+		for (auto it = toBeDeleted.begin(); it != toBeDeleted.end(); ++it) {
+			auto connection = *it;
+			if (_connections.find(connection) == _connections.end()) {
+				LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*)connection
+						<< formatAddress(connection->getRemoteAddress()));
+				_terminate = true;
+				break;
+			}
+			LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
+			delete connection;
+		}
 	}
 }
 
@@ -224,7 +251,7 @@ void Server::processEventQueue() {
 	}
 	time_t now = time(NULL);
 	if (now >= _nextDeadConnectionCheck) {
-		std::vector<Connection*> toRemove;
+		std::list<Connection*> toRemove;
 		for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
 			time_t numSecondsSinceConnection = now - it->second;
 			auto connection = it->first;
