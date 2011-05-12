@@ -177,7 +177,7 @@ void Server::serve(const char* staticPath, int port) {
 
 	LS_INFO(_logger, "Listening on http://" << formatAddress(sock));
 
-	const int maxEvents = 20;
+	const int maxEvents = 256;
 	epoll_event events[maxEvents];
 
 	while (!_terminate) {
@@ -189,6 +189,15 @@ void Server::serve(const char* staticPath, int port) {
 			if (errno == EINTR) continue;
 			LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
 			return;
+		}
+		if (numEvents == maxEvents) {
+			static time_t lastWarnTime = 0;
+			time_t now = time(NULL);
+			if (now - lastWarnTime >= 60) {
+				LS_WARNING(_logger, "Full event queue; may start starving connections. "
+						   "Will warn at most once a minute");
+				lastWarnTime = now;
+			}
 		}
 		for (int i = 0; i < numEvents; ++i) {
 			if (events[i].data.ptr == this) {
@@ -223,21 +232,17 @@ void Server::serve(const char* staticPath, int port) {
 				if (events[i].events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP)) {
 					LS_WARNING(_logger, "Got epoll error event (" << EventBits(events[i].events)
 							<< ") on connection: " << formatAddress(connection->getRemoteAddress()));
-					keepAlive = false;
-				}
-				if (keepAlive && events[i].events & EPOLLHUP) {
-					LS_INFO(_logger, "Graceful hang-up of socket");
-					keepAlive = false;
-				}
-				if (keepAlive && events[i].events & EPOLLIN) {
-					keepAlive = connection->handleDataReadyForRead();
-				}
-				if (keepAlive && (events[i].events & EPOLLOUT)) {
-					keepAlive = connection->handleDataReadyForWrite();
-				}
-				if (!keepAlive) {
-					LS_DEBUG(_logger, "Queuing for delete connection: " << formatAddress(connection->getRemoteAddress()));
 					toBeDeleted.push_back(connection);
+				} else if (events[i].events & EPOLLHUP) {
+					LS_DEBUG(_logger, "Graceful hang-up (EPOLLHUP) of socket: " << formatAddress(connection->getRemoteAddress()));
+					toBeDeleted.push_back(connection);
+				} else {
+					if (events[i].events & EPOLLOUT) {
+						connection->handleDataReadyForWrite();
+					}
+					if (events[i].events & EPOLLIN) {
+						connection->handleDataReadyForRead();
+					}
 				}
 			}
 		}

@@ -29,8 +29,8 @@ public:
 	virtual ~Connection();
 
 	bool write(const void* data, size_t size, bool flush);
-	bool handleDataReadyForRead();
-	bool handleDataReadyForWrite();
+	void handleDataReadyForRead();
+	void handleDataReadyForWrite();
 
 	int getFd() const { return _fd; }
 
@@ -49,13 +49,12 @@ public:
 private:
 	void finalise();
 	bool closed() const;
-	bool checkCloseConditions() const;
 
-	bool handleNewData();
-	bool handleHeaders();
-	bool handleWebSocketKey3();
-	bool handleWebSocket();
-	bool handleWebSocketMessage(const char* message);
+	void handleNewData();
+	void handleHeaders();
+	void handleWebSocketKey3();
+	void handleWebSocket();
+	void handleWebSocketMessage(const char* message);
 
 	bool bufferLine(const char* line);
 	bool bufferLine(const std::string& line);

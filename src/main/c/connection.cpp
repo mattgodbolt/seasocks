@@ -199,8 +199,8 @@ void Connection::close() {
 	// This is the user-side close request. It only actually only calls shutdown on the socket,
 	// leaving the close of the FD and the cleanup until the destructor runs.
 	_server->checkThread();
-	if (_fd != -1 && ::shutdown(_fd, SHUT_RDWR) == -1) {
-		LS_ERROR(_logger, "Unable to shutdown socket : " << getLastError());
+	if (_fd != -1 && !_shutdown && ::shutdown(_fd, SHUT_RDWR) == -1) {
+		LS_WARNING(_logger, "Unable to shutdown socket : " << getLastError());
 	}
 	_shutdown = true;
 }
@@ -238,10 +238,9 @@ int Connection::safeSend(const void* data, size_t size) {
 }
 
 bool Connection::write(const void* data, size_t size, bool flushIt) {
-	if (closed()) {
+	if (closed() || _closeOnEmpty) {
 		return false;
 	}
-	assert(!_closeOnEmpty);
 	if (size == 0) {
 		return true;
 	}
@@ -284,37 +283,32 @@ bool Connection::bufferLine(const std::string& line) {
 	return write(lineAndCrlf.c_str(), lineAndCrlf.length(), false);
 }
 
-bool Connection::handleDataReadyForRead() {
+void Connection::handleDataReadyForRead() {
 	if (closed()) {
-		return false;
+		return;
 	}
 	size_t curSize = _inBuf.size();
 	_inBuf.resize(curSize + ReadWriteBufferSize);
 	int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
 	if (result == -1) {
 		LS_ERROR(_logger, "Unable to read from socket : " << getLastError());
-		return false;
+		return;
 	}
 	if (result == 0) {
 		LS_INFO(_logger, "Remote end closed connection");
-		return false;
+		close();
+		return;
 	}
 	_bytesReceived += result;
 	_inBuf.resize(curSize + result);
-	if (!handleNewData()) {
-		return false;
-	}
-	return checkCloseConditions();
+	handleNewData();
 }
 
-bool Connection::handleDataReadyForWrite() {
+void Connection::handleDataReadyForWrite() {
 	if (closed()) {
-		return false;
+		return;
 	}
-	if (!flush()) {
-		return false;
-	}
-	return checkCloseConditions();
+	flush();
 }
 
 bool Connection::flush() {
@@ -337,41 +331,36 @@ bool Connection::flush() {
 		}
 		_registeredForWriteEvents = false;
 	}
+	if (_outBuf.empty() && !closed() && _closeOnEmpty) {
+		LS_DEBUG(_logger, "Ready for close, now empty");
+		close();
+	}
 	return true;
 }
 
 bool Connection::closed() const {
-	return _fd == -1;
+	return _fd == -1 || _shutdown;
 }
 
-bool Connection::checkCloseConditions() const {
-	if (closed()) {
-		return true;
-	}
-	if (_closeOnEmpty && _outBuf.empty()) {
-		LS_DEBUG(_logger, "Ready for close, now empty");
-		return false;
-	}
-	return true;
-}
-
-bool Connection::handleNewData() {
+void Connection::handleNewData() {
 	switch (_state) {
 	case READING_HEADERS:
-		return handleHeaders();
+		handleHeaders();
+		break;
 	case READING_WEBSOCKET_KEY3:
-		return handleWebSocketKey3();
+		handleWebSocketKey3();
+		break;
 	case HANDLING_WEBSOCKET:
-		return handleWebSocket();
+		handleWebSocket();
+		break;
 	default:
 		assert(false);
-		return false;
 	}
 }
 
-bool Connection::handleHeaders() {
+void Connection::handleHeaders() {
 	if (_inBuf.size() < 4) {
-		return true;
+		return;
 	}
 	for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
 		if (_inBuf[i] == '\r' &&
@@ -379,21 +368,22 @@ bool Connection::handleHeaders() {
 			_inBuf[i+2] == '\r' &&
 			_inBuf[i+3] == '\n') {
 			if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
-				return false;
+				close();
+				return;
 			}
 			_inBuf.erase(_inBuf.begin(), _inBuf.begin() + i + 4);
-			return handleNewData();
+			handleNewData();
+			return;
 		}
 	}
 	if (_inBuf.size() > MaxHeadersSize) {
-		return sendUnsupportedError("Headers too big");
+		sendUnsupportedError("Headers too big");
 	}
-	return true;
 }
 
-bool Connection::handleWebSocketKey3() {
+void Connection::handleWebSocketKey3() {
 	if (_inBuf.size() < 8) {
-		return true;
+		return;
 	}
 
 	struct {
@@ -427,8 +417,6 @@ bool Connection::handleWebSocketKey3() {
 	if (_webSocketHandler) {
 		_webSocketHandler->onConnect(this);
 	}
-
-	return true;
 }
 
 void Connection::send(const char* webSocketResponse) {
@@ -449,16 +437,17 @@ boost::shared_ptr<Credentials> Connection::credentials() {
 	return _credentials;
 }
 
-bool Connection::handleWebSocket() {
+void Connection::handleWebSocket() {
 	if (_inBuf.empty()) {
-		return true;
+		return;
 	}
 	size_t firstByteNotConsumed = 0;
 	size_t messageStart = 0;
 	while (messageStart < _inBuf.size()) {
 		if (_inBuf[messageStart] != 0) {
 			LS_ERROR(_logger, "Error in WebSocket input stream (got " << (int)_inBuf[messageStart] << ")");
-			return false;
+			close();
+			return;
 		}
 		// TODO: UTF-8
 		size_t endOfMessage = 0;
@@ -470,9 +459,7 @@ bool Connection::handleWebSocket() {
 		}
 		if (endOfMessage != 0) {
 			_inBuf[endOfMessage] = 0;
-			if (!handleWebSocketMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]))) {
-				return false;
-			}
+			handleWebSocketMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]));
 			firstByteNotConsumed = endOfMessage + 1;
 		} else {
 			break;
@@ -484,17 +471,14 @@ bool Connection::handleWebSocket() {
 	if (_inBuf.size() > MaxWebsocketMessageSize) {
 		LS_ERROR(_logger, "WebSocket message too long");
 		close();
-		return false;
 	}
-	return true;
 }
 
-bool Connection::handleWebSocketMessage(const char* message) {
+void Connection::handleWebSocketMessage(const char* message) {
 	LS_DEBUG(_logger, "Got web socket message: '" << message << "'");
 	if (_webSocketHandler) {
 		_webSocketHandler->onData(this, message);
 	}
-	return true;
 }
 
 bool Connection::sendError(int errorCode, const std::string& message, const std::string& body) {
@@ -776,7 +760,7 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 	}
 	ranges = processRangesForStaticData(ranges, stat.st_size);
 	bufferLine("Content-Type: " + getContentType(path));
-	bufferLine("Connection: close");
+	bufferLine("Connection: keep-alive");
 	bufferLine("Accept-Ranges: bytes");
 	bufferLine("Last-Modified: " + webtime(stat.st_mtime));
 	if (!isCacheable(path)) {
@@ -810,7 +794,6 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 			}
 		}
 	}
-	_closeOnEmpty = true;
 	return true;
 }
 
@@ -818,10 +801,9 @@ bool Connection::sendData(const std::string& type, const char* start, size_t siz
 	bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
 	bufferLine("Content-Type: " + type);
 	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(size));
-	bufferLine("Connection: close");
+	bufferLine("Connection: keep-alive");
 	bufferLine("");
 	bool result = write(start, size, true);
-	_closeOnEmpty = true;
 	return result;
 }
 
