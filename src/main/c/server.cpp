@@ -229,12 +229,17 @@ void Server::serve(const char* staticPath, int port) {
 			} else {
 				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
 				bool keepAlive = true;
-				if (events[i].events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP)) {
-					LS_WARNING(_logger, "Got epoll error event (" << EventBits(events[i].events)
+				if (events[i].events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP|EPOLLERR)) {
+					LS_WARNING(_logger, "Got unhandled epoll event (" << EventBits(events[i].events)
 							<< ") on connection: " << formatAddress(connection->getRemoteAddress()));
 					toBeDeleted.push_back(connection);
+				} else if (events[i].events & EPOLLERR) {
+					LS_INFO(_logger, "Error on socket ("
+							<< EventBits(events[i].events) << "): " << formatAddress(connection->getRemoteAddress()));
+					toBeDeleted.push_back(connection);
 				} else if (events[i].events & EPOLLHUP) {
-					LS_DEBUG(_logger, "Graceful hang-up (EPOLLHUP) of socket: " << formatAddress(connection->getRemoteAddress()));
+					LS_DEBUG(_logger, "Graceful hang-up (" << EventBits(events[i].events) <<
+							") of socket: " << formatAddress(connection->getRemoteAddress()));
 					toBeDeleted.push_back(connection);
 				} else {
 					if (events[i].events & EPOLLOUT) {
@@ -273,7 +278,7 @@ void Server::processEventQueue() {
 			time_t numSecondsSinceConnection = now - it->second;
 			auto connection = it->first;
 			if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
-				LS_WARNING(_logger, formatAddress(connection->getRemoteAddress())
+				LS_INFO(_logger, formatAddress(connection->getRemoteAddress())
 						<< " : Killing lame connection - no bytes received after " << numSecondsSinceConnection << "s");
 				toRemove.push_back(connection);
 			}
