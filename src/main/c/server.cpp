@@ -299,14 +299,6 @@ void Server::handleAccept() {
 		LS_ERROR(_logger, "Unable to accept: " << getLastError());
 		return;
 	}
-	struct linger linger;
-	linger.l_linger = 500; // 5 seconds
-	linger.l_onoff = true;
-	if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
-		LS_ERROR(_logger, "Unable to set linger socket option: " << getLastError());
-		::close(fd);
-		return;
-	}
 	if (!configureSocket(fd)) {
 		::close(fd);
 		return;
