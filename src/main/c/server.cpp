@@ -74,7 +74,11 @@ void Server::enableSingleSignOn(SsoOptions ssoOptions) {
 }
 
 Server::~Server() {
-	LS_INFO(_logger, "Server shutting down");
+	LS_INFO(_logger, "Server destruction");
+	shutdown();
+}
+
+void Server::shutdown() {
 	while (!_connections.empty()) {
 		// Deleting the connection closes it and removes it from 'this'.
 		delete _connections.begin()->first;
@@ -117,7 +121,7 @@ bool Server::configureSocket(int fd) const {
 void Server::terminate() {
     _terminate = true;
     uint64_t one = 1;
-	if (::write(_pipes[1], &one, sizeof(one)) == -1) {
+	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
 		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
 	}
 }
@@ -263,6 +267,8 @@ void Server::serve(const char* staticPath, int port) {
 			delete connection;
 		}
 	}
+	LS_INFO(_logger, "Server terminating");
+	shutdown();
 }
 
 void Server::processEventQueue() {

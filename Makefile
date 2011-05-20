@@ -31,7 +31,7 @@ endif
 
 $(FIG_DEP): package.fig
 	rm -rf lib include
-	fig -u --config $(PLATFORM) && touch $@
+	fig -m --config $(PLATFORM) && touch $@
 
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
 APPS_CPP_SRCS=$(shell find $(APPS_SRC) -name '*.cpp')
@@ -99,3 +99,6 @@ clobber: clean
 
 publish: all
 	fig --publish seasocks/$(VERSION)
+
+publish-local: all
+	fig --publish-local seasocks/local

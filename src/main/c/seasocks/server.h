@@ -58,6 +58,7 @@ private:
 	void handleAccept();
 	boost::shared_ptr<Runnable> popNextRunnable();
 	void processEventQueue();
+	void shutdown();
 
 	// Connections, mapped to initial connection time.
 	std::map<Connection*, time_t> _connections;
