@@ -50,6 +50,8 @@ private:
 	void finalise();
 	bool closed() const;
 
+	void closeInternal();
+
 	void handleNewData();
 	void handleHeaders();
 	void handleWebSocketKey3();
@@ -107,6 +109,7 @@ private:
 	boost::shared_ptr<Credentials> _credentials;
 	std::string _requestUri;
 	time_t _connectionTime;
+	bool _shutdownByUser;
 
 	enum State {
 		INVALID,

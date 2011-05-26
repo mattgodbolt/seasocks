@@ -185,7 +185,8 @@ Connection::Connection(
 	  _bytesReceived(0),
 	  _address(address),
 	  _sso(sso),
-	  _credentials(boost::shared_ptr<Credentials>(new Credentials())) {
+	  _credentials(boost::shared_ptr<Credentials>(new Credentials())),
+	  _shutdownByUser(false){
 	assert(server->getStaticPath() != "");
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
@@ -196,7 +197,13 @@ Connection::~Connection() {
 }
 
 void Connection::close() {
-	// This is the user-side close request. It only actually only calls shutdown on the socket,
+	// This is the user-side close requests ONLY! You should Call closeInternal
+	_shutdownByUser = true;
+	closeInternal();
+}
+
+void Connection::closeInternal(){
+	// It only actually only calls shutdown on the socket,
 	// leaving the close of the FD and the cleanup until the destructor runs.
 	_server->checkThread();
 	if (_fd != -1 && !_shutdown && ::shutdown(_fd, SHUT_RDWR) == -1) {
@@ -204,6 +211,7 @@ void Connection::close() {
 	}
 	_shutdown = true;
 }
+
 
 void Connection::finalise() {
 	if (_webSocketHandler) {
@@ -230,7 +238,7 @@ int Connection::safeSend(const void* data, size_t size) {
 			return 0;
 		}
 		LS_WARNING(_logger, "Unable to write to socket : " << getLastError() << " - disabling further writes");
-		close();
+		closeInternal();
 	} else {
 		_bytesSent += sendResult;
 	}
@@ -261,7 +269,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
 	size_t newBufferSize = endOfBuffer + bytesToBuffer;
 	if (newBufferSize >= MaxBufferSize) {
 		LS_WARNING(_logger, "Closing connection: buffer size too large (" << newBufferSize << " > " << MaxBufferSize);
-		close();
+		closeInternal();
 		return false;
 	}
 	_outBuf.resize(newBufferSize);
@@ -296,7 +304,7 @@ void Connection::handleDataReadyForRead() {
 	}
 	if (result == 0) {
 		LS_INFO(_logger, "Remote end closed connection");
-		close();
+		closeInternal();
 		return;
 	}
 	_bytesReceived += result;
@@ -333,7 +341,7 @@ bool Connection::flush() {
 	}
 	if (_outBuf.empty() && !closed() && _closeOnEmpty) {
 		LS_DEBUG(_logger, "Ready for close, now empty");
-		close();
+		closeInternal();
 	}
 	return true;
 }
@@ -368,7 +376,7 @@ void Connection::handleHeaders() {
 			_inBuf[i+2] == '\r' &&
 			_inBuf[i+3] == '\n') {
 			if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
-				close();
+				closeInternal();
 				return;
 			}
 			_inBuf.erase(_inBuf.begin(), _inBuf.begin() + i + 4);
@@ -422,7 +430,9 @@ void Connection::handleWebSocketKey3() {
 void Connection::send(const char* webSocketResponse) {
 	_server->checkThread();
 	if (_shutdown) {
-		LS_ERROR(_logger, "Client wrote to connection after closing it");
+		if (_shutdownByUser) {
+			LS_ERROR(_logger, "Client wrote to connection after closing it");
+		}
 		return;
 	}
 	uint8_t zero = 0;
@@ -446,7 +456,7 @@ void Connection::handleWebSocket() {
 	while (messageStart < _inBuf.size()) {
 		if (_inBuf[messageStart] != 0) {
 			LS_ERROR(_logger, "Error in WebSocket input stream (got " << (int)_inBuf[messageStart] << ")");
-			close();
+			closeInternal();
 			return;
 		}
 		// TODO: UTF-8
@@ -470,7 +480,7 @@ void Connection::handleWebSocket() {
 	}
 	if (_inBuf.size() > MaxWebsocketMessageSize) {
 		LS_ERROR(_logger, "WebSocket message too long");
-		close();
+		closeInternal();
 	}
 }
 
@@ -813,5 +823,6 @@ void Connection::bufferResponseAndCommonHeaders(const std::string& response) {
 	bufferLine("Server: " SEASOCKS_VERSION_STRING);
 	bufferLine("Date: " + now());
 }
+
 
 }  // SeaSocks
