@@ -67,6 +67,28 @@ Server::Server(boost::shared_ptr<Logger> logger)
 	  _nextDeadConnectionCheck(0), _terminate(false), _threadId(0) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = boost::shared_ptr<SsoAuthenticator>();
+
+	_epollFd = epoll_create(10);
+	if (_epollFd == -1) {
+		LS_ERROR(_logger, "Unable to create epoll: " << getLastError());
+		return;
+	}
+
+	/* TASK: once RH5 is dead and gone, use: _wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC); instead. It's lower overhead than this. */
+	if (pipe(_pipes) != 0) {
+		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
+		return;
+	}
+	if (!makeNonBlocking(_pipes[0]) || !makeNonBlocking(_pipes[1])) {
+		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
+		return;
+	}
+
+	epoll_event eventWake = { EPOLLIN, &_pipes[0] };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _pipes[0], &eventWake) == -1) {
+		LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
+		return;
+	}
 }
 
 void Server::enableSingleSignOn(SsoOptions ssoOptions) {
@@ -76,16 +98,7 @@ void Server::enableSingleSignOn(SsoOptions ssoOptions) {
 Server::~Server() {
 	LS_INFO(_logger, "Server destruction");
 	shutdown();
-}
-
-void Server::shutdown() {
-	while (!_connections.empty()) {
-		// Deleting the connection closes it and removes it from 'this'.
-		delete _connections.begin()->first;
-	}
-	if (_listenSock != -1) {
-		close(_listenSock);
-	}
+	// Only shut the pipes and epoll at the very end so any scheduled work
 	if (_pipes[0] != -1) {
 		close(_pipes[0]);
 	}
@@ -94,6 +107,18 @@ void Server::shutdown() {
 	}
 	if (_epollFd != -1) {
 		close(_epollFd);
+	}
+}
+
+void Server::shutdown() {
+	// Stop listening to any further incoming connections.
+	if (_listenSock != -1) {
+		close(_listenSock);
+	}
+	// Disconnect and close any current connections.
+	while (!_connections.empty()) {
+		// Deleting the connection closes it and removes it from 'this'.
+		delete _connections.begin()->first;
 	}
 }
 
@@ -126,16 +151,14 @@ void Server::terminate() {
 	}
 }
 
-void Server::serve(const char* staticPath, int port) {
-	_threadId = gettid();
-	_staticPath = staticPath;
+bool Server::startListening(int port) {
 	_listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listenSock == -1) {
 		LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
-		return;
+		return false;
 	}
 	if (!configureSocket(_listenSock)) {
-		return;
+		return false;
 	}
 	sockaddr_in sock;
 	memset(&sock, 0, sizeof(sock));
@@ -144,128 +167,138 @@ void Server::serve(const char* staticPath, int port) {
 	sock.sin_family = AF_INET;
 	if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
 		LS_ERROR(_logger, "Unable to bind socket: " << getLastError());
-		return;
+		return false;
 	}
 	if (listen(_listenSock, 5) == -1) {
 		LS_ERROR(_logger, "Unable to listen on socket: " << getLastError());
-		return;
+		return false;
 	}
-
-	_epollFd = epoll_create(10);
-	if (_epollFd == -1) {
-		LS_ERROR(_logger, "Unable to create epoll: " << getLastError());
-		return;
-	}
-
-	/* TASK: once RH5 is dead and gone, use: _wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC); instead. It's lower overhead than this. */
-	if (pipe(_pipes) != 0) {
-		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
-		return;
-	}
-	if (!makeNonBlocking(_pipes[0]) || !makeNonBlocking(_pipes[1])) {
-		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
-		return;
-	}
-
 	epoll_event event = { EPOLLIN, this };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
 		LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
-		return;
+		return false;
 	}
 
-	epoll_event eventWake = { EPOLLIN, &_pipes[0] };
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _pipes[0], &eventWake) == -1) {
-		LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
-		return;
+	return true;
+}
+
+void Server::handlePipe() {
+	uint64_t dummy;
+	while (::read(_pipes[0], &dummy, sizeof(dummy)) != -1) {
+		// Spin, draining the pipe until it returns EWOULDBLOCK or similar.
 	}
+	if (errno != EAGAIN || errno != EWOULDBLOCK) {
+		LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
+        _terminate = true;
+	}
+	// It's a "wake up" event; this will just cause the epoll loop to wake up.
+}
 
-	LS_INFO(_logger, "Listening on http://" << formatAddress(sock));
+Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t events) {
+	if (events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP|EPOLLERR)) {
+		LS_WARNING(_logger, "Got unhandled epoll event (" << EventBits(events) << ") on connection: "
+				<< formatAddress(connection->getRemoteAddress()));
+		return Close;
+	} else if (events & EPOLLERR) {
+		LS_INFO(_logger, "Error on socket (" << EventBits(events) << "): "
+				<< formatAddress(connection->getRemoteAddress()));
+		return Close;
+	} else if (events & EPOLLHUP) {
+		LS_DEBUG(_logger, "Graceful hang-up (" << EventBits(events) << ") of socket: "
+				<< formatAddress(connection->getRemoteAddress()));
+		return Close;
+	} else {
+		if (events & EPOLLOUT) {
+			connection->handleDataReadyForWrite();
+		}
+		if (events & EPOLLIN) {
+			connection->handleDataReadyForRead();
+		}
+	}
+	return KeepOpen;
+}
 
+void Server::checkAndDispatchEpoll() {
 	const int maxEvents = 256;
 	epoll_event events[maxEvents];
+
+	std::list<Connection*> toBeDeleted;
+	int numEvents = epoll_wait(_epollFd, events, maxEvents, EpollTimeoutMillis);
+	if (numEvents == -1) {
+		if (errno != EINTR) {
+			LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
+		}
+		return;
+	}
+	if (numEvents == maxEvents) {
+		static time_t lastWarnTime = 0;
+		time_t now = time(NULL);
+		if (now - lastWarnTime >= 60) {
+			LS_WARNING(_logger, "Full event queue; may start starving connections. "
+					   "Will warn at most once a minute");
+			lastWarnTime = now;
+		}
+	}
+	for (int i = 0; i < numEvents; ++i) {
+		if (events[i].data.ptr == this) {
+			if (events[i].events & ~EPOLLIN) {
+				LS_SEVERE(_logger, "Got unexpected event on listening socket ("
+						<< EventBits(events[i].events) << ") - terminating");
+				_terminate = true;
+				break;
+			}
+			handleAccept();
+		} else if (events[i].data.ptr == &_pipes[0]) {
+			if (events[i].events & ~EPOLLIN) {
+				LS_SEVERE(_logger, "Got unexpected event on management pipe ("
+						<< EventBits(events[i].events) << ") - terminating");
+				_terminate = true;
+				break;
+			}
+			handlePipe();
+		} else {
+			auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
+			if (handleConnectionEvents(connection, events[i].events) == Close) {
+				toBeDeleted.push_back(connection);
+			}
+		}
+	}
+	// The connections are all deleted at the end so we've processed any other subject's
+	// closes etc before we call onDisconnect().
+	for (auto it = toBeDeleted.begin(); it != toBeDeleted.end(); ++it) {
+		auto connection = *it;
+		if (_connections.find(connection) == _connections.end()) {
+			LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*)connection
+					<< formatAddress(connection->getRemoteAddress()));
+			_terminate = true;
+			break;
+		}
+		LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
+		delete connection;
+	}
+}
+
+void Server::serve(const char* staticPath, int port) {
+	if (_epollFd == -1 || _pipes[0] == -1 || _pipes[1] == -1) {
+		LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
+		return;
+	}
+	// Stash away "the" server thread id and the path we're serving from.
+	_threadId = gettid();
+	_staticPath = staticPath;
+
+	if (!startListening(port)) {
+		return;
+	}
+
+	char buf[1024];
+	::gethostname(buf, sizeof(buf));
+	LS_INFO(_logger, "Listening on http://" << buf << ":" << port << "/");
 
 	while (!_terminate) {
 		// Always process events first to catch start up events.
 		processEventQueue();
-		std::list<Connection*> toBeDeleted;
-		int numEvents = epoll_wait(_epollFd, events, maxEvents, EpollTimeoutMillis);
-		if (numEvents == -1) {
-			if (errno == EINTR) continue;
-			LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
-			return;
-		}
-		if (numEvents == maxEvents) {
-			static time_t lastWarnTime = 0;
-			time_t now = time(NULL);
-			if (now - lastWarnTime >= 60) {
-				LS_WARNING(_logger, "Full event queue; may start starving connections. "
-						   "Will warn at most once a minute");
-				lastWarnTime = now;
-			}
-		}
-		for (int i = 0; i < numEvents; ++i) {
-			if (events[i].data.ptr == this) {
-				if (events[i].events & ~EPOLLIN) {
-					LS_SEVERE(_logger, "Got unexpected event on listening socket ("
-							<< EventBits(events[i].events) << ") - terminating");
-					_terminate = true;
-					break;
-				}
-				if (events[i].events & EPOLLIN) {
-					handleAccept();
-				}
-			} else if (events[i].data.ptr == &_pipes[0]) {
-				uint64_t dummy;
-				if (events[i].events & ~EPOLLIN) {
-					LS_SEVERE(_logger, "Got unexpected event on management pipe ("
-							<< EventBits(events[i].events) << ") - terminating");
-					_terminate = true;
-					break;
-				}
-				while (::read(_pipes[0], &dummy, sizeof(dummy)) != -1) {
-					// Spin, draining the pipe until it returns EWOULDBLOCK or similar.
-				}
-				if (errno != EAGAIN || errno != EWOULDBLOCK) {
-					LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
-                    _terminate = true;
-				}
-				// It's a "wake up" event; we will process any runnables at the top of the loop.
-			} else {
-				auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
-				bool keepAlive = true;
-				if (events[i].events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP|EPOLLERR)) {
-					LS_WARNING(_logger, "Got unhandled epoll event (" << EventBits(events[i].events)
-							<< ") on connection: " << formatAddress(connection->getRemoteAddress()));
-					toBeDeleted.push_back(connection);
-				} else if (events[i].events & EPOLLERR) {
-					LS_INFO(_logger, "Error on socket ("
-							<< EventBits(events[i].events) << "): " << formatAddress(connection->getRemoteAddress()));
-					toBeDeleted.push_back(connection);
-				} else if (events[i].events & EPOLLHUP) {
-					LS_DEBUG(_logger, "Graceful hang-up (" << EventBits(events[i].events) <<
-							") of socket: " << formatAddress(connection->getRemoteAddress()));
-					toBeDeleted.push_back(connection);
-				} else {
-					if (events[i].events & EPOLLOUT) {
-						connection->handleDataReadyForWrite();
-					}
-					if (events[i].events & EPOLLIN) {
-						connection->handleDataReadyForRead();
-					}
-				}
-			}
-		}
-		for (auto it = toBeDeleted.begin(); it != toBeDeleted.end(); ++it) {
-			auto connection = *it;
-			if (_connections.find(connection) == _connections.end()) {
-				LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*)connection
-						<< formatAddress(connection->getRemoteAddress()));
-				_terminate = true;
-				break;
-			}
-			LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
-			delete connection;
-		}
+		checkAndDispatchEpoll();
 	}
 	LS_INFO(_logger, "Server terminating");
 	shutdown();

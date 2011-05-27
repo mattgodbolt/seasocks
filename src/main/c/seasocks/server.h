@@ -58,7 +58,14 @@ private:
 	void handleAccept();
 	boost::shared_ptr<Runnable> popNextRunnable();
 	void processEventQueue();
+
+	bool startListening(int port);
 	void shutdown();
+
+	void checkAndDispatchEpoll();
+	void handlePipe();
+	enum NewState { KeepOpen, Close };
+	NewState handleConnectionEvents(Connection* connection, uint32_t events);
 
 	// Connections, mapped to initial connection time.
 	std::map<Connection*, time_t> _connections;

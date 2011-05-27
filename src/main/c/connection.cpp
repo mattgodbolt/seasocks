@@ -824,5 +824,4 @@ void Connection::bufferResponseAndCommonHeaders(const std::string& response) {
 	bufferLine("Date: " + now());
 }
 
-
 }  // SeaSocks
