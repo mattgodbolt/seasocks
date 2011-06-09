@@ -407,11 +407,15 @@ boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* en
 }
 
 void Server::schedule(boost::shared_ptr<Runnable> runnable) {
-	LockGuard lock(_pendingRunnableMutex);
-	_pendingRunnables.push_back(runnable);
+  {
+  	LockGuard lock(_pendingRunnableMutex);
+  	_pendingRunnables.push_back(runnable);
+  }
 	uint64_t one = 1;
 	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
-		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+  		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+    }
 	}
 }
 
