@@ -824,4 +824,15 @@ void Connection::bufferResponseAndCommonHeaders(const std::string& response) {
 	bufferLine("Date: " + now());
 }
 
+void Connection::setLinger() {
+	if (_fd == -1) {
+		return;
+	}
+	const int secondsToLinger = 1;
+	struct linger linger = { true, secondsToLinger };
+	if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
+		LS_INFO(_logger, "Unable to set linger on socket");
+	}
+}
+
 }  // SeaSocks

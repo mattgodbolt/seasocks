@@ -41,6 +41,8 @@ public:
 	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
 	virtual const std::string& getRequestUri() const { return _requestUri; }
 
+	void setLinger();
+
 	size_t inputBufferSize() const { return _inBuf.size(); }
 	size_t outputBufferSize() const { return _outBuf.size(); }
 

@@ -118,7 +118,9 @@ void Server::shutdown() {
 	// Disconnect and close any current connections.
 	while (!_connections.empty()) {
 		// Deleting the connection closes it and removes it from 'this'.
-		delete _connections.begin()->first;
+		Connection* toBeClosed = _connections.begin()->first;
+		toBeClosed->setLinger();
+		delete toBeClosed;
 	}
 }
 
