@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
@@ -62,7 +63,7 @@ int gettid() {
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1),
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(2),
 	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
 	  _nextDeadConnectionCheck(0), _terminate(false), _threadId(0) {
 	_pipes[0] = _pipes[1] = -1;
@@ -135,9 +136,26 @@ bool Server::configureSocket(int fd) const {
 	if (!makeNonBlocking(fd)) {
 		return false;
 	}
-	int yesPlease = 1;
+	const int yesPlease = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
 		LS_ERROR(_logger, "Unable to set reuse socket option: " << getLastError());
+		return false;
+	}
+	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yesPlease, sizeof(yesPlease)) == -1) {
+		LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
+		return false;
+	}
+	const int oneSecond = 1;
+	if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &oneSecond, sizeof(oneSecond)) == -1) {
+		LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
+		return false;
+	}
+	if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &oneSecond, sizeof(oneSecond)) == -1) {
+		LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
+		return false;
+	}
+	if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &_maxKeepAliveDrops, sizeof(_maxKeepAliveDrops)) == -1) {
+		LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
 		return false;
 	}
 	return true;
@@ -447,6 +465,11 @@ std::string Server::getStatsDocument() const {
 void Server::setLameConnectionTimeoutSeconds(int seconds) {
 	LS_INFO(_logger, "Setting lame connection timeout to " << seconds);
 	_lameConnectionTimeoutSeconds = seconds;
+}
+
+void Server::setMaxKeepAliveDrops(int maxKeepAliveDrops) {
+	LS_INFO(_logger, "Setting max keep alive drops to " << maxKeepAliveDrops);
+	_maxKeepAliveDrops = maxKeepAliveDrops;
 }
 
 void Server::checkThread() const {

@@ -28,6 +28,12 @@ public:
 	// If we haven't heard anything ever on a connection for this long, kill it.
 	// This is possibly caused by bad WebSocket implementation in Chrome.
 	void setLameConnectionTimeoutSeconds(int seconds);
+	// Sets the maximum number of TCP level keepalives that we can miss before
+	// we let the OS consider the connection dead. We configure keepalives every second,
+	// so this is also the minimum number of seconds it takes to notice a badly-behaved
+	// dead connection (e.g. a laptop going into sleep mode or a hard-crashed
+	// machine.
+	void setMaxKeepAliveDrops(int maxKeepAliveDrops);
 
 	// Serves static content from the given port on the current thread, until terminate is called
 	void serve(const char* staticPath, int port);
@@ -73,6 +79,7 @@ private:
 	int _listenSock;
 	int _epollFd;
 	int _pipes[2];
+	int _maxKeepAliveDrops;
 	int _lameConnectionTimeoutSeconds;
 	time_t _nextDeadConnectionCheck;
 
