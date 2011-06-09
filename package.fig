@@ -21,3 +21,4 @@ config redhat
   include boost/1.43.redhat5
   include :default
 end
+
