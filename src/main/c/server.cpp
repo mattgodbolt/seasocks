@@ -300,6 +300,8 @@ void Server::serve(const char* staticPath, int port) {
 		processEventQueue();
 		checkAndDispatchEpoll();
 	}
+	// Reasonable effort to ensure anything enqueued during terminate has a chance to run.
+	processEventQueue();
 	LS_INFO(_logger, "Server terminating");
 	shutdown();
 }
