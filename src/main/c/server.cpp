@@ -119,7 +119,9 @@ void Server::shutdown() {
 	// Disconnect and close any current connections.
 	while (!_connections.empty()) {
 		// Deleting the connection closes it and removes it from 'this'.
-		delete _connections.begin()->first;
+		Connection* toBeClosed = _connections.begin()->first;
+		toBeClosed->setLinger();
+		delete toBeClosed;
 	}
 }
 
@@ -318,6 +320,8 @@ void Server::serve(const char* staticPath, int port) {
 		processEventQueue();
 		checkAndDispatchEpoll();
 	}
+	// Reasonable effort to ensure anything enqueued during terminate has a chance to run.
+	processEventQueue();
 	LS_INFO(_logger, "Server terminating");
 	shutdown();
 }
@@ -421,11 +425,15 @@ boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* en
 }
 
 void Server::schedule(boost::shared_ptr<Runnable> runnable) {
-	LockGuard lock(_pendingRunnableMutex);
-	_pendingRunnables.push_back(runnable);
+  {
+  	LockGuard lock(_pendingRunnableMutex);
+  	_pendingRunnables.push_back(runnable);
+  }
 	uint64_t one = 1;
 	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
-		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+  		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+    }
 	}
 }
 

@@ -187,12 +187,16 @@ Connection::Connection(
 	  _sso(sso),
 	  _credentials(boost::shared_ptr<Credentials>(new Credentials())),
 	  _shutdownByUser(false){
-	assert(server->getStaticPath() != "");
+  if (server) {
+  	assert(server->getStaticPath() != "");
+  }
 	_webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
 Connection::~Connection() {
-	_server->checkThread();
+  if (_server) {
+  	_server->checkThread();
+  }
 	finalise();
 }
 
@@ -451,7 +455,6 @@ void Connection::handleWebSocket() {
 	if (_inBuf.empty()) {
 		return;
 	}
-	size_t firstByteNotConsumed = 0;
 	size_t messageStart = 0;
 	while (messageStart < _inBuf.size()) {
 		if (_inBuf[messageStart] != 0) {
@@ -470,13 +473,13 @@ void Connection::handleWebSocket() {
 		if (endOfMessage != 0) {
 			_inBuf[endOfMessage] = 0;
 			handleWebSocketMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]));
-			firstByteNotConsumed = endOfMessage + 1;
+			messageStart = endOfMessage + 1;
 		} else {
 			break;
 		}
 	}
-	if (firstByteNotConsumed != 0) {
-		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + firstByteNotConsumed);
+	if (messageStart != 0) {
+		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + messageStart);
 	}
 	if (_inBuf.size() > MaxWebsocketMessageSize) {
 		LS_ERROR(_logger, "WebSocket message too long");
@@ -822,6 +825,17 @@ void Connection::bufferResponseAndCommonHeaders(const std::string& response) {
 	bufferLine(response);
 	bufferLine("Server: " SEASOCKS_VERSION_STRING);
 	bufferLine("Date: " + now());
+}
+
+void Connection::setLinger() {
+	if (_fd == -1) {
+		return;
+	}
+	const int secondsToLinger = 1;
+	struct linger linger = { true, secondsToLinger };
+	if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
+		LS_INFO(_logger, "Unable to set linger on socket");
+	}
 }
 
 }  // SeaSocks

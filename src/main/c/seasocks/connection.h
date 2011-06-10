@@ -41,11 +41,21 @@ public:
 	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
 	virtual const std::string& getRequestUri() const { return _requestUri; }
 
+	void setLinger();
+
 	size_t inputBufferSize() const { return _inBuf.size(); }
 	size_t outputBufferSize() const { return _outBuf.size(); }
 
 	size_t bytesReceived() const { return _bytesReceived; }
 	size_t bytesSent() const { return _bytesSent; }
+
+  // For testing:
+  std::vector<uint8_t>& getInputBuffer() { return _inBuf; }
+	void handleWebSocket();
+  void setHandler(boost::shared_ptr<WebSocket::Handler> handler) {
+    _webSocketHandler = handler;
+  }
+
 private:
 	void finalise();
 	bool closed() const;
@@ -55,7 +65,6 @@ private:
 	void handleNewData();
 	void handleHeaders();
 	void handleWebSocketKey3();
-	void handleWebSocket();
 	void handleWebSocketMessage(const char* message);
 
 	bool bufferLine(const char* line);
