@@ -53,7 +53,7 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 
 const int EpollTimeoutMillis = 500;  // Twice a second is ample.
 const int DefaultLameConnectionTimeoutSeconds = 10;
-
+const int DefaultKeepAliveDrops = 5;
 int gettid() {
 	return syscall(SYS_gettid);
 }
@@ -63,7 +63,7 @@ int gettid() {
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(2),
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(DefaultKeepAliveDrops),
 	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
 	  _nextDeadConnectionCheck(0), _terminate(false), _threadId(0) {
 	_pipes[0] = _pipes[1] = -1;
