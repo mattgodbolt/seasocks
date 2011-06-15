@@ -25,14 +25,16 @@ public:
 	void enableSingleSignOn(SsoOptions ssoOptions);
 	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
 			bool allowCrossOriginRequests = false);
+
 	// If we haven't heard anything ever on a connection for this long, kill it.
 	// This is possibly caused by bad WebSocket implementation in Chrome.
 	void setLameConnectionTimeoutSeconds(int seconds);
+
 	// Sets the maximum number of TCP level keepalives that we can miss before
 	// we let the OS consider the connection dead. We configure keepalives every second,
 	// so this is also the minimum number of seconds it takes to notice a badly-behaved
-	// dead connection (e.g. a laptop going into sleep mode or a hard-crashed
-	// machine.
+	// dead connection, e.g. a laptop going into sleep mode or a hard-crashed machine.
+	// A value of 0 disables keep alives, which is the default.
 	void setMaxKeepAliveDrops(int maxKeepAliveDrops);
 
 	// Serves static content from the given port on the current thread, until terminate is called

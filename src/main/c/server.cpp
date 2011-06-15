@@ -53,7 +53,6 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 
 const int EpollTimeoutMillis = 500;  // Twice a second is ample.
 const int DefaultLameConnectionTimeoutSeconds = 10;
-const int DefaultKeepAliveDrops = 5;
 int gettid() {
 	return syscall(SYS_gettid);
 }
@@ -63,7 +62,7 @@ int gettid() {
 namespace SeaSocks {
 
 Server::Server(boost::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(DefaultKeepAliveDrops),
+	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
 	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
 	  _nextDeadConnectionCheck(0), _terminate(false), _threadId(0) {
 	_pipes[0] = _pipes[1] = -1;
@@ -143,22 +142,24 @@ bool Server::configureSocket(int fd) const {
 		LS_ERROR(_logger, "Unable to set reuse socket option: " << getLastError());
 		return false;
 	}
-	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yesPlease, sizeof(yesPlease)) == -1) {
-		LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
-		return false;
-	}
-	const int oneSecond = 1;
-	if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &oneSecond, sizeof(oneSecond)) == -1) {
-		LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
-		return false;
-	}
-	if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &oneSecond, sizeof(oneSecond)) == -1) {
-		LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
-		return false;
-	}
-	if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &_maxKeepAliveDrops, sizeof(_maxKeepAliveDrops)) == -1) {
-		LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
-		return false;
+	if (_maxKeepAliveDrops > 0) {
+		if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yesPlease, sizeof(yesPlease)) == -1) {
+			LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
+			return false;
+		}
+		const int oneSecond = 1;
+		if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &oneSecond, sizeof(oneSecond)) == -1) {
+			LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
+			return false;
+		}
+		if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &oneSecond, sizeof(oneSecond)) == -1) {
+			LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
+			return false;
+		}
+		if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &_maxKeepAliveDrops, sizeof(_maxKeepAliveDrops)) == -1) {
+			LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
+			return false;
+		}
 	}
 	return true;
 }
