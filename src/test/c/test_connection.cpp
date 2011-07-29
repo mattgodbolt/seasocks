@@ -18,7 +18,6 @@ public:
   }
   virtual void onConnect(WebSocket*) {}
   virtual void onData(WebSocket*, const char* data) {
-    printf("Got data: %s\n", data);
     if (_stage == 0) { ASSERT_STRING_EQUALS(data, "a"); }
     else if (_stage == 1) { ASSERT_STRING_EQUALS(data, "b"); }
     else {
@@ -29,7 +28,7 @@ public:
   virtual void onDisconnect(WebSocket*) {}
 };
 
-void x() {
+void breaks_apart_messages_in_same_buffer() {
   sockaddr_in addr;
   boost::shared_ptr<Logger> logger(new IgnoringLogger);
   Connection connection(logger, NULL, -1, addr, boost::shared_ptr<SsoAuthenticator>());
@@ -41,7 +40,7 @@ void x() {
 }
 
 int main(int argc, const char* argv[]) {
-	RUN(x);
+	RUN(breaks_apart_messages_in_same_buffer);
 	return TEST_REPORT();
 }
  
