@@ -362,8 +362,11 @@ void Connection::handleNewData() {
 	case READING_WEBSOCKET_KEY3:
 		handleWebSocketKey3();
 		break;
-	case HANDLING_WEBSOCKET:
-		handleWebSocket();
+	case HANDLING_HIXIE_WEBSOCKET:
+		handleHixieWebSocket();
+		break;
+	case HANDLING_HYBI_WEBSOCKET:
+		handleHybiWebSocket();
 		break;
 	default:
 		assert(false);
@@ -419,12 +422,12 @@ void Connection::handleWebSocketKey3() {
 	bufferResponseAndCommonHeaders("HTTP/1.1 101 WebSocket Protocol Handshake");
 	bufferLine("Upgrade: WebSocket");
 	bufferLine("Connection: Upgrade");
-	write(&_webSockExtraHeaders[0], _webSockExtraHeaders.size(), false);
+	write(&_hixieExtraHeaders[0], _hixieExtraHeaders.size(), false);
 	bufferLine("");
 
 	write(&digest, 16, true);
 
-	_state = HANDLING_WEBSOCKET;
+	_state = HANDLING_HIXIE_WEBSOCKET;
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
 	if (_webSocketHandler) {
 		_webSocketHandler->onConnect(this);
@@ -439,11 +442,32 @@ void Connection::send(const char* webSocketResponse) {
 		}
 		return;
 	}
-	uint8_t zero = 0;
-	if (!write(&zero, 1, false)) return;
-	if (!write(webSocketResponse, strlen(webSocketResponse), false)) return;
-	uint8_t effeff = 0xff;
-	write(&effeff, 1, true);
+	auto messageLength = strlen(webSocketResponse);
+	if (_state == HANDLING_HIXIE_WEBSOCKET) {
+		uint8_t zero = 0;
+		if (!write(&zero, 1, false)) return;
+		if (!write(webSocketResponse, messageLength, false)) return;
+		uint8_t effeff = 0xff;
+		write(&effeff, 1, true);
+		return;
+	}
+	uint8_t firstByte = 0x81; // Text frame, final in sequence.
+	if (!write(&firstByte, 1, false)) return;
+	if (messageLength < 126) {
+		uint8_t nextByte = messageLength << 1; // No MASK bit set.
+		if (!write(&nextByte, 1, false)) return;
+	} else if (messageLength < 65536) {
+		uint8_t nextByte = 126 << 1; // No MASK bit set.
+		if (!write(&nextByte, 1, false)) return;
+		auto lengthBytes = htons(messageLength);
+		if (!write(&lengthBytes, 2, false)) return;
+	} else {
+		uint8_t nextByte = 127 << 1; // No MASK bit set.
+		if (!write(&nextByte, 1, false)) return;
+		uint64_t lengthBytes = __bswap_64(messageLength);
+		if (!write(&lengthBytes, 8, false)) return;
+	}
+	write(webSocketResponse, messageLength, true);
 }
 
 boost::shared_ptr<Credentials> Connection::credentials() {
@@ -451,7 +475,7 @@ boost::shared_ptr<Credentials> Connection::credentials() {
 	return _credentials;
 }
 
-void Connection::handleWebSocket() {
+void Connection::handleHixieWebSocket() {
 	if (_inBuf.empty()) {
 		return;
 	}
@@ -487,6 +511,52 @@ void Connection::handleWebSocket() {
 	}
 }
 
+void Connection::handleHybiWebSocket() {
+	if (_inBuf.empty()) {
+		return;
+	}
+	size_t messageStart = 0;
+	wrap a nice class for this...it's shite this way
+	while (messageStart < _inBuf.size()) {
+		if ((_inBuf[messageStart] & 1) == 0) {
+			// FIN bit is not clear...
+			// TODO: support
+			LS_ERROR(_logger, "Received hybi frame without FIN bit set - unsupported");
+			closeInternal();
+			return;
+		}
+		if (_inBuf[messageStart] & (7<<1) != 0) {
+			LS_ERROR(_logger, "Received hybi frame without reserved bits set - error");
+			closeInternal();
+			return;
+		}
+		uint32_t mask = 0;
+		auto opcode = (_inBuf[messageStart] >> 4) & 0xf;
+		size_t payloadLength = (_inBuf[1] >> 1) & 0x7f;
+		if (payloadLength == 126) {
+			if (_inBuf.size() < 4) { break; }
+			payloadLength = htons(reinterpret_cast<uint16_t*>(&_inBuf[2]));
+			ptr += 2;
+		} else if (payloadLength == 127) {
+			if (_inBuf.size() < 10) { break; }
+			payloadLength = __bswap_64(reinterpret_cast<uint64_t*>(&_inBuf[2]));
+			ptr += 8;
+		}
+		if (payloadLength > MaxWebsocketMessageSize) {
+			LS_ERROR(_logger, "WebSocket message too long");
+			closeInternal();
+		}
+		if (_inBuf[1] & 1) {
+			// MASK is set.
+			if (_inBuf.size() < ptr + 4) { break; }
+			mask = htonl(reinterpret_cast<uint32_t*>(&_inBuf[ptr]));
+			ptr += 4;
+		}
+		if (_inBuf.size() < ptr + payloadLength) { return ; }
+
+	// todo.....
+}
+
 void Connection::handleWebSocketMessage(const char* message) {
 	LS_DEBUG(_logger, "Got web socket message: '" << message << "'");
 	if (_webSocketHandler) {
@@ -495,7 +565,7 @@ void Connection::handleWebSocketMessage(const char* message) {
 }
 
 bool Connection::sendError(int errorCode, const std::string& message, const std::string& body) {
-	assert(_state != HANDLING_WEBSOCKET);
+	assert(_state != HANDLING_HIXIE_WEBSOCKET);
 	bufferResponseAndCommonHeaders("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
 	auto errorContent = findEmbeddedContent("/_error.html");
 	std::string document;
@@ -578,6 +648,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	std::string host;
 	std::string cookie;
 	std::string rangeHeader;
+	std::string hybiKey;
+	int webSocketVersion = 0;
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -597,18 +669,24 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		} else if (strcasecmp(key, "Upgrade") == 0 && strcasecmp(value, "websocket") == 0) {
 			haveWebSocketUprade = true;
 		} else if (strcasecmp(key, "Sec-WebSocket-Key1") == 0) {
+			// Hixie only.
 			_webSocketKeys[0] = parseWebSocketKey(value);
 		} else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
+			// Hixie only.
 			_webSocketKeys[1] = parseWebSocketKey(value);
+		} else if (strcasecmp(key, "Sec-WebSocket-Key") == 0) {
+			hybiKey = strValue;
 		} else if (strcasecmp(key, "Origin") == 0 && allowCrossOrigin) {
-			_webSockExtraHeaders += "Sec-WebSocket-Origin: " + strValue + "\r\n";
+			_hixieExtraHeaders += "Sec-WebSocket-Origin: " + strValue + "\r\n";
 		} else if (strcasecmp(key, "Host") == 0) {
 			if (!allowCrossOrigin) {
-				_webSockExtraHeaders += "Sec-WebSocket-Origin: http://" + strValue + "\r\n";
+				_hixieExtraHeaders += "Sec-WebSocket-Origin: http://" + strValue + "\r\n";
 			}
-			_webSockExtraHeaders += "Sec-WebSocket-Location: ws://" + strValue + requestUri;
-			_webSockExtraHeaders += "\r\n";
+			_hixieExtraHeaders += "Sec-WebSocket-Location: ws://" + strValue + requestUri;
+			_hixieExtraHeaders += "\r\n";
 			host = strValue;
+		} else if (strcasecmp(key, "Sec-WebSocket-Version") == 0) {
+			webSocketVersion = boost::lexical_cast<int>(strValue);
 		} else if (strcasecmp(key, "Cookie") == 0) {
 			cookie = strValue;
 		} else if (strcasecmp(key, "Range") == 0) {
@@ -662,17 +740,44 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	// </SSO>
 
 	if (haveConnectionUpgrade && haveWebSocketUprade) {
-		LS_DEBUG(_logger, "Got a websocket with key1=0x" << std::hex << _webSocketKeys[0] << ", key2=0x" << _webSocketKeys[1]);
 		_webSocketHandler = _server->getWebSocketHandler(requestUri);
 		if (!_webSocketHandler) {
 			LS_ERROR(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
 			return send404(requestUri);
 		}
-		_state = READING_WEBSOCKET_KEY3;
-		return true;
+		if (webSocketVersion == 0) {
+			// Hixie
+			LS_DEBUG(_logger, "Got a hixie websocket with key1=0x" << std::hex << _webSocketKeys[0] << ", key2=0x" << _webSocketKeys[1]);
+			_state = READING_WEBSOCKET_KEY3;
+			return true;
+		}
+		return handleHybiHandshake(webSocketVersion, hybiKey);
 	} else {
 		return sendStaticData(requestUri, rangeHeader);
 	}
+}
+
+bool Connection::handleHybiHandshake(
+		int webSocketVersion,
+		const std::string& webSocketKey) {
+	if (webSocketVersion != 8) {
+		return sendBadRequest("Invalid websocket version");
+	}
+	LS_DEBUG(_logger, "Got a hybi-8 websocket with key=" << webSocketKey);
+	const std::string hashString = webSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+	LS_DEBUG(_logger, "Attempting websocket upgrade");
+
+	bufferResponseAndCommonHeaders("HTTP/1.1 101 WebSocket Protocol Handshake");
+	bufferLine("Upgrade: WebSocket");
+	bufferLine("Connection: Upgrade");
+	// TODO: SHA and base64 here.
+	bufferLine("Sec-WebSocket-Accept: " + hashString);
+	bufferLine("");
+	flush();
+
+	_state = HANDLING_HYBI_WEBSOCKET;
+	return true;
 }
 
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {

@@ -49,12 +49,13 @@ public:
 	size_t bytesReceived() const { return _bytesReceived; }
 	size_t bytesSent() const { return _bytesSent; }
 
-  // For testing:
-  std::vector<uint8_t>& getInputBuffer() { return _inBuf; }
-	void handleWebSocket();
-  void setHandler(boost::shared_ptr<WebSocket::Handler> handler) {
-    _webSocketHandler = handler;
-  }
+	// For testing:
+	std::vector<uint8_t>& getInputBuffer() { return _inBuf; }
+	void handleHixieWebSocket();
+	void handleHybiWebSocket();
+	void setHandler(boost::shared_ptr<WebSocket::Handler> handler) {
+		_webSocketHandler = handler;
+	}
 
 private:
 	void finalise();
@@ -70,6 +71,8 @@ private:
 	bool bufferLine(const char* line);
 	bool bufferLine(const std::string& line);
 	bool flush();
+
+	bool handleHybiHandshake(int webSocketVersion, const std::string& webSocketKey);
 
 	// Send an error document. Returns 'true' for convenience in handle*() routines.
 	bool sendError(int errorCode, const std::string& message, const std::string& document);
@@ -111,8 +114,8 @@ private:
 	size_t _bytesReceived;
 	std::vector<uint8_t> _inBuf;
 	std::vector<uint8_t> _outBuf;
-	// Populated only during web socket header parsing.
-	std::string _webSockExtraHeaders;
+	// Populated only during Hixie web socket header parsing.
+	std::string _hixieExtraHeaders;
 	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
 	boost::shared_ptr<SsoAuthenticator> _sso;
 	boost::shared_ptr<Credentials> _credentials;
@@ -124,7 +127,8 @@ private:
 		INVALID,
 		READING_HEADERS,
 		READING_WEBSOCKET_KEY3,
-		HANDLING_WEBSOCKET
+		HANDLING_HIXIE_WEBSOCKET,
+		HANDLING_HYBI_WEBSOCKET,
 	};
 	State _state;
 
