@@ -453,18 +453,22 @@ void Connection::send(const char* webSocketResponse) {
 		write(&effeff, 1, true);
 		return;
 	}
-	uint8_t firstByte = 0x81; // Text frame, final in sequence.
+	sendHybi(HybiPacketDecoder::OPCODE_TEXT, webSocketResponse, messageLength);
+}
+
+void Connection::sendHybi(int opcode, const char* webSocketResponse, size_t messageLength) {
+	uint8_t firstByte = 0x80 | opcode;
 	if (!write(&firstByte, 1, false)) return;
 	if (messageLength < 126) {
-		uint8_t nextByte = messageLength << 1; // No MASK bit set.
+		uint8_t nextByte = messageLength; // No MASK bit set.
 		if (!write(&nextByte, 1, false)) return;
 	} else if (messageLength < 65536) {
-		uint8_t nextByte = 126 << 1; // No MASK bit set.
+		uint8_t nextByte = 126; // No MASK bit set.
 		if (!write(&nextByte, 1, false)) return;
 		auto lengthBytes = htons(messageLength);
 		if (!write(&lengthBytes, 2, false)) return;
 	} else {
-		uint8_t nextByte = 127 << 1; // No MASK bit set.
+		uint8_t nextByte = 127; // No MASK bit set.
 		if (!write(&nextByte, 1, false)) return;
 		uint64_t lengthBytes = __bswap_64(messageLength);
 		if (!write(&lengthBytes, 8, false)) return;
@@ -533,7 +537,7 @@ void Connection::handleHybiWebSocket() {
 			handleWebSocketMessage(decodedMessage.c_str());
 			break;
 		case HybiPacketDecoder::Ping:
-			//TODO: send a pong.
+			sendHybi(HybiPacketDecoder::OPCODE_PONG, decodedMessage.c_str(), decodedMessage.size());
 			break;
 		case HybiPacketDecoder::NoMessage:
 			done = true;
@@ -766,6 +770,9 @@ bool Connection::handleHybiHandshake(
 	bufferLine("");
 	flush();
 
+	if (_webSocketHandler) {
+		_webSocketHandler->onConnect(this);
+	}
 	_state = HANDLING_HYBI_WEBSOCKET;
 	return true;
 }

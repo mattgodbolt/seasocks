@@ -54,6 +54,20 @@ void testWithPartialMessageFollowing() {
 	testSingleString(HybiPacketDecoder::Message, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c}, 7);
 }
 
+void testWithTwoMessages() {
+	std::vector<uint8_t> data {
+		0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
+		0x81, 0x07, 0x47, 0x6f, 0x6f, 0x64, 0x62, 0x79, 0x65};
+	HybiPacketDecoder decoder(ignore, data);
+	std::string decoded;
+	ASSERT_EQUALS(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
+	ASSERT_EQUALS("Hello", decoded);
+	ASSERT_EQUALS(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
+	ASSERT_EQUALS("Goodbye", decoded);
+	ASSERT_EQUALS(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQUALS(data.size(), decoder.numBytesDecoded());
+}
+
 void testLongStringExamples() {
 	// These are the binary examples, but cast as strings.
 	testLongString(256, {0x81, 0x7E, 0x01, 0x00});
@@ -67,6 +81,7 @@ void testAccept() {
 int main(int argc, const char* argv[]) {
 	RUN(testTextExamples);
 	RUN(testWithPartialMessageFollowing);
+	RUN(testWithTwoMessages);
 	RUN(testLongStringExamples);
 	RUN(testAccept);
 	return TEST_REPORT();

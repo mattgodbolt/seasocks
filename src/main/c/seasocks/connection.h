@@ -82,6 +82,8 @@ private:
 	bool send404(const std::string& path);
 	bool sendBadRequest(const std::string& reason);
 
+	void sendHybi(int opcode, const char* webSocketResponse, size_t messageLength);
+
 	bool processHeaders(uint8_t* first, uint8_t* last);
 	bool sendData(const std::string& type, const char* start, size_t size);
 
