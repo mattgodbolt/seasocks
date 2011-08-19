@@ -1,6 +1,7 @@
 #include "tinytest.h"
 
 #include <string>
+#include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
 #include "seasocks/ignoringlogger.h"
 #include <iostream>
@@ -59,10 +60,15 @@ void testLongStringExamples() {
 	testLongString(65536, {0x81, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 }
 
+void testAccept() {
+	ASSERT_EQUALS("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", getAcceptKey("dGhlIHNhbXBsZSBub25jZQ=="));
+}
+
 int main(int argc, const char* argv[]) {
 	RUN(testTextExamples);
 	RUN(testWithPartialMessageFollowing);
 	RUN(testLongStringExamples);
+	RUN(testAccept);
 	return TEST_REPORT();
 }
 

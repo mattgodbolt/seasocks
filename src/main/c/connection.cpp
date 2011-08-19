@@ -7,6 +7,7 @@
 #include "seasocks/logger.h"
 
 #include "internal/Embedded.h"
+#include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
 #include "internal/Version.h"
@@ -755,15 +756,13 @@ bool Connection::handleHybiHandshake(
 		return sendBadRequest("Invalid websocket version");
 	}
 	LS_DEBUG(_logger, "Got a hybi-8 websocket with key=" << webSocketKey);
-	const std::string hashString = webSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
 	bufferResponseAndCommonHeaders("HTTP/1.1 101 WebSocket Protocol Handshake");
 	bufferLine("Upgrade: WebSocket");
 	bufferLine("Connection: Upgrade");
-	// TODO: SHA and base64 here.
-	bufferLine("Sec-WebSocket-Accept: " + hashString);
+	bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
 	bufferLine("");
 	flush();
 
