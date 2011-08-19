@@ -86,11 +86,15 @@ $(BIN_DIR)/test_ssoauthenticator: $(TEST_SRC)/test_ssoauthenticator.cpp $(BIN_DI
 	
 $(BIN_DIR)/test_connection: $(TEST_SRC)/test_connection.cpp $(BIN_DIR)/libseasocks.a
 	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
-	
-.tests-pass: $(BIN_DIR)/test_ssoauthenticator $(BIN_DIR)/test_connection
+
+$(BIN_DIR)/test_hybi: $(TEST_SRC)/test_hybi.cpp $(BIN_DIR)/libseasocks.a
+	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
+
+.tests-pass: $(BIN_DIR)/test_ssoauthenticator $(BIN_DIR)/test_connection $(BIN_DIR)/test_hybi
 	@rm -f .tests-pass
 	$(BIN_DIR)/test_ssoauthenticator
 	$(BIN_DIR)/test_connection
+	$(BIN_DIR)/test_hybi
 	@touch .tests-pass
 
 test: .tests-pass

@@ -10,7 +10,7 @@
 { \
 	std::ostringstream o; \
 	o << STUFF; \
-	LOG->log(Logger::LEVEL, o.str().c_str()); \
+	(LOG)->log(Logger::LEVEL, o.str().c_str()); \
 }
 
 #define LS_DEBUG(LOG, STUFF) 	LS_LOG(LOG, DEBUG, STUFF)

@@ -7,6 +7,7 @@
 #include "seasocks/logger.h"
 
 #include "internal/Embedded.h"
+#include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
 #include "internal/Version.h"
 
@@ -515,46 +516,36 @@ void Connection::handleHybiWebSocket() {
 	if (_inBuf.empty()) {
 		return;
 	}
-	size_t messageStart = 0;
-	wrap a nice class for this...it's shite this way
-	while (messageStart < _inBuf.size()) {
-		if ((_inBuf[messageStart] & 1) == 0) {
-			// FIN bit is not clear...
-			// TODO: support
-			LS_ERROR(_logger, "Received hybi frame without FIN bit set - unsupported");
+	HybiPacketDecoder decoder(*_logger, _inBuf);
+	bool done = false;
+	while (!done) {
+		std::string decodedMessage;
+		switch (decoder.decodeNextMessage(decodedMessage)) {
+		default:
+			closeInternal();
+			LS_ERROR(_logger, "Unknown HybiPacketDecoder state");
+			return;
+		case HybiPacketDecoder::Error:
 			closeInternal();
 			return;
+		case HybiPacketDecoder::Message:
+			handleWebSocketMessage(decodedMessage.c_str());
+			break;
+		case HybiPacketDecoder::Ping:
+			//TODO: send a pong.
+			break;
+		case HybiPacketDecoder::NoMessage:
+			done = true;
+			break;
 		}
-		if (_inBuf[messageStart] & (7<<1) != 0) {
-			LS_ERROR(_logger, "Received hybi frame without reserved bits set - error");
-			closeInternal();
-			return;
-		}
-		uint32_t mask = 0;
-		auto opcode = (_inBuf[messageStart] >> 4) & 0xf;
-		size_t payloadLength = (_inBuf[1] >> 1) & 0x7f;
-		if (payloadLength == 126) {
-			if (_inBuf.size() < 4) { break; }
-			payloadLength = htons(reinterpret_cast<uint16_t*>(&_inBuf[2]));
-			ptr += 2;
-		} else if (payloadLength == 127) {
-			if (_inBuf.size() < 10) { break; }
-			payloadLength = __bswap_64(reinterpret_cast<uint64_t*>(&_inBuf[2]));
-			ptr += 8;
-		}
-		if (payloadLength > MaxWebsocketMessageSize) {
-			LS_ERROR(_logger, "WebSocket message too long");
-			closeInternal();
-		}
-		if (_inBuf[1] & 1) {
-			// MASK is set.
-			if (_inBuf.size() < ptr + 4) { break; }
-			mask = htonl(reinterpret_cast<uint32_t*>(&_inBuf[ptr]));
-			ptr += 4;
-		}
-		if (_inBuf.size() < ptr + payloadLength) { return ; }
-
-	// todo.....
+	}
+	if (decoder.numBytesDecoded() != 0) {
+		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + decoder.numBytesDecoded());
+	}
+	if (_inBuf.size() > MaxWebsocketMessageSize) {
+		LS_ERROR(_logger, "WebSocket message too long");
+		closeInternal();
+	}
 }
 
 void Connection::handleWebSocketMessage(const char* message) {
