@@ -8,6 +8,7 @@ Features
 *   API for building WebSocket servers
 *   Integration with [DRW Single Sign On](http://go/sso)
 *   Simple command line binary for quick serving of static files only
+*   Supports newer Hybi-10 WebSockets as well as the older Hixie style.
 
 Stuff it doesn't do
 -------------------
