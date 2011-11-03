@@ -667,7 +667,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	}
 
 	bool haveConnectionUpgrade = false;
-	bool haveWebSocketUprade = false;
+	bool haveWebSocketUpgrade = false;
 	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
 	std::string host;
 	std::string cookie;
@@ -691,7 +691,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 				haveConnectionUpgrade = true;
 			}
 		} else if (strcasecmp(key, "Upgrade") == 0 && strcasecmp(value, "websocket") == 0) {
-			haveWebSocketUprade = true;
+			haveWebSocketUpgrade = true;
 		} else if (strcasecmp(key, "Sec-WebSocket-Key1") == 0) {
 			// Hixie only.
 			_webSocketKeys[0] = parseWebSocketKey(value);
@@ -763,7 +763,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	}
 	// </SSO>
 
-	if (haveConnectionUpgrade && haveWebSocketUprade) {
+	if (haveConnectionUpgrade && haveWebSocketUpgrade) {
 		_webSocketHandler = _server->getWebSocketHandler(requestUri);
 		if (!_webSocketHandler) {
 			LS_ERROR(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
@@ -807,7 +807,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 bool Connection::handleHybiHandshake(
 		int webSocketVersion,
 		const std::string& webSocketKey) {
-	if (webSocketVersion != 8) {
+	if (webSocketVersion != 8 && webSocketVersion != 13) {
 		return sendBadRequest("Invalid websocket version");
 	}
 	LS_DEBUG(_logger, "Got a hybi-8 websocket with key=" << webSocketKey);
