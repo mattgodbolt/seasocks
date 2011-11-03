@@ -1,13 +1,11 @@
 #ifndef _SEASOCKS_WEBSOCKET_H_
 #define _SEASOCKS_WEBSOCKET_H_
 
-#include <netinet/in.h>
-#include <boost/shared_ptr.hpp>
-#include "seasocks/credentials.h"
+#include "seasocks/Request.h"
 
 namespace SeaSocks {
 
-class WebSocket {
+class WebSocket : public Request {
 public:
 	/**
 	 * Send the given data. Must be called on the SeaSocks thread.
@@ -21,15 +19,6 @@ public:
 	 * at a later time.
 	 */
 	virtual void close() = 0;
-
-	/**
-	 * Returns the credentials of this WebSocket.
-	 */
-	virtual boost::shared_ptr<Credentials> credentials() = 0;
-
-	virtual const sockaddr_in& getRemoteAddress() const = 0;
-
-	virtual const std::string& getRequestUri() const = 0;
 
 	/**
 	 * Interface to dealing with WebSocket connections.

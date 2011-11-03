@@ -37,6 +37,8 @@ public:
 	// From WebSocket.
 	virtual void send(const char* webSocketResponse);
 	virtual void close();
+
+	// From Request.
 	virtual boost::shared_ptr<Credentials> credentials();
 	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
 	virtual const std::string& getRequestUri() const { return _requestUri; }

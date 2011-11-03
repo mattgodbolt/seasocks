@@ -2,6 +2,7 @@
 
 #include "seasocks/AccessControl.h"
 #include "seasocks/credentials.h"
+#include "seasocks/PageHandler.h"
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
@@ -162,6 +163,33 @@ public:
 
 	virtual void log(Level level, const char* message) {
 		_logger->log(level, (_prefix + message).c_str());
+	}
+};
+
+class PageRequest : public SeaSocks::Request {
+	boost::shared_ptr<SeaSocks::Credentials> _credentials;
+	const sockaddr_in _remoteAddress;
+	const std::string _requestUri;
+public:
+	PageRequest(
+			boost::shared_ptr<SeaSocks::Credentials> credentials,
+			const sockaddr_in& remoteAddress,
+			const std::string& requestUri) :
+				_credentials(credentials),
+				_remoteAddress(remoteAddress),
+				_requestUri(requestUri) {
+	}
+
+	virtual boost::shared_ptr<SeaSocks::Credentials> credentials() {
+		return _credentials;
+	}
+
+	virtual const sockaddr_in& getRemoteAddress() const {
+		return _remoteAddress;
+	}
+
+	virtual const std::string& getRequestUri() const {
+		return _requestUri;
 	}
 };
 
@@ -749,7 +777,30 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		}
 		return handleHybiHandshake(webSocketVersion, hybiKey);
 	} else {
-		return sendStaticData(requestUri, rangeHeader);
+		PageRequest request(_credentials, _address, requestUri);
+		auto handler = _server->getPageHandler();
+		if (!handler) {
+			return sendStaticData(requestUri, rangeHeader);
+		}
+		auto response = handler->handleGet(request);
+		if (response->responseCode() == 404) {
+			return sendStaticData(requestUri, rangeHeader);
+		} else if (response->responseCode() != 200) {
+			// TODO: better errors here!
+			return sendError(response->responseCode(), "Error", response->payload());
+		}
+
+		bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
+		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(response->payloadSize()));
+		bufferLine("Content-Type: " + response->contentType());
+		bufferLine("Connection: keep-alive");
+		bufferLine("Last-Modified: " + now());
+		bufferLine("Cache-Control: no-store");
+		bufferLine("Pragma: no-cache");
+		bufferLine("Expires: " + now());
+		bufferLine("");
+
+		return write(response->payload(), response->payloadSize(), true);
 	}
 }
 
@@ -855,6 +906,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 }
 
 bool Connection::sendStaticData(const char* requestUri, const std::string& rangeHeader) {
+	// TODO: fold this into the handler way of doing things.
 	std::string path = _server->getStaticPath() + requestUri;
 	// Trim any trailing queries.
 	size_t queryPos = path.find('?');

@@ -406,23 +406,31 @@ bool Server::unsubscribeFromWriteEvents(Connection* connection) {
 
 void Server::addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
 		bool allowCrossOriginRequests) {
-	_handlerMap[endpoint] = { handler, allowCrossOriginRequests };
+	_webSocketHandlerMap[endpoint] = { handler, allowCrossOriginRequests };
+}
+
+void Server::setPageHandler(boost::shared_ptr<PageHandler> handler) {
+	_pageHandler = handler;
 }
 
 bool Server::isCrossOriginAllowed(const char* endpoint) const {
-	auto iter = _handlerMap.find(endpoint);
-	if (iter == _handlerMap.end()) {
+	auto iter = _webSocketHandlerMap.find(endpoint);
+	if (iter == _webSocketHandlerMap.end()) {
 		return false;
 	}
 	return iter->second.allowCrossOrigin;
 }
 
 boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endpoint) const {
-	auto iter = _handlerMap.find(endpoint);
-	if (iter == _handlerMap.end()) {
+	auto iter = _webSocketHandlerMap.find(endpoint);
+	if (iter == _webSocketHandlerMap.end()) {
 		return boost::shared_ptr<WebSocket::Handler>();
 	}
 	return iter->second.handler;
+}
+
+boost::shared_ptr<PageHandler> Server::getPageHandler() const {
+	return _pageHandler;
 }
 
 void Server::schedule(boost::shared_ptr<Runnable> runnable) {

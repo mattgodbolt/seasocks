@@ -16,6 +16,7 @@ namespace SeaSocks {
 
 class Connection;
 class Logger;
+class PageHandler;
 
 class Server {
 public:
@@ -23,6 +24,9 @@ public:
 	~Server();
 
 	void enableSingleSignOn(SsoOptions ssoOptions);
+
+	void setPageHandler(boost::shared_ptr<PageHandler> handler);
+
 	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
 			bool allowCrossOriginRequests = false);
 
@@ -49,6 +53,8 @@ public:
 	const std::string& getStaticPath() const { return _staticPath; }
 	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
 	bool isCrossOriginAllowed(const char* endpoint) const;
+
+	boost::shared_ptr<PageHandler> getPageHandler() const;
 
 	std::string getStatsDocument() const;
 
@@ -85,12 +91,14 @@ private:
 	int _lameConnectionTimeoutSeconds;
 	time_t _nextDeadConnectionCheck;
 
-	struct Entry {
+	struct WebSocketHandlerEntry {
 		boost::shared_ptr<WebSocket::Handler> handler;
 		bool allowCrossOrigin;
 	};
-	typedef boost::unordered_map<std::string, Entry> HandlerMap;
-	HandlerMap _handlerMap;
+	typedef boost::unordered_map<std::string, WebSocketHandlerEntry> WebSocketHandlerMap;
+	WebSocketHandlerMap _webSocketHandlerMap;
+
+	boost::shared_ptr<PageHandler> _pageHandler;
 
 	Mutex _pendingRunnableMutex;
 	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
