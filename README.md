@@ -8,12 +8,12 @@ Features
 *   API for building WebSocket servers
 *   Integration with [DRW Single Sign On](http://go/sso)
 *   Simple command line binary for quick serving of static files only
-*   Supports newer Hybi-10 WebSockets as well as the older Hixie style.
+*   Supports newer Hybi-10 and Hybi-16 WebSockets as well as the older Hixie style.
 
 Stuff it doesn't do
 -------------------
 It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
-It provides no support for custom content generation (e.g. Servlets).
+It provides only very limited support for custom content generation (e.g. Servlets).
 It has been optimized for WebSocket based control.
 
 Getting started
