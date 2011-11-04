@@ -56,12 +56,14 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::string
 	_messageStart = ptr;
 	switch (opcode) {
 	default:
-		LS_ERROR(&_logger, "Received hybi frame without unknown opcode " << opcode);
+		LS_ERROR(&_logger, "Received hybi frame with unknown opcode " << opcode);
 		return Error;
 	case OPCODE_TEXT:
 		return Message;
 	case OPCODE_PING:
 		return Ping;
+	case OPCODE_CLOSE:
+		return Close;
 	}
 }
 

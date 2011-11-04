@@ -16,7 +16,7 @@ public:
 	HybiPacketDecoder(Logger& logger, const std::vector<uint8_t>& buffer);
 
 	enum {
-		OPCODE_CONT = 0x0,
+		OPCODE_CONT = 0x0,  // Deprecated in latest hybi spec, here anyway.
 		OPCODE_TEXT = 0x1,
 		OPCODE_BINARY = 0x2,
 		OPCODE_CLOSE = 0x8,
@@ -28,7 +28,8 @@ public:
 		NoMessage,
 		Message,
 		Error,
-		Ping
+		Ping,
+		Close
 	};
 	MessageState decodeNextMessage(std::string& messageOut);
 

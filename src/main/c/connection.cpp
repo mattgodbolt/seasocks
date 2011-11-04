@@ -570,6 +570,10 @@ void Connection::handleHybiWebSocket() {
 		case HybiPacketDecoder::NoMessage:
 			done = true;
 			break;
+		case HybiPacketDecoder::Close:
+			LS_DEBUG(_logger, "Received WebSocket close");
+			closeInternal();
+			return;
 		}
 	}
 	if (decoder.numBytesDecoded() != 0) {
