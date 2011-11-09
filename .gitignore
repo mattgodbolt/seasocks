@@ -6,3 +6,4 @@
 .tests-pass
 *.swp
 tags
+/.fig

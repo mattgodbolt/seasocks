@@ -43,6 +43,11 @@ boost::shared_ptr<Response> Response::textResponse(const std::string& response) 
 			new ConcreteResponse(200, response, "text/plain"));
 }
 
+boost::shared_ptr<Response> Response::jsonResponse(const std::string& response) {
+	return boost::shared_ptr<Response>(
+			new ConcreteResponse(200, response, "application/json"));
+}
+
 boost::shared_ptr<Response> Response::htmlResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
 			new ConcreteResponse(200, response, "text/html"));
