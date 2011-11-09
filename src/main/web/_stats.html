@@ -1,8 +1,8 @@
 <html DOCTYPE=html>
 <head>
   <title>SeaSocks Stats</title>
-  <link href="_seasocks.css" rel="stylesheet">
-  <script src="_jquery.min.js" type="text/javascript"></script>
+  <link href="/_seasocks.css" rel="stylesheet">
+  <script src="/_jquery.min.js" type="text/javascript"></script>
   <script>
   function clear() {
     $('#cx tbody tr:visible').remove();
@@ -15,7 +15,7 @@
   }
   function refresh() {
   		var stats = new XMLHttpRequest();
-		stats.open("GET", "_livestats.js", false);
+		stats.open("GET", "/_livestats.js", false);
 		stats.send(null);
 		eval(stats.responseText);
   }
