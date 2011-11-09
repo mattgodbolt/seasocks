@@ -8,6 +8,8 @@ namespace SeaSocks {
 
 class Request {
 public:
+	virtual ~Request() {}
+
 	/**
 	 * Returns the credentials associated with this request.
 	 */
