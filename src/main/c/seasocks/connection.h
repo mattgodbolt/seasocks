@@ -83,6 +83,7 @@ private:
 	bool sendUnsupportedError(const std::string& reason);
 	bool send404(const std::string& path);
 	bool sendBadRequest(const std::string& reason);
+	bool sendISE(const std::string& error);
 
 	void sendHybi(int opcode, const char* webSocketResponse, size_t messageLength);
 

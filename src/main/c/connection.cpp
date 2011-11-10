@@ -640,6 +640,10 @@ bool Connection::sendBadRequest(const std::string& reason) {
 	return sendError(400, "Bad Request", reason);
 }
 
+bool Connection::sendISE(const std::string& error) {
+	return sendError(500, "Internal Server Error", error);
+}
+
 bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	char* requestLine = extractLine(first, last);
 	assert(requestLine != NULL);
@@ -786,7 +790,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		if (!handler) {
 			return sendStaticData(requestUri, rangeHeader);
 		}
-		auto response = handler->handleGet(request);
+		boost::shared_ptr<Response> response;
+		try {
+			response = handler->handleGet(request);
+		} catch (const std::exception& e) {
+			return sendISE(e.what());
+		}
 		if (response->responseCode() == 404) {
 			return sendStaticData(requestUri, rangeHeader);
 		} else if (response->responseCode() != 200) {
