@@ -170,17 +170,33 @@ class PageRequest : public SeaSocks::Request {
 	boost::shared_ptr<SeaSocks::Credentials> _credentials;
 	const sockaddr_in _remoteAddress;
 	const std::string _requestUri;
+	const Verb _verb;
+
+	static Verb lookup(const char* verb) {
+		if (strcmp(verb, "GET") == 0) return Get;
+		if (strcmp(verb, "PUT") == 0) return Put;
+		if (strcmp(verb, "POST") == 0) return Post;
+		if (strcmp(verb, "DELETE") == 0) return Delete;
+		return Invalid;
+	}
+
 public:
 	PageRequest(
 			boost::shared_ptr<SeaSocks::Credentials> credentials,
 			const sockaddr_in& remoteAddress,
-			const std::string& requestUri) :
+			const std::string& requestUri,
+			const char* verb) :
 				_credentials(credentials),
 				_remoteAddress(remoteAddress),
-				_requestUri(requestUri) {
+				_requestUri(requestUri),
+				_verb(lookup(verb)){
 	}
 
-	virtual boost::shared_ptr<SeaSocks::Credentials> credentials() {
+	virtual Verb verb() const {
+		return _verb;
+	}
+
+	virtual boost::shared_ptr<SeaSocks::Credentials> credentials() const {
 		return _credentials;
 	}
 
@@ -504,7 +520,7 @@ void Connection::sendHybi(int opcode, const char* webSocketResponse, size_t mess
 	write(webSocketResponse, messageLength, true);
 }
 
-boost::shared_ptr<Credentials> Connection::credentials() {
+boost::shared_ptr<Credentials> Connection::credentials() const {
 	_server->checkThread();
 	return _credentials;
 }
@@ -654,9 +670,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (verb == NULL) {
 		return sendBadRequest("Malformed request line");
 	}
-	if (strcmp(verb, "GET") != 0) {
-		return sendUnsupportedError("We only support GET");
-	}
 	const char* requestUri = shift(requestLine);
 	if (requestUri == NULL) {
 		return sendBadRequest("Malformed request line");
@@ -772,6 +785,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	// </SSO>
 
 	if (haveConnectionUpgrade && haveWebSocketUpgrade) {
+		if (strcmp(verb, "GET") != 0) {
+			return sendBadRequest("Non-GET WebSocket request");
+		}
 		_webSocketHandler = _server->getWebSocketHandler(requestUri);
 		if (!_webSocketHandler) {
 			LS_ERROR(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
@@ -785,19 +801,25 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		}
 		return handleHybiHandshake(webSocketVersion, hybiKey);
 	} else {
-		PageRequest request(_credentials, _address, requestUri);
+		PageRequest request(_credentials, _address, requestUri, verb);
 		auto handler = _server->getPageHandler();
 		if (!handler) {
 			return sendStaticData(requestUri, rangeHeader);
 		}
 		boost::shared_ptr<Response> response;
 		try {
-			response = handler->handleGet(request);
+			response = handler->handle(request);
 		} catch (const std::exception& e) {
 			return sendISE(e.what());
 		}
-		if (response->responseCode() == 404) {
-			return sendStaticData(requestUri, rangeHeader);
+		if (!response) {
+			return sendBadRequest("Bad verb " + std::string(verb) + " for uri " + std::string(requestUri));
+		} else if (response->responseCode() == 404) {
+			if (strcmp(verb, "GET") == 0) {
+				return sendStaticData(requestUri, rangeHeader);
+			} else {
+				return sendBadRequest("Bad verb " + std::string(verb) + " for uri " + std::string(requestUri));
+			}
 		} else if (response->responseCode() != 200) {
 			// TODO: better errors here!
 			return sendError(response->responseCode(), "Error", response->payload());

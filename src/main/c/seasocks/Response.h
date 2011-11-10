@@ -15,6 +15,7 @@ public:
 
 	virtual std::string contentType() const = 0;
 
+	static boost::shared_ptr<Response> unhandled();
 	static boost::shared_ptr<Response> notFound();
 	static boost::shared_ptr<Response> textResponse(const std::string& response);
 	static boost::shared_ptr<Response> jsonResponse(const std::string& response);

@@ -33,6 +33,11 @@ public:
 
 namespace SeaSocks {
 
+boost::shared_ptr<Response> Response::unhandled() {
+	static boost::shared_ptr<Response> unhandled;
+	return unhandled;
+}
+
 boost::shared_ptr<Response> Response::notFound() {
 	static boost::shared_ptr<Response> notFound(new ConcreteResponse(404, "Not found", ""));
 	return notFound;

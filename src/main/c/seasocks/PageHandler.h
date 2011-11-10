@@ -13,7 +13,7 @@ class PageHandler {
 public:
 	virtual ~PageHandler() {}
 
-	virtual boost::shared_ptr<Response> handleGet(const Request& request) = 0;
+	virtual boost::shared_ptr<Response> handle(const Request& request) = 0;
 };
 
 }

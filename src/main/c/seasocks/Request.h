@@ -10,10 +10,21 @@ class Request {
 public:
 	virtual ~Request() {}
 
+	enum Verb {
+		Invalid,
+		WebSocket,
+		Get,
+		Put,
+		Post,
+		Delete,
+	};
+
+	virtual Verb verb() const = 0;
+
 	/**
 	 * Returns the credentials associated with this request.
 	 */
-	virtual boost::shared_ptr<Credentials> credentials() = 0;
+	virtual boost::shared_ptr<Credentials> credentials() const = 0;
 
 	virtual const sockaddr_in& getRemoteAddress() const = 0;
 

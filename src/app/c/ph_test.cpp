@@ -14,13 +14,16 @@ using namespace SeaSocks;
 
 class MyPageHandler: public PageHandler {
 public:
-	virtual boost::shared_ptr<Response> handleGet(const Request& request) {
+	virtual boost::shared_ptr<Response> handle(const Request& request) {
+		if (request.verb() != Request::Get) return Response::unhandled();
 		std::ostringstream ostr;
 		ostr << "<html><head><title>SeaSocks example</title></head>"
 				"<body>You asked for " << request.getRequestUri()
 				<< " and your ip is " << request.getRemoteAddress().sin_addr.s_addr
 				<< " and a random number is " << rand()
-				<< "</body></html";
+				<< "<form action=/post method=post><input type=text name=value1></input><br>"
+				<< "<input type=submit value=Submit></input></form>"
+				<< "</body></html>";
 		return Response::htmlResponse(ostr.str());
 	}
 };
