@@ -15,6 +15,10 @@ using namespace SeaSocks;
 class MyPageHandler: public PageHandler {
 public:
 	virtual boost::shared_ptr<Response> handle(const Request& request) {
+		if (request.verb() == Request::Post) {
+			std::string content(request.content(), request.content() + request.contentLength());
+			return Response::textResponse("Thanks for the post. You said: " + content);
+		}
 		if (request.verb() != Request::Get) return Response::unhandled();
 		std::ostringstream ostr;
 		ostr << "<html><head><title>SeaSocks example</title></head>"

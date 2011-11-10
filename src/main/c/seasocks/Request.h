@@ -4,6 +4,8 @@
 #include <boost/shared_ptr.hpp>
 #include "seasocks/credentials.h"
 
+#include <cstdint>
+
 namespace SeaSocks {
 
 class Request {
@@ -30,6 +32,13 @@ public:
 
 	virtual const std::string& getRequestUri() const = 0;
 
+	virtual size_t contentLength() const = 0;
+
+	virtual const uint8_t* content() const = 0;
+
+	virtual bool hasHeader(const std::string& name) const = 0;
+
+	virtual std::string getHeader(const std::string& name) const = 0;
 };
 
 }  // namespace SeaSocks

@@ -10,6 +10,7 @@
 #include "internal/Embedded.h"
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
+#include "internal/PageRequest.h"
 #include "internal/LogStream.h"
 #include "internal/Version.h"
 
@@ -163,49 +164,6 @@ public:
 
 	virtual void log(Level level, const char* message) {
 		_logger->log(level, (_prefix + message).c_str());
-	}
-};
-
-class PageRequest : public SeaSocks::Request {
-	boost::shared_ptr<SeaSocks::Credentials> _credentials;
-	const sockaddr_in _remoteAddress;
-	const std::string _requestUri;
-	const Verb _verb;
-
-	static Verb lookup(const char* verb) {
-		if (strcmp(verb, "GET") == 0) return Get;
-		if (strcmp(verb, "PUT") == 0) return Put;
-		if (strcmp(verb, "POST") == 0) return Post;
-		if (strcmp(verb, "DELETE") == 0) return Delete;
-		return Invalid;
-	}
-
-public:
-	PageRequest(
-			boost::shared_ptr<SeaSocks::Credentials> credentials,
-			const sockaddr_in& remoteAddress,
-			const std::string& requestUri,
-			const char* verb) :
-				_credentials(credentials),
-				_remoteAddress(remoteAddress),
-				_requestUri(requestUri),
-				_verb(lookup(verb)){
-	}
-
-	virtual Verb verb() const {
-		return _verb;
-	}
-
-	virtual boost::shared_ptr<SeaSocks::Credentials> credentials() const {
-		return _credentials;
-	}
-
-	virtual const sockaddr_in& getRemoteAddress() const {
-		return _remoteAddress;
-	}
-
-	virtual const std::string& getRequestUri() const {
-		return _requestUri;
 	}
 };
 
@@ -414,6 +372,9 @@ void Connection::handleNewData() {
 	case HANDLING_HYBI_WEBSOCKET:
 		handleHybiWebSocket();
 		break;
+	case BUFFERING_POST_DATA:
+		handleBufferingPostData();
+		break;
 	default:
 		assert(false);
 	}
@@ -477,6 +438,15 @@ void Connection::handleWebSocketKey3() {
 	_inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
 	if (_webSocketHandler) {
 		_webSocketHandler->onConnect(this);
+	}
+}
+
+void Connection::handleBufferingPostData() {
+	if (_request->consumeContent(_inBuf)) {
+		_state = READING_HEADERS;
+		if (!handlePageRequest()) {
+			closeInternal();
+		}
 	}
 }
 
@@ -690,11 +660,14 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUpgrade = false;
 	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
+	std::map<std::string, std::string> allHeaders;
+	// TODO: move all this lot to the new header map.
 	std::string host;
 	std::string cookie;
 	std::string rangeHeader;
 	std::string hybiKey;
 	int webSocketVersion = 0;
+	size_t contentLength = 0;
 	while (first < last) {
 		char* colonPos = NULL;
 		char* headerLine = extractLine(first, last, &colonPos);
@@ -707,6 +680,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		const char* value = skipWhitespace(colonPos + 1);
 		LS_DEBUG(_logger, "Key: " << key << " || " << value);
 		std::string strValue(value);
+		allHeaders[key] = strValue;
 		if (strcasecmp(key, "Connection") == 0) {
 			if (strcasecmp(value, "upgrade") == 0) {
 				haveConnectionUpgrade = true;
@@ -736,6 +710,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			cookie = strValue;
 		} else if (strcasecmp(key, "Range") == 0) {
 			rangeHeader = strValue;
+		} else if (strcasecmp(key, "Content-Length") == 0) {
+			contentLength = boost::lexical_cast<size_t>(strValue);
 		}
 	}
 
@@ -800,43 +776,55 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			return true;
 		}
 		return handleHybiHandshake(webSocketVersion, hybiKey);
-	} else {
-		PageRequest request(_credentials, _address, requestUri, verb);
-		auto handler = _server->getPageHandler();
-		if (!handler) {
-			return sendStaticData(requestUri, rangeHeader);
-		}
-		boost::shared_ptr<Response> response;
-		try {
-			response = handler->handle(request);
-		} catch (const std::exception& e) {
-			return sendISE(e.what());
-		}
-		if (!response) {
-			return sendBadRequest("Bad verb " + std::string(verb) + " for uri " + std::string(requestUri));
-		} else if (response->responseCode() == 404) {
-			if (strcmp(verb, "GET") == 0) {
-				return sendStaticData(requestUri, rangeHeader);
-			} else {
-				return sendBadRequest("Bad verb " + std::string(verb) + " for uri " + std::string(requestUri));
-			}
-		} else if (response->responseCode() != 200) {
-			// TODO: better errors here!
-			return sendError(response->responseCode(), "Error", response->payload());
-		}
-
-		bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
-		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(response->payloadSize()));
-		bufferLine("Content-Type: " + response->contentType());
-		bufferLine("Connection: keep-alive");
-		bufferLine("Last-Modified: " + now());
-		bufferLine("Cache-Control: no-store");
-		bufferLine("Pragma: no-cache");
-		bufferLine("Expires: " + now());
-		bufferLine("");
-
-		return write(response->payload(), response->payloadSize(), true);
 	}
+
+	auto handler = _server->getPageHandler();
+	if (!handler) {
+		return sendStaticData(requestUri, rangeHeader);
+	}
+
+	if (contentLength > MaxBufferSize) {
+		return sendBadRequest("Content length too long");
+	}
+	_request.reset(new PageRequest(
+			_credentials, _address, requestUri, verb, contentLength, allHeaders));
+	if (contentLength == 0) {
+		return handlePageRequest();
+	}
+	_state = BUFFERING_POST_DATA;
+	return true;
+}
+
+bool Connection::handlePageRequest() {
+	auto handler = _server->getPageHandler();
+	boost::shared_ptr<Response> response;
+	try {
+		response = handler->handle(*_request);
+	} catch (const std::exception& e) {
+		return sendISE(e.what());
+	}
+	const auto requestUri = _request->getRequestUri();
+	if (!response) {
+		return sendStaticData(requestUri.c_str(), _request->getHeader("Range"));
+	} else if (response->responseCode() == 404) {
+		// TODO: better here; we use this purely to serve our own embedded content.
+		return send404(requestUri);
+	} else if (response->responseCode() != 200) {
+		// TODO: better errors here!
+		return sendError(response->responseCode(), "Error", response->payload());
+	}
+
+	bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
+	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(response->payloadSize()));
+	bufferLine("Content-Type: " + response->contentType());
+	bufferLine("Connection: keep-alive");
+	bufferLine("Last-Modified: " + now());
+	bufferLine("Cache-Control: no-store");
+	bufferLine("Pragma: no-cache");
+	bufferLine("Expires: " + now());
+	bufferLine("");
+
+	return write(response->payload(), response->payloadSize(), true);
 }
 
 bool Connection::handleHybiHandshake(
@@ -940,6 +928,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 	return sendRanges;
 }
 
+// TODO: take a Request here.
 bool Connection::sendStaticData(const char* requestUri, const std::string& rangeHeader) {
 	// TODO: fold this into the handler way of doing things.
 	std::string path = _server->getStaticPath() + requestUri;

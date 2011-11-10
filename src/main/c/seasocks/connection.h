@@ -17,6 +17,7 @@ namespace SeaSocks {
 
 class Logger;
 class Server;
+class PageRequest;
 
 class Connection : public WebSocket {
 public:
@@ -43,6 +44,12 @@ public:
 	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
 	virtual const std::string& getRequestUri() const { return _requestUri; }
 	virtual Request::Verb verb() const { return Request::WebSocket; }
+	// Is this all such a good idea?
+	virtual size_t contentLength() const { return 0; }
+	virtual const uint8_t* content() const { return NULL; }
+	// TODO: At the very least should implement these properly for WS:
+	virtual bool hasHeader(const std::string&) const { return false; }
+	virtual std::string getHeader(const std::string&) const { return std::string(); }
 
 	void setLinger();
 
@@ -70,6 +77,8 @@ private:
 	void handleHeaders();
 	void handleWebSocketKey3();
 	void handleWebSocketMessage(const char* message);
+	void handleBufferingPostData();
+	bool handlePageRequest();
 
 	bool bufferLine(const char* line);
 	bool bufferLine(const std::string& line);
@@ -128,6 +137,7 @@ private:
 	std::string _requestUri;
 	time_t _connectionTime;
 	bool _shutdownByUser;
+	std::unique_ptr<PageRequest> _request;
 
 	enum State {
 		INVALID,
@@ -135,6 +145,7 @@ private:
 		READING_WEBSOCKET_KEY3,
 		HANDLING_HIXIE_WEBSOCKET,
 		HANDLING_HYBI_WEBSOCKET,
+		BUFFERING_POST_DATA,
 	};
 	State _state;
 
