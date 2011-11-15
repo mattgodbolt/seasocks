@@ -801,7 +801,11 @@ bool Connection::handlePageRequest() {
 	try {
 		response = handler->handle(*_request);
 	} catch (const std::exception& e) {
+		LS_ERROR(_logger, "page error: " << e.what());
 		return sendISE(e.what());
+	} catch ( ... ) {
+		LS_ERROR(_logger, "page error: (unknown)");
+		return sendISE("(unknown)");
 	}
 	const auto requestUri = _request->getRequestUri();
 	if (!response) {
