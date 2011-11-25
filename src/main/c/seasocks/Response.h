@@ -17,6 +17,7 @@ public:
 
 	static boost::shared_ptr<Response> unhandled();
 	static boost::shared_ptr<Response> notFound();
+	static boost::shared_ptr<Response> badRequest(const std::string& reason);
 	static boost::shared_ptr<Response> textResponse(const std::string& response);
 	static boost::shared_ptr<Response> jsonResponse(const std::string& response);
 	static boost::shared_ptr<Response> htmlResponse(const std::string& response);

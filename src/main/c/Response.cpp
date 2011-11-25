@@ -43,6 +43,10 @@ boost::shared_ptr<Response> Response::notFound() {
 	return notFound;
 }
 
+boost::shared_ptr<Response> Response::badRequest(const std::string& reason) {
+	return boost::shared_ptr<Response>(new ConcreteResponse(400, reason, ""));
+}
+
 boost::shared_ptr<Response> Response::textResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
 			new ConcreteResponse(200, response, "text/plain"));
