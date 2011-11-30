@@ -12,8 +12,8 @@ class UsernameAccessControl : public AccessControl {
 	std::set<std::string> _users;
 public:
 	UsernameAccessControl(const std::set<std::string> users);
-	virtual bool requiresAuthentication(const char* requestUri);
-	virtual bool hasAccess(boost::shared_ptr<Credentials> credentials, const char* requestUri);
+	virtual bool requiresAuthentication(const Request& request);
+	virtual bool hasAccess(const Request& request);
 };
 
 }

@@ -8,26 +8,70 @@
 
 using namespace SeaSocks;
 
+namespace {
+
+class FakeRequest : public Request {
+    std::string _uri;
+    std::string _cookie;
+    boost::shared_ptr<Credentials> _credentials;
+public:
+    FakeRequest() : _credentials(new Credentials()) {}
+
+    static FakeRequest uri(const std::string& uri) { FakeRequest r; r._uri = uri; return r; }
+    static FakeRequest cookie(const std::string& cookie) { FakeRequest r; r._cookie = cookie; return r; }
+
+    virtual Verb verb() const { return Get; }
+    virtual boost::shared_ptr<Credentials> credentials() const { return _credentials; }
+
+    virtual const sockaddr_in& getRemoteAddress() const {
+        static sockaddr_in sin;
+        return sin;
+    }
+
+    virtual const std::string& getRequestUri() const {
+        return _uri;
+    }
+
+    virtual size_t contentLength() const {
+        return 0;
+    }
+
+    virtual const uint8_t* content() const {
+        return NULL;
+    }
+
+    virtual bool hasHeader(const std::string& name) const {
+        return (name == "Cookie" && !_cookie.empty());
+    }
+
+    virtual std::string getHeader(const std::string& name) const {
+        if (name == "Cookie") return _cookie;
+        return "";
+    }
+};
+
+}
+
 void checks_uri_prefix_to_see_if_bounceback() {
 	SsoOptions options = SsoOptions::test();
 	options.returnPath = "/__bounceback";
 	SsoAuthenticator sso(options);
 	
-	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer("/__bounceback"));
-	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer("/__bounceback?"));
-	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer("/__bounceback?foo=blah&gbgg=423"));
-	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer("/__bounceback?"));
+	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bounceback")));
+	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bounceback?")));
+	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bounceback?foo=blah&gbgg=423")));
+	ASSERT_EQUALS(true, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bounceback?")));
 	
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/another"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/another/__bounceback"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/not__bounceback"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/__bouncebackNOT"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/another?foo=blah&gbgg=423"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/__bounceb"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/_bounceback"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/__bouncebac"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/"));
-	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer("/?"));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/another")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/another/__bounceback")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/not__bounceback")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bouncebackNOT")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/another?foo=blah&gbgg=423")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bounceb")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/_bounceback")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/__bouncebac")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/")));
+	ASSERT_EQUALS(false, sso.isBounceBackFromSsoServer(FakeRequest::uri("/?")));
 }
 
 void parses_uri_parameters() {
@@ -72,30 +116,31 @@ void extract_credentials_from_local_cookie() {
 	SsoOptions options = SsoOptions::test();
 	options.localAuthKey = "I AM NOT SECURE";
 	SsoAuthenticator sso(options);
-	boost::shared_ptr<Credentials> credentials(new Credentials());
+    FakeRequest request;
 
 	// happy path
-	sso.extractCredentialsFromLocalCookie("_auth=joe|49A85A78D89CE4D36997C5B48940A2C6", credentials);
-	ASSERT_EQUALS(true, credentials->authenticated);
-	ASSERT_EQUALS("joe", credentials->username);
+    request = FakeRequest::cookie("_auth=joe|49A85A78D89CE4D36997C5B48940A2C6");
+	sso.extractCredentialsFromLocalCookie(request);
+	ASSERT_EQUALS(true, request.credentials()->authenticated);
+	ASSERT_EQUALS("joe", request.credentials()->username);
 
 	// no cookie 
-	credentials.reset(new Credentials());
-	sso.extractCredentialsFromLocalCookie("", credentials);
-	ASSERT_EQUALS(false, credentials->authenticated);
-	ASSERT_EQUALS("", credentials->username);
+    request = FakeRequest::cookie("");
+	sso.extractCredentialsFromLocalCookie(request);
+	ASSERT_EQUALS(false, request.credentials()->authenticated);
+	ASSERT_EQUALS("", request.credentials()->username);
 
 	// invalid hash
-	credentials.reset(new Credentials());
-	sso.extractCredentialsFromLocalCookie("_auth=joe|BADHASH", credentials);
-	ASSERT_EQUALS(false, credentials->authenticated);
-	ASSERT_EQUALS("", credentials->username);
+    request = FakeRequest::cookie("_auth=joe|BADHASH");
+	sso.extractCredentialsFromLocalCookie(request);
+	ASSERT_EQUALS(false, request.credentials()->authenticated);
+	ASSERT_EQUALS("", request.credentials()->username);
 
 	// other cookies (ignored)
-	credentials.reset(new Credentials());
-	sso.extractCredentialsFromLocalCookie("foo=bar;x=\" _auth=ignoreme \"_auth=joe|49A85A78D89CE4D36997C5B48940A2C6;blah=x", credentials);
-	ASSERT_EQUALS(true, credentials->authenticated);
-	ASSERT_EQUALS("joe", credentials->username);
+    request = FakeRequest::cookie("foo=bar;x=\" _auth=ignoreme \"_auth=joe|49A85A78D89CE4D36997C5B48940A2C6;blah=x");
+    sso.extractCredentialsFromLocalCookie(request);
+	ASSERT_EQUALS(true, request.credentials()->authenticated);
+	ASSERT_EQUALS("joe", request.credentials()->username);
 }
 
 void parses_cookies() {
@@ -133,7 +178,7 @@ void redirects_to_sso_server() {
 
 	std::stringstream response;
 	std::string error;
-	sso.respondWithRedirectToAuthenticationServer("/mypage?foo", "myserver:8080", response, error);
+	sso.respondWithRedirectToAuthenticationServer(FakeRequest::uri("/mypage?foo"), "myserver:8080", response, error);
 
 	std::string expectedResponse = 
 		"HTTP/1.1 307 Temporary Redirect\r\n"
@@ -151,7 +196,7 @@ void parses_bounceback_params_and_generates_redirect() {
 
 	std::stringstream response;
 	std::string error;
-	sso.respondWithLocalCookieAndRedirectToOriginalPage("/__bounceback?user=joe&continue=%2fpage", response, error);
+	sso.respondWithLocalCookieAndRedirectToOriginalPage(FakeRequest::uri("/__bounceback?user=joe&continue=%2fpage"), response, error);
 
 	std::string expectedResponse = 
 		"HTTP/1.1 307 Temporary Redirect\r\n"

@@ -135,7 +135,6 @@ private:
 	std::string _hixieExtraHeaders;
 	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
 	boost::shared_ptr<SsoAuthenticator> _sso;
-	boost::shared_ptr<Credentials> _credentials;
 	std::string _requestUri;
 	time_t _connectionTime;
 	bool _shutdownByUser;

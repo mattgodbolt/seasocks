@@ -18,7 +18,6 @@ class PageRequest : public SeaSocks::Request {
 
 public:
 	PageRequest(
-			boost::shared_ptr<SeaSocks::Credentials> credentials,
 			const sockaddr_in& remoteAddress,
 			const std::string& requestUri,
 			const char* verb,

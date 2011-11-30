@@ -7,12 +7,13 @@ namespace SeaSocks {
 UsernameAccessControl::UsernameAccessControl(const std::set<std::string> users) : _users(users) {
 }
 
-bool UsernameAccessControl::requiresAuthentication(const char* requestUri) {
+bool UsernameAccessControl::requiresAuthentication(const Request& request) {
 	return true;
 }
 
-bool UsernameAccessControl::hasAccess(boost::shared_ptr<Credentials> credentials, const char* requestUri) {
-	std::cout << "hello " << credentials->username << "@" << requestUri << std::endl;
+bool UsernameAccessControl::hasAccess(const Request& request) {
+    auto credentials = request.credentials();
+	std::cout << "hello " << credentials->username << "@" << request.getRequestUri() << std::endl;
 	if (!credentials->authenticated) {
 		return false;
 	}

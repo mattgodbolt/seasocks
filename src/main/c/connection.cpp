@@ -189,7 +189,6 @@ Connection::Connection(
 	  _bytesReceived(0),
 	  _address(address),
 	  _sso(sso),
-	  _credentials(boost::shared_ptr<Credentials>(new Credentials())),
 	  _shutdownByUser(false){
   if (server) {
   	assert(server->getStaticPath() != "");
@@ -501,7 +500,7 @@ void Connection::sendHybi(int opcode, const char* webSocketResponse, size_t mess
 
 boost::shared_ptr<Credentials> Connection::credentials() const {
 	_server->checkThread();
-	return _credentials;
+	return _request->credentials();
 }
 
 void Connection::handleHixieWebSocket() {
@@ -674,7 +673,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	std::map<std::string, std::string> allHeaders;
 	// TODO: move all this lot to the new header map.
 	std::string host;
-	std::string cookie;
 	std::string rangeHeader;
 	std::string hybiKey;
 	int webSocketVersion = 0;
@@ -717,8 +715,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			host = strValue;
 		} else if (strcasecmp(key, "Sec-WebSocket-Version") == 0) {
 			webSocketVersion = boost::lexical_cast<int>(strValue);
-		} else if (strcasecmp(key, "Cookie") == 0) {
-			cookie = strValue;
 		} else if (strcasecmp(key, "Range") == 0) {
 			rangeHeader = strValue;
 		} else if (strcasecmp(key, "Content-Length") == 0) {
@@ -726,14 +722,16 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		}
 	}
 
+    _request.reset(new PageRequest(_address, requestUri, verb, contentLength, allHeaders));
+
 	// <SSO>
 	if (_sso) {
-		if (_sso->isBounceBackFromSsoServer(requestUri)) {
+		if (_sso->isBounceBackFromSsoServer(*_request)) {
             LS_DEBUG(_logger, "Bouncing back via " << requestUri);
-			if (_sso->validateSignature(requestUri)) {
+			if (_sso->validateSignature(*_request)) {
 				std::stringstream response;
 				std::string error;
-				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response, error)) {
+				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(*_request, response, error)) {
 					std::string content = response.str();
 					bool result = write(content.c_str(), content.length(), true);
 					closeWhenEmpty();
@@ -746,17 +744,17 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			}
 		}
 
-		if (findEmbeddedContent(requestUri) == NULL && _sso->enabledForPath(requestUri)) {
+		if (findEmbeddedContent(requestUri) == NULL && _sso->enabledFor(*_request)) {
 			// TODO: Merge enabledForPath with the AccessControl; perhaps merge them.
             LS_DEBUG(_logger, "SSO content at " << requestUri);
-			_sso->extractCredentialsFromLocalCookie(cookie, _credentials);
-			if (!_credentials->authenticated) {
+			_sso->extractCredentialsFromLocalCookie(*_request);
+			if (!_request->credentials()->authenticated) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
 					return sendError(ResponseCode::Unauthorized, requestUri);
 				} else {
 					std::stringstream response;
 					std::string error;
-					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, host, response, error)) {
+					if (_sso->respondWithRedirectToAuthenticationServer(*_request, host, response, error)) {
 						std::string content = response.str();
 			            LS_DEBUG(_logger, "Redirecting to server");
 						bool result = write(content.c_str(), content.length(), true);
@@ -767,7 +765,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 					}
 				}
 			}
-			if (!_sso->hasAccess(_credentials, requestUri)) {
+			if (!_sso->hasAccess(*_request)) {
 				return sendError(ResponseCode::Forbidden, requestUri);
 			}
 		}
@@ -800,8 +798,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	if (contentLength > MaxBufferSize) {
 		return sendBadRequest("Content length too long");
 	}
-	_request.reset(new PageRequest(
-			_credentials, _address, requestUri, verb, contentLength, allHeaders));
 	if (contentLength == 0) {
 		return handlePageRequest();
 	}

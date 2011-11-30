@@ -3,6 +3,7 @@
 
 #include "seasocks/credentials.h"
 #include "seasocks/AccessControl.h"
+#include "seasocks/Request.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -188,16 +189,16 @@ struct SsoOptions {
 class SsoAuthenticator {
 public:
 	SsoAuthenticator(const SsoOptions& options);
-	bool enabledForPath(const char* requestUri) const;
-	bool hasAccess(boost::shared_ptr<Credentials> credentials, const char* requestUri) const;
-	bool isBounceBackFromSsoServer(const char* requestUri) const;
-	bool validateSignature(const char* requestUri) const;
-	bool respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error);
-	bool respondWithRedirectToAuthenticationServer(const char* requestUri, const std::string& requestHost, std::ostream& response, std::string& error);
-	void extractCredentialsFromLocalCookie(const std::string& cookie, boost::shared_ptr<Credentials> target) const;
+	bool enabledFor(const Request& request) const;
+	bool hasAccess(const Request& request) const;
+	bool isBounceBackFromSsoServer(const Request& request) const;
+	bool validateSignature(const Request& request) const;
+	bool respondWithLocalCookieAndRedirectToOriginalPage(const Request& request, std::ostream& response, std::string& error);
+	bool respondWithRedirectToAuthenticationServer(const Request& request, const std::string& requestHost, std::ostream& response, std::string& error);
+	void extractCredentialsFromLocalCookie(Request& request) const;
 	bool requestExplicityForbidsDrwSsoRedirect() const;
 	std::string secureHash(const std::string& string) const;
-	static void parseUriParameters(const char* uri, std::map<std::string, std::string>& params);
+	static void parseUriParameters(const std::string& uri, std::map<std::string, std::string>& params);
 	static std::string decodeUriComponent(const char* value, const char* end);
 	static std::string encodeUriComponent(const std::string& value);
 	static void parseCookie(const std::string& cookieValue, std::map<std::string, std::string>& params);

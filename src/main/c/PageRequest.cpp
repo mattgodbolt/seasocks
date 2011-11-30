@@ -19,13 +19,12 @@ Request::Verb lookup(const char* verb) {
 namespace SeaSocks {
 
 PageRequest::PageRequest(
-		boost::shared_ptr<SeaSocks::Credentials> credentials,
 		const sockaddr_in& remoteAddress,
 		const std::string& requestUri,
 		const char* verb,
 		size_t contentLength,
 		const std::map<std::string, std::string>& headers) :
-			_credentials(credentials),
+		    _credentials(boost::shared_ptr<Credentials>(new Credentials())),
 			_remoteAddress(remoteAddress),
 			_requestUri(requestUri),
 			_verb(lookup(verb)),

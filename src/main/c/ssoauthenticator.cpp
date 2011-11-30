@@ -37,11 +37,11 @@ std::string hexStringOf(uint8_t (&data)[length]) {
 
 class DefaultAccessControl : public SeaSocks::AccessControl {
 public:
-	virtual bool requiresAuthentication(const char* requestUri) {
+	virtual bool requiresAuthentication(const SeaSocks::Request& request) {
 		return true;
 	}
 
-	bool hasAccess(boost::shared_ptr<SeaSocks::Credentials> credentials, const char* requestUri) {
+	bool hasAccess(const SeaSocks::Request& request) {
 		return true;
 	}
 };
@@ -58,8 +58,9 @@ SsoAuthenticator::SsoAuthenticator(const SsoOptions& options) : _options(options
 	}
 }
 
-bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) const {
-	bool prefixMatch = _options.returnPath.compare(0, _options.returnPath.length(), requestUri,  _options.returnPath.length()) == 0;
+bool SsoAuthenticator::isBounceBackFromSsoServer(const Request& request) const {
+    auto requestUri = request.getRequestUri();
+	bool prefixMatch = _options.returnPath.compare(0, _options.returnPath.length(), requestUri.c_str(), _options.returnPath.length()) == 0;
 	if (prefixMatch) {
 		char nextChar = requestUri[_options.returnPath.length()];
 		return nextChar == '\0' || nextChar == '?';
@@ -68,15 +69,15 @@ bool SsoAuthenticator::isBounceBackFromSsoServer(const char* requestUri) const {
 	}
 }
 
-bool SsoAuthenticator::enabledForPath(const char* requestUri) const {
-	return _options.accessController->requiresAuthentication(requestUri);
+bool SsoAuthenticator::enabledFor(const Request& request) const {
+	return _options.accessController->requiresAuthentication(request);
 }
 
-bool SsoAuthenticator::hasAccess(boost::shared_ptr<Credentials> credentials, const char* requestUri) const {
-	return _options.accessController->hasAccess(credentials, requestUri);
+bool SsoAuthenticator::hasAccess(const Request& request) const {
+	return _options.accessController->hasAccess(request);
 }
 
-bool SsoAuthenticator::validateSignature(const char* requestUri) const {
+bool SsoAuthenticator::validateSignature(const Request& request) const {
 	// TODO: Implement this.
 	// get 'user' and 'signature' params
 	// token = user + '|' + determineBaseUrl
@@ -84,9 +85,9 @@ bool SsoAuthenticator::validateSignature(const char* requestUri) const {
 	return true;
 }
 
-bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const char* requestUri, std::ostream& response, std::string& error) {
+bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const Request& request, std::ostream& response, std::string& error) {
 	std::map<std::string, std::string> params;
-	parseUriParameters(requestUri, params);
+	parseUriParameters(request.getRequestUri(), params);
 	if (params.count("user") == 0 || params.count("continue") == 0) {
 		// Tampering detected.
 		error = "Invalid response from SSO server (require user and continue params)";
@@ -117,7 +118,7 @@ bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const cha
 	return true;
 }
 
-bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* requestUri, const std::string& requestHost, std::ostream& response, std::string& error) {
+bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const Request& request, const std::string& requestHost, std::ostream& response, std::string& error) {
 	std::stringstream baseUrl;
 	if (_options.basePath.empty()) {
 		baseUrl	<< "http://" << requestHost;
@@ -125,7 +126,7 @@ bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* req
 		baseUrl << _options.basePath;
 	}
 	std::stringstream targetUrl;
-	targetUrl << baseUrl.str() << _options.returnPath << "?continue=" << encodeUriComponent(requestUri);
+	targetUrl << baseUrl.str() << _options.returnPath << "?continue=" << encodeUriComponent(request.getRequestUri());
 	std::stringstream redirectUrl;
 	redirectUrl << _options.authServer << "/login"
 		    << "?basePath=" << encodeUriComponent(baseUrl.str())
@@ -141,7 +142,9 @@ bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const char* req
 	return true;
 }
 
-void SsoAuthenticator::extractCredentialsFromLocalCookie(const std::string& cookieString, boost::shared_ptr<Credentials> target) const {
+void SsoAuthenticator::extractCredentialsFromLocalCookie(Request& request) const {
+    auto cookieString = request.getHeader("Cookie");
+    auto target = request.credentials();
 	target->authenticated = false;
 	target->username = "";
 
@@ -301,7 +304,7 @@ void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std
 	}
 }
 
-void SsoAuthenticator::parseUriParameters(const char* uri, std::map<std::string, std::string>& params) {
+void SsoAuthenticator::parseUriParameters(const std::string& uri, std::map<std::string, std::string>& params) {
 	enum State {
 		INITIAL, KEY, VALUE
 	};
@@ -310,7 +313,7 @@ void SsoAuthenticator::parseUriParameters(const char* uri, std::map<std::string,
 	const char* keyEnd = NULL;
 	const char* valueStart = NULL;
 	const char* valueEnd = NULL;
-	for (const char *pos = uri;; ++pos) {
+	for (const char *pos = uri.c_str();; ++pos) {
 		switch (*pos) {
 		case '?':
 			switch (state) {
