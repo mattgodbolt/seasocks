@@ -724,30 +724,27 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     _request.reset(new PageRequest(_address, requestUri, verb, contentLength, allHeaders));
 
 	// <SSO>
-	if (_sso) {
+	if (_sso && findEmbeddedContent(requestUri) == NULL) {
 		if (_sso->isBounceBackFromSsoServer(*_request)) {
-            LS_DEBUG(_logger, "Bouncing back via " << requestUri);
 			if (_sso->validateSignature(*_request)) {
 				return sendResponse(_sso->respondWithLocalCookieAndRedirectToOriginalPage(*_request));
 			}
             return sendISE(std::string("Invalid SSO signature at ") + requestUri);
 		}
 
-		if (findEmbeddedContent(requestUri) == NULL && _sso->enabledFor(*_request)) {
-			// TODO: Merge enabledForPath with the AccessControl; perhaps merge them.
-            LS_DEBUG(_logger, "SSO content at " << requestUri);
-			_sso->extractCredentialsFromLocalCookie(*_request);
-			if (!_request->credentials()->authenticated) {
-				if (_sso->requestExplicityForbidsDrwSsoRedirect(*_request)) {
-					return sendError(ResponseCode::Unauthorized, requestUri);
-				}
+        _sso->extractCredentialsFromLocalCookie(*_request);
+        if (_sso->enabledFor(*_request)) {
+            if (!_request->credentials()->authenticated) {
+                if (_sso->requestExplicityForbidsDrwSsoRedirect(*_request)) {
+                    return sendError(ResponseCode::Unauthorized, requestUri);
+                }
                 LS_DEBUG(_logger, "Redirecting to server");
                 return sendResponse(_sso->respondWithRedirectToAuthenticationServer(*_request));
-			}
-			if (!_sso->hasAccess(*_request)) {
-				return sendError(ResponseCode::Forbidden, requestUri);
-			}
-		}
+            }
+            if (!_sso->hasAccess(*_request)) {
+                return sendError(ResponseCode::Forbidden, requestUri);
+            }
+        }
 	}
 	// </SSO>
 
