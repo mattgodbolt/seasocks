@@ -1038,6 +1038,4 @@ std::string Connection::getHeader(const std::string& header) const {
     return _request->getHeader(header);
 }
 
-}
-
 }  // SeaSocks
