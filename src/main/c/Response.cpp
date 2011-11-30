@@ -5,14 +5,14 @@ using namespace SeaSocks;
 namespace {
 
 class ConcreteResponse : public Response {
-	int _responseCode;
+	ResponseCode _responseCode;
 	const std::string _payload;
 	const std::string _contentType;
 public:
-	ConcreteResponse(int responseCode, const std::string& payload, const std::string& contentType) :
+	ConcreteResponse(ResponseCode responseCode, const std::string& payload, const std::string& contentType) :
 		_responseCode(responseCode), _payload(payload), _contentType(contentType) {}
 
-	virtual int responseCode() const {
+	virtual ResponseCode responseCode() const {
 		return _responseCode;
 	}
 
@@ -39,27 +39,27 @@ boost::shared_ptr<Response> Response::unhandled() {
 }
 
 boost::shared_ptr<Response> Response::notFound() {
-	static boost::shared_ptr<Response> notFound(new ConcreteResponse(404, "Not found", ""));
+	static boost::shared_ptr<Response> notFound(new ConcreteResponse(ResponseCode::NotFound, "Not found", ""));
 	return notFound;
 }
 
-boost::shared_ptr<Response> Response::badRequest(const std::string& reason) {
-	return boost::shared_ptr<Response>(new ConcreteResponse(400, reason, ""));
+boost::shared_ptr<Response> Response::error(ResponseCode code, const std::string& reason) {
+	return boost::shared_ptr<Response>(new ConcreteResponse(code, reason, ""));
 }
 
 boost::shared_ptr<Response> Response::textResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
-			new ConcreteResponse(200, response, "text/plain"));
+			new ConcreteResponse(ResponseCode::Ok, response, "text/plain"));
 }
 
 boost::shared_ptr<Response> Response::jsonResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
-			new ConcreteResponse(200, response, "application/json"));
+			new ConcreteResponse(ResponseCode::Ok, response, "application/json"));
 }
 
 boost::shared_ptr<Response> Response::htmlResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
-			new ConcreteResponse(200, response, "text/html"));
+			new ConcreteResponse(ResponseCode::Ok, response, "text/html"));
 }
 
 }

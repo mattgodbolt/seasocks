@@ -578,20 +578,22 @@ void Connection::handleWebSocketMessage(const char* message) {
 	}
 }
 
-bool Connection::sendError(int errorCode, const std::string& message, const std::string& body) {
+bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
 	assert(_state != HANDLING_HIXIE_WEBSOCKET);
-	bufferResponseAndCommonHeaders("HTTP/1.1 " + boost::lexical_cast<std::string>(errorCode) + std::string(" ") + message);
+	auto errorNumber = static_cast<int>(errorCode);
+	auto message = ::name(errorCode);
+	bufferResponseAndCommonHeaders("HTTP/1.1 " + boost::lexical_cast<std::string>(errorNumber) + " " + message);
 	auto errorContent = findEmbeddedContent("/_error.html");
 	std::string document;
 	if (errorContent) {
 		document.assign(errorContent->data, errorContent->data + errorContent->length);
-		replace(document, "%%ERRORCODE%%", boost::lexical_cast<std::string>(errorCode));
+		replace(document, "%%ERRORCODE%%", boost::lexical_cast<std::string>(errorNumber));
 		replace(document, "%%MESSAGE%%", message);
 		replace(document, "%%BODY%%", body);
 	} else {
 		std::stringstream documentStr;
-		documentStr << "<html><head><title>" << errorCode << " - " << message << "</title></head>"
-				<< "<body><h1>" << errorCode << " - " << message << "</h1>"
+		documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
+				<< "<body><h1>" << errorNumber << " - " << message << "</h1>"
 				<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
 		document = documentStr.str();
 	}
@@ -607,7 +609,7 @@ bool Connection::sendError(int errorCode, const std::string& message, const std:
 }
 
 bool Connection::sendUnsupportedError(const std::string& reason) {
-	return sendError(501, "Not Implemented", reason);
+	return sendError(ResponseCode::NotImplemented, reason);
 }
 
 bool Connection::send404(const std::string& path) {
@@ -618,16 +620,16 @@ bool Connection::send404(const std::string& path) {
 		auto stats = _server->getStatsDocument();
 		return sendData("text/javascript", stats.c_str(), stats.length());
 	} else {
-		return sendError(404, "Not Found", "Unable to find resource for: " + path);
+		return sendError(ResponseCode::NotFound, "Unable to find resource for: " + path);
 	}
 }
 
 bool Connection::sendBadRequest(const std::string& reason) {
-	return sendError(400, "Bad Request", reason);
+	return sendError(ResponseCode::BadRequest, reason);
 }
 
 bool Connection::sendISE(const std::string& error) {
-	return sendError(500, "Internal Server Error", error);
+	return sendError(ResponseCode::InternalServerError, error);
 }
 
 bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
@@ -727,10 +729,10 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 					_closeOnEmpty = true;
 					return result;
 				} else {
-					return sendError(500, error.c_str(), requestUri);
+					return sendISE(error + " at " + requestUri);
 				}
 			} else {
-				return sendError(500, "Invalid SSO signature", requestUri);
+				return sendISE(std::string("Invalid SSO signature at ") + requestUri);
 			}
 		}
 
@@ -739,7 +741,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_sso->extractCredentialsFromLocalCookie(cookie, _credentials);
 			if (!_credentials->authenticated) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
-					return sendError(403, "Not Authorized", requestUri);
+					return sendError(ResponseCode::Unauthorized, requestUri);
 				} else {
 					std::stringstream response;
 					std::string error;
@@ -749,12 +751,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 						_closeOnEmpty = true;
 						return result;
 					} else {
-						return sendError(500, error.c_str(), requestUri);
+						return sendISE(error + " at " + requestUri);
 					}
 				}
 			}
 			if (!_sso->hasAccess(_credentials, requestUri)) {
-				return sendError(403, "Forbidden", requestUri);
+				return sendError(ResponseCode::Forbidden, requestUri);
 			}
 		}
 	}
@@ -810,12 +812,11 @@ bool Connection::handlePageRequest() {
 	const auto requestUri = _request->getRequestUri();
 	if (!response) {
 		return sendStaticData(requestUri.c_str(), _request->getHeader("Range"));
-	} else if (response->responseCode() == 404) {
+	} else if (response->responseCode() == ResponseCode::NotFound) {
 		// TODO: better here; we use this purely to serve our own embedded content.
 		return send404(requestUri);
-	} else if (response->responseCode() != 200) {
-		// TODO: better errors here!
-		return sendError(response->responseCode(), "Error", response->payload());
+	} else if (!isOk(response->responseCode())) {
+		return sendError(response->responseCode(), response->payload());
 	}
 
 	bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");

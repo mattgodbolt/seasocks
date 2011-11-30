@@ -3,6 +3,7 @@
 
 #include "websocket.h"
 #include "seasocks/ssoauthenticator.h"
+#include "seasocks/ResponseCode.h"
 
 #include <inttypes.h>
 #include <netinet/in.h>
@@ -87,7 +88,7 @@ private:
 	bool handleHybiHandshake(int webSocketVersion, const std::string& webSocketKey);
 
 	// Send an error document. Returns 'true' for convenience in handle*() routines.
-	bool sendError(int errorCode, const std::string& message, const std::string& document);
+	bool sendError(ResponseCode errorCode, const std::string& document);
 
 	// Send individual errors. Again all return true for convenience.
 	bool sendUnsupportedError(const std::string& reason);
