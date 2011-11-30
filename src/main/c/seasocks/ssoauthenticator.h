@@ -10,6 +10,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <strings.h>
 
 namespace SeaSocks {
@@ -80,6 +81,8 @@ struct SsoOptions {
 
 	/**
 	 * A secret known only to this app, used to sign and verify the local cookie. 
+	 *    SsoOptions
+
 	 *
 	 * The default value is a random string generated at startup. Application restarts
 	 * will invalidate the cookie, causing the user to be re-authenticated by the SSO
@@ -94,6 +97,25 @@ struct SsoOptions {
 	 * login for all domains, but doesn't restrict by username.
 	 */
 	boost::shared_ptr<AccessControl> accessController;
+
+	enum ProtocolVersion { VERSION_1 = 1, VERSION_2 = 2};
+
+	/**
+	 * Version of the SSO protocol to use in requests.
+	 */
+	ProtocolVersion protocolVersion;
+
+    /**
+     * SSO Protocol 2 and above only: Set of LDAP groups we would like information on.
+     */
+    std::set<std::string> requestGroups;
+
+    /**
+     * SSO Protocol 2 and above only: Set of user attributes we would like information on.
+     */
+    std::set<std::string> requestUserAttributes;
+
+    SsoOptions() : protocolVersion(VERSION_2) {}
 
 	/**
 	 * Create options that will 'just work' for default SSO server: https://signon.drwholdings.com. 
@@ -197,11 +219,12 @@ public:
 	boost::shared_ptr<Response> respondWithLocalCookieAndRedirectToOriginalPage(const Request& request);
 	boost::shared_ptr<Response> respondWithRedirectToAuthenticationServer(const Request& request);
 	void extractCredentialsFromLocalCookie(Request& request) const;
-	bool requestExplicityForbidsDrwSsoRedirect() const;
+	bool requestExplicityForbidsDrwSsoRedirect(const Request& request) const;
 	std::string secureHash(const std::string& string) const;
 	static void parseUriParameters(const std::string& uri, std::map<std::string, std::string>& params);
-	static std::string decodeUriComponent(const char* value, const char* end);
-	static std::string encodeUriComponent(const std::string& value);
+    static std::string decodeUriComponent(const char* value, const char* end);
+    static std::string decodeUriComponent(const std::string& value);
+    static std::string encodeUriComponent(const std::string& value, bool ssoWorkaround = false);
 	static void parseCookie(const std::string& cookieValue, std::map<std::string, std::string>& params);
 private:
 	SsoOptions _options;

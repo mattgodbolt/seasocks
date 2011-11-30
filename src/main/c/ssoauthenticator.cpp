@@ -2,6 +2,7 @@
 
 #include "seasocks/AccessControl.h"
 #include "seasocks/ResponseBuilder.h"
+#include "seasocks/stringutil.h"
 
 #include "md5/md5.h"
 
@@ -47,11 +48,20 @@ public:
 	}
 };
 
+void appendSsoSet(std::ostream& os, const char* name, const std::set<std::string>& set) {
+    if (set.empty()) return;
+    os << "&" << name << "=";
+    bool first = true;
+    for (auto it = set.cbegin(); it != set.cend(); ++it) {
+        if (!first) os << "%26";
+        first = false;
+        os << SeaSocks::SsoAuthenticator::encodeUriComponent(*it, true);
+    }
+}
+
 }
 
 namespace SeaSocks {
-
-static const int SSO_PROTOCOL_VERSION = 1;
 
 SsoAuthenticator::SsoAuthenticator(const SsoOptions& options) : _options(options) {
 	if (!_options.accessController) {
@@ -107,9 +117,17 @@ boost::shared_ptr<Response> SsoAuthenticator::respondWithLocalCookieAndRedirectT
 		// Tampering detected.
         return Response::error(ResponseCode::Forbidden, "Invalid response from SSO server (user or continue params contain invalid chars)");
 	}
+
+	std::string cookieValue;
+	if (_options.protocolVersion == SsoOptions::VERSION_1) {
+	    cookieValue = user;
+	} else {
+	    cookieValue = user + "|" + encodeUriComponent(params["groups"]) + "|" + encodeUriComponent(params["userData"]);
+	}
+
 	return ResponseBuilder(ResponseCode::TemporaryRedirect)
             .withLocation(continueUrl)
-            .setsCookie(_options.authCookieName, encodeUriComponent(user) + "|" + encodeUriComponent(secureHash(user)))
+            .setsCookie(_options.authCookieName, cookieValue + "|" + encodeUriComponent(secureHash(cookieValue)))
             .closesConnection()
 	        .build();
 }
@@ -127,7 +145,11 @@ boost::shared_ptr<Response> SsoAuthenticator::respondWithRedirectToAuthenticatio
 	redirectUrl << _options.authServer << "/login"
 		    << "?basePath=" << encodeUriComponent(baseUrl.str())
 		    << "&target=" << encodeUriComponent(targetUrl.str())
-		    << "&version=" << SSO_PROTOCOL_VERSION;
+		    << "&version=" << _options.protocolVersion;
+	if (_options.protocolVersion >= SsoOptions::VERSION_2) {
+        appendSsoSet(redirectUrl, "groupsRequest", _options.requestGroups);
+        appendSsoSet(redirectUrl, "userDataRequest", _options.requestUserAttributes);
+	}
 	if (!_options.theme.empty()) {
 		redirectUrl << "&theme=" << encodeUriComponent(_options.theme);
 	}
@@ -147,31 +169,56 @@ void SsoAuthenticator::extractCredentialsFromLocalCookie(Request& request) const
 	parseCookie(cookieString, cookieValues);
 	if (cookieValues.count(_options.authCookieName)) {
 		std::string authCookie = cookieValues[_options.authCookieName];
-		size_t delim = authCookie.find('|');
-		if (delim != std::string::npos) {
-			std::string username = authCookie.substr(0, delim);
-			std::string hash = authCookie.substr(delim + 1);
-			if (secureHash(username) == hash) {
-				target->authenticated = true;
-				target->username = username;
-			}
-		}	
+		auto splitUp = split(authCookie, '|');
+        if (_options.protocolVersion == SsoOptions::VERSION_1 && splitUp.size() == 2) {
+            std::string username = splitUp[0];
+            std::string hash = splitUp[1];
+            if (secureHash(username) == hash) {
+                target->authenticated = true;
+                target->username = username;
+            }
+        } else if (_options.protocolVersion == SsoOptions::VERSION_2 && splitUp.size() == 4) {
+            std::string username = splitUp[0];
+            std::string groupdata = splitUp[1];
+            std::string userdata = splitUp[2];
+            std::string hash = splitUp[3];
+            auto expectedHash = secureHash(username + "|" + groupdata + "|" + userdata);
+            if (expectedHash == hash) {
+                target->authenticated = true;
+                target->username = username;
+                auto groups = split(decodeUriComponent(groupdata), '&');
+                for (auto it = groups.begin(); it != groups.end(); ++it) {
+                    target->groups.insert(decodeUriComponent(*it));
+                }
+                auto keyValues = split(decodeUriComponent(userdata), '&');
+                for (auto it = keyValues.begin(); it != keyValues.end(); ++it) {
+                    size_t equals = it->find("=");
+                    if (equals != it->npos) {
+                        target->attributes[decodeUriComponent(it->substr(0, equals))] = decodeUriComponent(it->substr(equals + 1));
+                    }
+                }
+            }
+        }
 	}
 }
 
-bool SsoAuthenticator::requestExplicityForbidsDrwSsoRedirect() const {
-	// TODO: Implement this
-	// return header['drw-sso-no-redirect'] == "true"
-	return false;
+bool SsoAuthenticator::requestExplicityForbidsDrwSsoRedirect(const Request& request) const {
+    return request.getHeader("drw-sso-no-redirect") == "true";
 }
 
-std::string SsoAuthenticator::encodeUriComponent(const std::string& value) {
+std::string SsoAuthenticator::encodeUriComponent(const std::string& value, bool ssoWorkaround) {
 	std::vector<char> result;
 	result.reserve(value.size() * 2);
 	for (int i = 0, l = value.length(); i < l; ++i) {
 		char c = value[i];
 		if (c == ' ') {
-			result.push_back('+');
+		    if (ssoWorkaround) {
+                result.push_back('%');
+                result.push_back('2');
+                result.push_back('0');
+		    } else {
+		        result.push_back('+');
+		    }
 		} else if (isalnum(c)) {
 			result.push_back(c);
 		} else {
@@ -200,6 +247,11 @@ std::string SsoAuthenticator::decodeUriComponent(const char* value, const char* 
 	}
 	return result;
 }
+
+std::string SsoAuthenticator::decodeUriComponent(const std::string& value) {
+    return decodeUriComponent(&value[0], &value[value.size()]);
+}
+
 
 void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std::string, std::string>& cookieValues) {
 	enum State {

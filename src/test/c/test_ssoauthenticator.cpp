@@ -113,35 +113,56 @@ void decodes_uri_components() {
 	ASSERT_EQUALS("\x01\x02\x03\xff" "hElLoMuM", SsoAuthenticator::decodeUriComponent(helloMum, helloMum + strlen(helloMum)));
 }
 
-void extract_credentials_from_local_cookie() {
-	SsoOptions options = SsoOptions::test();
-	options.localAuthKey = "I AM NOT SECURE";
-	SsoAuthenticator sso(options);
+void extract_credentials_from_local_cookie_v1() {
+    SsoOptions options = SsoOptions::test();
+    options.protocolVersion = SsoOptions::VERSION_1;
+    options.localAuthKey = "I AM NOT SECURE";
+    SsoAuthenticator sso(options);
     FakeRequest request;
 
-	// happy path
+    // happy path
     request = FakeRequest::cookie("_auth=joe|49A85A78D89CE4D36997C5B48940A2C6");
-	sso.extractCredentialsFromLocalCookie(request);
-	ASSERT_EQUALS(true, request.credentials()->authenticated);
-	ASSERT_EQUALS("joe", request.credentials()->username);
+    sso.extractCredentialsFromLocalCookie(request);
+    ASSERT_EQUALS(true, request.credentials()->authenticated);
+    ASSERT_EQUALS("joe", request.credentials()->username);
 
-	// no cookie 
+    // no cookie
     request = FakeRequest::cookie("");
-	sso.extractCredentialsFromLocalCookie(request);
-	ASSERT_EQUALS(false, request.credentials()->authenticated);
-	ASSERT_EQUALS("", request.credentials()->username);
+    sso.extractCredentialsFromLocalCookie(request);
+    ASSERT_EQUALS(false, request.credentials()->authenticated);
+    ASSERT_EQUALS("", request.credentials()->username);
 
-	// invalid hash
+    // invalid hash
     request = FakeRequest::cookie("_auth=joe|BADHASH");
-	sso.extractCredentialsFromLocalCookie(request);
-	ASSERT_EQUALS(false, request.credentials()->authenticated);
-	ASSERT_EQUALS("", request.credentials()->username);
+    sso.extractCredentialsFromLocalCookie(request);
+    ASSERT_EQUALS(false, request.credentials()->authenticated);
+    ASSERT_EQUALS("", request.credentials()->username);
 
-	// other cookies (ignored)
+    // other cookies (ignored)
     request = FakeRequest::cookie("foo=bar;x=\" _auth=ignoreme \"_auth=joe|49A85A78D89CE4D36997C5B48940A2C6;blah=x");
     sso.extractCredentialsFromLocalCookie(request);
-	ASSERT_EQUALS(true, request.credentials()->authenticated);
-	ASSERT_EQUALS("joe", request.credentials()->username);
+    ASSERT_EQUALS(true, request.credentials()->authenticated);
+    ASSERT_EQUALS("joe", request.credentials()->username);
+}
+
+void extract_credentials_from_local_cookie_v2() {
+    SsoOptions options = SsoOptions::test();
+    options.protocolVersion = SsoOptions::VERSION_2;
+    options.localAuthKey = "I AM NOT SECURE";
+    SsoAuthenticator sso(options);
+    FakeRequest request;
+
+    // happy path
+    request = FakeRequest::cookie("_auth=joe|foo%26bar%26baz|fullName%3DJoe%20Walnes%26baz%3Dbongo|68F544D5E0358692E43BFD2F515C05E8");
+    sso.extractCredentialsFromLocalCookie(request);
+    ASSERT_EQUALS(true, request.credentials()->authenticated);
+    ASSERT_EQUALS("joe", request.credentials()->username);
+    std::set<std::string> expectedGroups = { "foo", "bar", "baz" };
+    ASSERT_EQUALS(expectedGroups, request.credentials()->groups);
+    std::map<std::string, std::string> expectedMap;
+    expectedMap["fullName"] = "Joe Walnes";
+    expectedMap["baz"] = "bongo";
+    ASSERT_EQUALS(expectedMap, request.credentials()->attributes);
 }
 
 void parses_cookies() {
@@ -171,8 +192,9 @@ void parses_cookies() {
 	ASSERT_EQUALS("you", cookies["bye"]);
 }
 
-void redirects_to_sso_server() {
+void redirects_to_sso_server_v1() {
 	SsoOptions options = SsoOptions::test();
+	options.protocolVersion = SsoOptions::VERSION_1;
 	options.returnPath = "/__bounceback";
 	options.authServer = "https://the-auth-server:10000";
 	SsoAuthenticator sso(options);
@@ -188,8 +210,31 @@ void redirects_to_sso_server() {
 	ASSERT_EQUALS(expectedLocation, locationHeader);
 }
 
-void parses_bounceback_params_and_generates_redirect() {
+void redirects_to_sso_server_v2() {
+    SsoOptions options = SsoOptions::test();
+    options.protocolVersion = SsoOptions::VERSION_2;
+    options.returnPath = "/__bounceback";
+    options.authServer = "https://the-auth-server:10000";
+    options.requestGroups.insert("ETF MM");
+    options.requestUserAttributes.insert("fullName");
+    options.requestUserAttributes.insert("email");
+    SsoAuthenticator sso(options);
+
+    auto response = sso.respondWithRedirectToAuthenticationServer(FakeRequest::uri("/mypage?foo").withHeader("Host", "myserver:8080"));
+
+    ASSERT_EQUALS(ResponseCode::TemporaryRedirect, response->responseCode());
+    ASSERT("Should close connection", !response->keepConnectionAlive());
+
+    std::string expectedLocation = "https://the-auth-server:10000/login?basePath=http%3A%2F%2Fmyserver%3A8080&target=http%3A%2F%2Fmyserver%3A8080%2F%5F%5Fbounceback%3Fcontinue%3D%252Fmypage%253Ffoo"
+            "&version=2&groupsRequest=ETF%20MM&userDataRequest=email%26fullName";
+    ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Location"));
+    auto locationHeader = response->getAdditionalHeaders().find("Location")->second;
+    ASSERT_EQUALS(expectedLocation, locationHeader);
+}
+
+void parses_bounceback_params_and_generates_redirect_v1() {
 	SsoOptions options = SsoOptions::test();
+	options.protocolVersion = SsoOptions::VERSION_1;
 	options.localAuthKey = "I AM NOT SECURE";
 	options.returnPath = "/__bounceback";
 	SsoAuthenticator sso(options);
@@ -206,6 +251,27 @@ void parses_bounceback_params_and_generates_redirect() {
     ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Set-Cookie"));
     auto cookie = response->getAdditionalHeaders().find("Set-Cookie")->second;
     ASSERT_EQUALS("_auth=joe|49A85A78D89CE4D36997C5B48940A2C6", cookie);
+}
+
+void parses_bounceback_params_and_generates_redirect_v2() {
+    SsoOptions options = SsoOptions::test();
+    options.protocolVersion = SsoOptions::VERSION_2;
+    options.localAuthKey = "I AM NOT SECURE";
+    options.returnPath = "/__bounceback";
+    SsoAuthenticator sso(options);
+
+    auto response = sso.respondWithLocalCookieAndRedirectToOriginalPage(FakeRequest::uri("/__bounceback?user=joe&groups=tbd&userData=foo%3Dbar&continue=%2fpage"));
+
+    ASSERT_EQUALS(ResponseCode::TemporaryRedirect, response->responseCode());
+    ASSERT("Should close connection", !response->keepConnectionAlive());
+
+    ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Location"));
+    auto locationHeader = response->getAdditionalHeaders().find("Location")->second;
+    ASSERT_EQUALS("/page", locationHeader);
+
+    ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Set-Cookie"));
+    auto cookie = response->getAdditionalHeaders().find("Set-Cookie")->second;
+    ASSERT_EQUALS("_auth=joe|tbd|foo%3Dbar|7DD1B3589E44B52B75956DD9F16E6412", cookie);
 }
 
 void returns_same_hash_each_time() {
@@ -228,12 +294,15 @@ int main(int argc, const char* argv[]) {
 	RUN(skips_bad_uri_encodings);
 	RUN(encodes_uri_components);
 	RUN(decodes_uri_components);
-	RUN(extract_credentials_from_local_cookie);
+    RUN(extract_credentials_from_local_cookie_v1);
+    RUN(extract_credentials_from_local_cookie_v2);
 	RUN(parses_cookies);
-	RUN(parses_bounceback_params_and_generates_redirect);
+    RUN(parses_bounceback_params_and_generates_redirect_v1);
+    RUN(parses_bounceback_params_and_generates_redirect_v2);
 	RUN(returns_same_hash_each_time);
 	RUN(uses_a_random_hash);
-	RUN(redirects_to_sso_server);
+    RUN(redirects_to_sso_server_v1);
+    RUN(redirects_to_sso_server_v2);
 	return TEST_REPORT();
 }
  

@@ -22,7 +22,7 @@ public:
 		if (request.verb() != Request::Get) return Response::unhandled();
 		std::ostringstream ostr;
 		ostr << "<html><head><title>SeaSocks example</title></head>"
-				"<body>You asked for " << request.getRequestUri()
+				"<body>Hello, " << request.credentials()->attributes["fullName"] << "! You asked for " << request.getRequestUri()
 				<< " and your ip is " << request.getRemoteAddress().sin_addr.s_addr
 				<< " and a random number is " << rand()
 				<< "<form action=/post method=post><input type=text name=value1></input><br>"
@@ -36,7 +36,9 @@ int main(int argc, const char* argv[]) {
 	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::INFO));
 
 	Server server(logger);
-	server.enableSingleSignOn(SsoOptions::test());
+	auto sso = SsoOptions::test();
+	sso.requestUserAttributes.insert("fullName");
+	server.enableSingleSignOn(sso);
 	
 	boost::shared_ptr<PageHandler> handler(new MyPageHandler());
 	server.setPageHandler(handler);

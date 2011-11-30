@@ -738,7 +738,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
             LS_DEBUG(_logger, "SSO content at " << requestUri);
 			_sso->extractCredentialsFromLocalCookie(*_request);
 			if (!_request->credentials()->authenticated) {
-				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
+				if (_sso->requestExplicityForbidsDrwSsoRedirect(*_request)) {
 					return sendError(ResponseCode::Unauthorized, requestUri);
 				}
                 LS_DEBUG(_logger, "Redirecting to server");

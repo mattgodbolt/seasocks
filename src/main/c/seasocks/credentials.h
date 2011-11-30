@@ -1,6 +1,8 @@
 #ifndef _SEASOCKS_CREDENTIALS_H_
 #define _SEASOCKS_CREDENTIALS_H_
 
+#include <map>
+#include <set>
 #include <string>
 #include <iostream>
 
@@ -18,17 +20,33 @@ struct Credentials {
 	 */
 	std::string username;
 	
-	// TODO: Support SSO V2 for additional fields:
-	// std::set<std::string> groups;
-	// std::map<std::string, std::string> attributes;
+	/**
+	 * Groups the user is in. NB only groups requested in the SsoOptions will be returned.
+	 */
+	std::set<std::string> groups;
+
+	/**
+	 * Attributes for the user. NB only attributes requested in the SsoOptions will be returned.
+	 */
+	std::map<std::string, std::string> attributes;
 	
-	Credentials(): authenticated(false), username("") {
+	Credentials(): authenticated(false) {
 	}
 	
 };
 
-inline std::ostream &operator<<(std::ostream &os, Credentials& credentials) {
-	return os << "{authenticated:" << credentials.authenticated << ", username:'" << credentials.username << "'}";
+inline std::ostream &operator<<(std::ostream &os, const Credentials& credentials) {
+	os << "{authenticated:" << credentials.authenticated << ", username:'" << credentials.username << "', groups: {";
+	for (auto it = credentials.groups.begin(); it != credentials.groups.end(); ++it) {
+	    if (it != credentials.groups.begin()) os << ", ";
+	    os << *it;
+	}
+	os << "}, attrs: {";
+    for (auto it = credentials.attributes.begin(); it != credentials.attributes.end(); ++it) {
+        if (it != credentials.attributes.begin()) os << ", ";
+        os << it->first << "=" << it->second;
+    }
+	return os << "}}";
 }
 
 }  // namespace SeaSocks
