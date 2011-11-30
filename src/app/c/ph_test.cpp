@@ -36,7 +36,7 @@ int main(int argc, const char* argv[]) {
 	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::INFO));
 
 	Server server(logger);
-	//server.enableSingleSignOn(SsoOptions::test());
+	server.enableSingleSignOn(SsoOptions::test());
 	
 	boost::shared_ptr<PageHandler> handler(new MyPageHandler());
 	server.setPageHandler(handler);

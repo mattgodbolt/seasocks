@@ -226,6 +226,7 @@ void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std
 			default:
 				state = State::KEY;
 				keyStart = pos;
+				break;
 			}
 			break;
 		case State::KEY:
@@ -253,6 +254,7 @@ void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std
 			default:
 				valueStart = pos;
 				state = State::VALUE;
+                break;
 			}
 			break;
 		case State::VALUE:
@@ -292,6 +294,7 @@ void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std
 				}
 			default:
 				quotedBuffer << *pos;
+                break;
 			}
 			break;
 		}

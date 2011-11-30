@@ -72,6 +72,7 @@ private:
 	void finalise();
 	bool closed() const;
 
+	void closeWhenEmpty();
 	void closeInternal();
 
 	void handleNewData();

@@ -210,7 +210,15 @@ void Connection::close() {
 	closeInternal();
 }
 
-void Connection::closeInternal(){
+void Connection::closeWhenEmpty() {
+    if (_outBuf.empty()) {
+        closeInternal();
+    } else {
+        _closeOnEmpty = true;
+    }
+}
+
+void Connection::closeInternal() {
 	// It only actually only calls shutdown on the socket,
 	// leaving the close of the FD and the cleanup until the destructor runs.
 	_server->checkThread();
@@ -377,6 +385,7 @@ void Connection::handleNewData() {
 		break;
 	default:
 		assert(false);
+		break;
 	}
 }
 
@@ -604,7 +613,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
 	if (!flush()) {
 		return false;
 	}
-	_closeOnEmpty = true;
+	closeWhenEmpty();
 	return true;
 }
 
@@ -720,13 +729,14 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	// <SSO>
 	if (_sso) {
 		if (_sso->isBounceBackFromSsoServer(requestUri)) {
+            LS_DEBUG(_logger, "Bouncing back via " << requestUri);
 			if (_sso->validateSignature(requestUri)) {
 				std::stringstream response;
 				std::string error;
 				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(requestUri, response, error)) {
 					std::string content = response.str();
 					bool result = write(content.c_str(), content.length(), true);
-					_closeOnEmpty = true;
+					closeWhenEmpty();
 					return result;
 				} else {
 					return sendISE(error + " at " + requestUri);
@@ -738,6 +748,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
 		if (findEmbeddedContent(requestUri) == NULL && _sso->enabledForPath(requestUri)) {
 			// TODO: Merge enabledForPath with the AccessControl; perhaps merge them.
+            LS_DEBUG(_logger, "SSO content at " << requestUri);
 			_sso->extractCredentialsFromLocalCookie(cookie, _credentials);
 			if (!_credentials->authenticated) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
@@ -747,8 +758,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 					std::string error;
 					if (_sso->respondWithRedirectToAuthenticationServer(requestUri, host, response, error)) {
 						std::string content = response.str();
+			            LS_DEBUG(_logger, "Redirecting to server");
 						bool result = write(content.c_str(), content.length(), true);
-						_closeOnEmpty = true;
+						closeWhenEmpty();
 						return result;
 					} else {
 						return sendISE(error + " at " + requestUri);
