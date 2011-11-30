@@ -264,31 +264,30 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
 	if (closed() || _closeOnEmpty) {
 		return false;
 	}
-	if (size == 0) {
-		return true;
+	if (size) {
+        int bytesSent = 0;
+        if (_outBuf.empty() && flushIt) {
+            // Attempt fast path, send directly.
+            bytesSent = safeSend(data, size);
+            if (bytesSent == static_cast<int>(size)) {
+                // We sent directly.
+                return true;
+            }
+            if (bytesSent == -1) {
+                return false;
+            }
+        }
+        size_t bytesToBuffer = size - bytesSent;
+        size_t endOfBuffer = _outBuf.size();
+        size_t newBufferSize = endOfBuffer + bytesToBuffer;
+        if (newBufferSize >= MaxBufferSize) {
+            LS_WARNING(_logger, "Closing connection: buffer size too large (" << newBufferSize << " > " << MaxBufferSize);
+            closeInternal();
+            return false;
+        }
+        _outBuf.resize(newBufferSize);
+        memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
 	}
-	int bytesSent = 0;
-	if (_outBuf.empty() && flushIt) {
-		// Attempt fast path, send directly.
-		bytesSent = safeSend(data, size);
-		if (bytesSent == static_cast<int>(size)) {
-			// We sent directly.
-			return true;
-		}
-		if (bytesSent == -1) {
-			return false;
-		}
-	}
-	size_t bytesToBuffer = size - bytesSent;
-	size_t endOfBuffer = _outBuf.size();
-	size_t newBufferSize = endOfBuffer + bytesToBuffer;
-	if (newBufferSize >= MaxBufferSize) {
-		LS_WARNING(_logger, "Closing connection: buffer size too large (" << newBufferSize << " > " << MaxBufferSize);
-		closeInternal();
-		return false;
-	}
-	_outBuf.resize(newBufferSize);
-	memcpy(&_outBuf[endOfBuffer], reinterpret_cast<const uint8_t*>(data) + bytesSent, bytesToBuffer);
 	if (flushIt) {
 		return flush();
 	}
@@ -434,7 +433,7 @@ void Connection::handleWebSocketKey3() {
 
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
-	bufferResponseAndCommonHeaders("HTTP/1.1 101 WebSocket Protocol Handshake");
+	bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
 	bufferLine("Upgrade: WebSocket");
 	bufferLine("Connection: Upgrade");
 	write(&_hixieExtraHeaders[0], _hixieExtraHeaders.size(), false);
@@ -590,7 +589,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
 	assert(_state != HANDLING_HIXIE_WEBSOCKET);
 	auto errorNumber = static_cast<int>(errorCode);
 	auto message = ::name(errorCode);
-	bufferResponseAndCommonHeaders("HTTP/1.1 " + boost::lexical_cast<std::string>(errorNumber) + " " + message);
+	bufferResponseAndCommonHeaders(errorCode);
 	auto errorContent = findEmbeddedContent("/_error.html");
 	std::string document;
 	if (errorContent) {
@@ -729,19 +728,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		if (_sso->isBounceBackFromSsoServer(*_request)) {
             LS_DEBUG(_logger, "Bouncing back via " << requestUri);
 			if (_sso->validateSignature(*_request)) {
-				std::stringstream response;
-				std::string error;
-				if(_sso->respondWithLocalCookieAndRedirectToOriginalPage(*_request, response, error)) {
-					std::string content = response.str();
-					bool result = write(content.c_str(), content.length(), true);
-					closeWhenEmpty();
-					return result;
-				} else {
-					return sendISE(error + " at " + requestUri);
-				}
-			} else {
-				return sendISE(std::string("Invalid SSO signature at ") + requestUri);
+				return sendResponse(_sso->respondWithLocalCookieAndRedirectToOriginalPage(*_request));
 			}
+            return sendISE(std::string("Invalid SSO signature at ") + requestUri);
 		}
 
 		if (findEmbeddedContent(requestUri) == NULL && _sso->enabledFor(*_request)) {
@@ -751,19 +740,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			if (!_request->credentials()->authenticated) {
 				if (_sso->requestExplicityForbidsDrwSsoRedirect()) {
 					return sendError(ResponseCode::Unauthorized, requestUri);
-				} else {
-					std::stringstream response;
-					std::string error;
-					if (_sso->respondWithRedirectToAuthenticationServer(*_request, host, response, error)) {
-						std::string content = response.str();
-			            LS_DEBUG(_logger, "Redirecting to server");
-						bool result = write(content.c_str(), content.length(), true);
-						closeWhenEmpty();
-						return result;
-					} else {
-						return sendISE(error + " at " + requestUri);
-					}
 				}
+                LS_DEBUG(_logger, "Redirecting to server");
+                return sendResponse(_sso->respondWithRedirectToAuthenticationServer(*_request));
 			}
 			if (!_sso->hasAccess(*_request)) {
 				return sendError(ResponseCode::Forbidden, requestUri);
@@ -817,27 +796,46 @@ bool Connection::handlePageRequest() {
 		LS_ERROR(_logger, "page error: (unknown)");
 		return sendISE("(unknown)");
 	}
+    if (!response) {
+        return sendStaticData(_request->getRequestUri().c_str(), _request->getHeader("Range"));
+    }
+	return sendResponse(response);
+}
+
+bool Connection::sendResponse(boost::shared_ptr<Response> response) {
 	const auto requestUri = _request->getRequestUri();
-	if (!response) {
-		return sendStaticData(requestUri.c_str(), _request->getHeader("Range"));
-	} else if (response->responseCode() == ResponseCode::NotFound) {
+	if (response->responseCode() == ResponseCode::NotFound) {
 		// TODO: better here; we use this purely to serve our own embedded content.
 		return send404(requestUri);
 	} else if (!isOk(response->responseCode())) {
 		return sendError(response->responseCode(), response->payload());
 	}
 
-	bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
+	bufferResponseAndCommonHeaders(response->responseCode());
 	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(response->payloadSize()));
 	bufferLine("Content-Type: " + response->contentType());
-	bufferLine("Connection: keep-alive");
+	if (response->keepConnectionAlive()) {
+	    bufferLine("Connection: keep-alive");
+	} else {
+        bufferLine("Connection: close");
+	}
 	bufferLine("Last-Modified: " + now());
 	bufferLine("Cache-Control: no-store");
 	bufferLine("Pragma: no-cache");
 	bufferLine("Expires: " + now());
+	auto headers = response->getAdditionalHeaders();
+	for (auto it = headers.begin(); it != headers.end(); ++it) {
+	    bufferLine(it->first + ": " + it->second);
+	}
 	bufferLine("");
 
-	return write(response->payload(), response->payloadSize(), true);
+	if (!write(response->payload(), response->payloadSize(), true)) {
+	    return false;
+	}
+	if (!response->keepConnectionAlive()) {
+	    closeWhenEmpty();
+	}
+	return true;
 }
 
 bool Connection::handleHybiHandshake(
@@ -850,7 +848,7 @@ bool Connection::handleHybiHandshake(
 
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
-	bufferResponseAndCommonHeaders("HTTP/1.1 101 WebSocket Protocol Handshake");
+	bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
 	bufferLine("Upgrade: WebSocket");
 	bufferLine("Connection: Upgrade");
 	bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
@@ -909,13 +907,13 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
 std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, long fileSize) {
 	if (origRanges.empty()) {
 		// Easy case: a non-range request.
-		bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
+		bufferResponseAndCommonHeaders(ResponseCode::Ok);
 		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
 		return { Range { 0, fileSize - 1 } };
 	}
 
 	// Partial content request.
-	bufferResponseAndCommonHeaders("HTTP/1.1 206 OK");
+	bufferResponseAndCommonHeaders(ResponseCode::PartialContent);
 	int contentLength = 0;
 	std::ostringstream rangeLine;
 	rangeLine << "Content-Range: bytes ";
@@ -1002,7 +1000,7 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 }
 
 bool Connection::sendData(const std::string& type, const char* start, size_t size) {
-	bufferResponseAndCommonHeaders("HTTP/1.1 200 OK");
+	bufferResponseAndCommonHeaders(ResponseCode::Ok);
 	bufferLine("Content-Type: " + type);
 	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(size));
 	bufferLine("Connection: keep-alive");
@@ -1011,7 +1009,10 @@ bool Connection::sendData(const std::string& type, const char* start, size_t siz
 	return result;
 }
 
-void Connection::bufferResponseAndCommonHeaders(const std::string& response) {
+void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
+    auto responseCodeInt = static_cast<int>(code);
+    auto responseCodeName = ::name(code);
+    auto response = std::string("HTTP/1.1 " + boost::lexical_cast<std::string>(responseCodeInt) + " " + responseCodeName);
 	LS_INFO(_logger, "Response: " << response);
 	bufferLine(response);
 	bufferLine("Server: " SEASOCKS_VERSION_STRING);

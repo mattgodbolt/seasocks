@@ -4,6 +4,7 @@
 #include "seasocks/credentials.h"
 #include "seasocks/AccessControl.h"
 #include "seasocks/Request.h"
+#include "seasocks/Response.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -193,8 +194,8 @@ public:
 	bool hasAccess(const Request& request) const;
 	bool isBounceBackFromSsoServer(const Request& request) const;
 	bool validateSignature(const Request& request) const;
-	bool respondWithLocalCookieAndRedirectToOriginalPage(const Request& request, std::ostream& response, std::string& error);
-	bool respondWithRedirectToAuthenticationServer(const Request& request, const std::string& requestHost, std::ostream& response, std::string& error);
+	boost::shared_ptr<Response> respondWithLocalCookieAndRedirectToOriginalPage(const Request& request);
+	boost::shared_ptr<Response> respondWithRedirectToAuthenticationServer(const Request& request);
 	void extractCredentialsFromLocalCookie(Request& request) const;
 	bool requestExplicityForbidsDrwSsoRedirect() const;
 	std::string secureHash(const std::string& string) const;

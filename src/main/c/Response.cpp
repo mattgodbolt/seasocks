@@ -1,35 +1,8 @@
 #include "seasocks/Response.h"
 
+#include "internal/ConcreteResponse.h"
+
 using namespace SeaSocks;
-
-namespace {
-
-class ConcreteResponse : public Response {
-	ResponseCode _responseCode;
-	const std::string _payload;
-	const std::string _contentType;
-public:
-	ConcreteResponse(ResponseCode responseCode, const std::string& payload, const std::string& contentType) :
-		_responseCode(responseCode), _payload(payload), _contentType(contentType) {}
-
-	virtual ResponseCode responseCode() const {
-		return _responseCode;
-	}
-
-	virtual const char* payload() const {
-		return _payload.c_str();
-	}
-
-	virtual size_t payloadSize() const {
-		return _payload.size();
-	}
-
-	virtual std::string contentType() const {
-		return _contentType;
-	}
-};
-
-}
 
 namespace SeaSocks {
 
@@ -39,27 +12,27 @@ boost::shared_ptr<Response> Response::unhandled() {
 }
 
 boost::shared_ptr<Response> Response::notFound() {
-	static boost::shared_ptr<Response> notFound(new ConcreteResponse(ResponseCode::NotFound, "Not found", ""));
+	static boost::shared_ptr<Response> notFound(new ConcreteResponse(ResponseCode::NotFound, "Not found", "text/plain", Response::Headers(), false));
 	return notFound;
 }
 
 boost::shared_ptr<Response> Response::error(ResponseCode code, const std::string& reason) {
-	return boost::shared_ptr<Response>(new ConcreteResponse(code, reason, ""));
+	return boost::shared_ptr<Response>(new ConcreteResponse(code, reason, "text/plain", Response::Headers(), false));
 }
 
 boost::shared_ptr<Response> Response::textResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
-			new ConcreteResponse(ResponseCode::Ok, response, "text/plain"));
+			new ConcreteResponse(ResponseCode::Ok, response, "text/plain", Response::Headers(), true));
 }
 
 boost::shared_ptr<Response> Response::jsonResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
-			new ConcreteResponse(ResponseCode::Ok, response, "application/json"));
+			new ConcreteResponse(ResponseCode::Ok, response, "application/json", Response::Headers(), true));
 }
 
 boost::shared_ptr<Response> Response::htmlResponse(const std::string& response) {
 	return boost::shared_ptr<Response>(
-			new ConcreteResponse(ResponseCode::Ok, response, "text/html"));
+			new ConcreteResponse(ResponseCode::Ok, response, "text/html", Response::Headers(), true));
 }
 
 }

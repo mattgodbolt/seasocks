@@ -4,6 +4,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <string>
+#include <map>
 
 namespace SeaSocks {
 
@@ -16,6 +17,11 @@ public:
 	virtual size_t payloadSize() const = 0;
 
 	virtual std::string contentType() const = 0;
+
+	virtual bool keepConnectionAlive() const = 0;
+
+	typedef std::multimap<std::string, std::string> Headers;
+    virtual Headers getAdditionalHeaders() const = 0;
 
 	static boost::shared_ptr<Response> unhandled();
 

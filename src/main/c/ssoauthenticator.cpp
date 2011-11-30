@@ -1,6 +1,7 @@
 #include "seasocks/ssoauthenticator.h"
 
 #include "seasocks/AccessControl.h"
+#include "seasocks/ResponseBuilder.h"
 
 #include "md5/md5.h"
 
@@ -85,20 +86,18 @@ bool SsoAuthenticator::validateSignature(const Request& request) const {
 	return true;
 }
 
-bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const Request& request, std::ostream& response, std::string& error) {
+boost::shared_ptr<Response> SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const Request& request) {
 	std::map<std::string, std::string> params;
 	parseUriParameters(request.getRequestUri(), params);
 	if (params.count("user") == 0 || params.count("continue") == 0) {
 		// Tampering detected.
-		error = "Invalid response from SSO server (require user and continue params)";
-		return false;
+	    return Response::error(ResponseCode::Forbidden, "Invalid response from SSO server (require user and continue params)");
 	}
 	std::string user = params["user"];
 	std::string continueUrl = params["continue"];
 	if (user.empty() || continueUrl.empty()) {
 		// Tampering detected.
-		error = "Invalid response from SSO server (require user and continue param values)";
-		return false;
+        return Response::error(ResponseCode::Forbidden, "Invalid response from SSO server (require user and continue params)");
 	}
 	if (user.find("\r") != std::string::npos
 	    || user.find("\n") != std::string::npos
@@ -106,22 +105,19 @@ bool SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const Req
 	    || continueUrl.find("\r") != std::string::npos
 	    || continueUrl.find("\n") != std::string::npos) {
 		// Tampering detected.
-		error = "Invalid response from SSO server (user or continue params contain invalid chars)";
-		return false;
+        return Response::error(ResponseCode::Forbidden, "Invalid response from SSO server (user or continue params contain invalid chars)");
 	}
-	response << "HTTP/1.1 307 Temporary Redirect\r\n"
-		 << "Location: " << continueUrl << "\r\n"
-	         << "Set-Cookie: " << _options.authCookieName
-		 << "=" << encodeUriComponent(user) << "|" << encodeUriComponent(secureHash(user)) << "\r\n"
-		 << "Connection: close\r\n"
-		 << "\r\n";
-	return true;
+	return ResponseBuilder(ResponseCode::TemporaryRedirect)
+            .withLocation(continueUrl)
+            .setsCookie(_options.authCookieName, encodeUriComponent(user) + "|" + encodeUriComponent(secureHash(user)))
+            .closesConnection()
+	        .build();
 }
 
-bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const Request& request, const std::string& requestHost, std::ostream& response, std::string& error) {
+boost::shared_ptr<Response> SsoAuthenticator::respondWithRedirectToAuthenticationServer(const Request& request) {
 	std::stringstream baseUrl;
 	if (_options.basePath.empty()) {
-		baseUrl	<< "http://" << requestHost;
+		baseUrl	<< "http://" << request.getHeader("Host");
 	} else {
 		baseUrl << _options.basePath;
 	}
@@ -135,11 +131,10 @@ bool SsoAuthenticator::respondWithRedirectToAuthenticationServer(const Request& 
 	if (!_options.theme.empty()) {
 		redirectUrl << "&theme=" << encodeUriComponent(_options.theme);
 	}
-	response << "HTTP/1.1 307 Temporary Redirect\r\n"
-		 << "Location: " << redirectUrl.str() << "\r\n"
-		 << "Connection: close\r\n"
-		 << "\r\n";
-	return true;
+	return ResponseBuilder(ResponseCode::TemporaryRedirect)
+	        .withLocation(redirectUrl.str())
+	        .closesConnection()
+	        .build();
 }
 
 void SsoAuthenticator::extractCredentialsFromLocalCookie(Request& request) const {

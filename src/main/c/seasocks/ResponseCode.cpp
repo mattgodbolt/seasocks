@@ -3,8 +3,7 @@
 using namespace SeaSocks;
 
 bool isOk(SeaSocks::ResponseCode code) {
-	auto intValue = static_cast<int>(code);
-	return intValue >= 200 && intValue < 300;
+	return static_cast<int>(code) < 400;
 }
 
 const char* name(ResponseCode code) {

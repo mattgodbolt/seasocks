@@ -12,13 +12,15 @@ namespace {
 
 class FakeRequest : public Request {
     std::string _uri;
-    std::string _cookie;
+    std::map<std::string, std::string> _headers;
     boost::shared_ptr<Credentials> _credentials;
 public:
     FakeRequest() : _credentials(new Credentials()) {}
 
     static FakeRequest uri(const std::string& uri) { FakeRequest r; r._uri = uri; return r; }
-    static FakeRequest cookie(const std::string& cookie) { FakeRequest r; r._cookie = cookie; return r; }
+    static FakeRequest cookie(const std::string& cookie) { FakeRequest r; r._headers["Cookie"] = cookie; return r; }
+
+    FakeRequest& withHeader(const char* header, const char* val) { _headers[header] = val; return *this; }
 
     virtual Verb verb() const { return Get; }
     virtual boost::shared_ptr<Credentials> credentials() const { return _credentials; }
@@ -41,12 +43,11 @@ public:
     }
 
     virtual bool hasHeader(const std::string& name) const {
-        return (name == "Cookie" && !_cookie.empty());
+        return _headers.find(name) != _headers.end();
     }
 
     virtual std::string getHeader(const std::string& name) const {
-        if (name == "Cookie") return _cookie;
-        return "";
+        return _headers.find(name)->second;
     }
 };
 
@@ -176,16 +177,15 @@ void redirects_to_sso_server() {
 	options.authServer = "https://the-auth-server:10000";
 	SsoAuthenticator sso(options);
 
-	std::stringstream response;
-	std::string error;
-	sso.respondWithRedirectToAuthenticationServer(FakeRequest::uri("/mypage?foo"), "myserver:8080", response, error);
+	auto response = sso.respondWithRedirectToAuthenticationServer(FakeRequest::uri("/mypage?foo").withHeader("Host", "myserver:8080"));
 
-	std::string expectedResponse = 
-		"HTTP/1.1 307 Temporary Redirect\r\n"
-		"Location: https://the-auth-server:10000/login?basePath=http%3A%2F%2Fmyserver%3A8080&target=http%3A%2F%2Fmyserver%3A8080%2F%5F%5Fbounceback%3Fcontinue%3D%252Fmypage%253Ffoo&version=1\r\n"
-		"Connection: close\r\n"
-		"\r\n";
-	ASSERT_EQUALS(expectedResponse, response.str());
+	ASSERT_EQUALS(ResponseCode::TemporaryRedirect, response->responseCode());
+	ASSERT("Should close connection", !response->keepConnectionAlive());
+
+	std::string expectedLocation = "https://the-auth-server:10000/login?basePath=http%3A%2F%2Fmyserver%3A8080&target=http%3A%2F%2Fmyserver%3A8080%2F%5F%5Fbounceback%3Fcontinue%3D%252Fmypage%253Ffoo&version=1";
+	ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Location"));
+	auto locationHeader = response->getAdditionalHeaders().find("Location")->second;
+	ASSERT_EQUALS(expectedLocation, locationHeader);
 }
 
 void parses_bounceback_params_and_generates_redirect() {
@@ -194,17 +194,18 @@ void parses_bounceback_params_and_generates_redirect() {
 	options.returnPath = "/__bounceback";
 	SsoAuthenticator sso(options);
 
-	std::stringstream response;
-	std::string error;
-	sso.respondWithLocalCookieAndRedirectToOriginalPage(FakeRequest::uri("/__bounceback?user=joe&continue=%2fpage"), response, error);
+	auto response = sso.respondWithLocalCookieAndRedirectToOriginalPage(FakeRequest::uri("/__bounceback?user=joe&continue=%2fpage"));
 
-	std::string expectedResponse = 
-		"HTTP/1.1 307 Temporary Redirect\r\n"
-		"Location: /page\r\n"
-		"Set-Cookie: _auth=joe|49A85A78D89CE4D36997C5B48940A2C6\r\n"
-		"Connection: close\r\n"
-		"\r\n";
-	ASSERT_EQUALS(expectedResponse, response.str());
+    ASSERT_EQUALS(ResponseCode::TemporaryRedirect, response->responseCode());
+    ASSERT("Should close connection", !response->keepConnectionAlive());
+
+    ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Location"));
+    auto locationHeader = response->getAdditionalHeaders().find("Location")->second;
+    ASSERT_EQUALS("/page", locationHeader);
+
+    ASSERT_EQUALS(1, response->getAdditionalHeaders().count("Set-Cookie"));
+    auto cookie = response->getAdditionalHeaders().find("Set-Cookie")->second;
+    ASSERT_EQUALS("_auth=joe|49A85A78D89CE4D36997C5B48940A2C6", cookie);
 }
 
 void returns_same_hash_each_time() {

@@ -19,6 +19,7 @@ namespace SeaSocks {
 class Logger;
 class Server;
 class PageRequest;
+class Response;
 
 class Connection : public WebSocket {
 public:
@@ -99,6 +100,8 @@ private:
 
 	void sendHybi(int opcode, const char* webSocketResponse, size_t messageLength);
 
+	bool sendResponse(boost::shared_ptr<Response> response);
+
 	bool processHeaders(uint8_t* first, uint8_t* last);
 	bool sendData(const std::string& type, const char* start, size_t size);
 
@@ -114,7 +117,7 @@ private:
 
 	int safeSend(const void* data, size_t size);
 
-	void bufferResponseAndCommonHeaders(const std::string& response);
+	void bufferResponseAndCommonHeaders(ResponseCode code);
 
 	std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 

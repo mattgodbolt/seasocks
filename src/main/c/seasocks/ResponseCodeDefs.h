@@ -2,7 +2,7 @@
 // Do not directly include! Use ResponseCode.h instead
 
 SEASOCKS_DEFINE_RESPONSECODE(100, Continue, "Continue")
-SEASOCKS_DEFINE_RESPONSECODE(101, SwitchingProtocols, "Switching Protocols")
+SEASOCKS_DEFINE_RESPONSECODE(101, WebSocketProtocolHandshake, "WebSocket Protocol Handshake")
 SEASOCKS_DEFINE_RESPONSECODE(102, Processing, "Processing")
 SEASOCKS_DEFINE_RESPONSECODE(103, Checkpoint, "Checkpoint")
 
