@@ -1030,4 +1030,14 @@ void Connection::setLinger() {
 	}
 }
 
+bool Connection::hasHeader(const std::string& header) const {
+    return _request->hasHeader(header);
+}
+
+std::string Connection::getHeader(const std::string& header) const {
+    return _request->getHeader(header);
+}
+
+}
+
 }  // SeaSocks

@@ -46,12 +46,10 @@ public:
 	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
 	virtual const std::string& getRequestUri() const { return _requestUri; }
 	virtual Request::Verb verb() const { return Request::WebSocket; }
-	// Is this all such a good idea?
 	virtual size_t contentLength() const { return 0; }
 	virtual const uint8_t* content() const { return NULL; }
-	// TODO: At the very least should implement these properly for WS:
-	virtual bool hasHeader(const std::string&) const { return false; }
-	virtual std::string getHeader(const std::string&) const { return std::string(); }
+	virtual bool hasHeader(const std::string&) const;
+	virtual std::string getHeader(const std::string&) const;
 
 	void setLinger();
 
