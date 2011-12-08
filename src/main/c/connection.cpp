@@ -1014,6 +1014,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
 	bufferLine(response);
 	bufferLine("Server: " SEASOCKS_VERSION_STRING);
 	bufferLine("Date: " + now());
+    bufferLine("Access-Control-Allow-Origin: *");
 }
 
 void Connection::setLinger() {
