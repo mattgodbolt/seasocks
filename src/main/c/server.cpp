@@ -414,7 +414,8 @@ void Server::setPageHandler(boost::shared_ptr<PageHandler> handler) {
 }
 
 bool Server::isCrossOriginAllowed(const char* endpoint) const {
-	auto iter = _webSocketHandlerMap.find(endpoint);
+	auto splits = split(endpoint, '?');
+	auto iter = _webSocketHandlerMap.find(splits[0]);
 	if (iter == _webSocketHandlerMap.end()) {
 		return false;
 	}
@@ -422,7 +423,8 @@ bool Server::isCrossOriginAllowed(const char* endpoint) const {
 }
 
 boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endpoint) const {
-	auto iter = _webSocketHandlerMap.find(endpoint);
+	auto splits = split(endpoint, '?');
+	auto iter = _webSocketHandlerMap.find(splits[0]);
 	if (iter == _webSocketHandlerMap.end()) {
 		return boost::shared_ptr<WebSocket::Handler>();
 	}
