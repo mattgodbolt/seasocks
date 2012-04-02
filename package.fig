@@ -10,15 +10,6 @@ config default
   append LIBPATH=@/bin/libseasocks.a
   append INCLUDEPATH=@/src/main/c//seasocks
   include tclap/1.2.0
-end
-
-config ubuntu
-  include boost/1.44.0.ubuntu
-  include :default
-end
-
-config redhat
-  include boost/1.44.0.redhat5
-  include :default
+  include boost/1.49.0.redhat5
 end
 

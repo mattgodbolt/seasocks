@@ -19,10 +19,8 @@ BIN_DIR=bin
 FIG_DEP=.fig-up-to-date
 UNAME_R:=$(shell uname -r)
 ifeq "" "$(findstring el5,$(UNAME_R))"
-  PLATFORM=ubuntu
   CC=g++
 else
-  PLATFORM=redhat
   GCC_DIR=/site/apps/gcc-4.5.0
   CC=$(GCC_DIR)/bin/g++
   GCC_LIB_PATH=$(GCC_DIR)/lib64
@@ -31,7 +29,7 @@ endif
 
 $(FIG_DEP): package.fig
 	rm -rf lib include
-	fig -m --config $(PLATFORM) && touch $@
+	fig -m && touch $@
 
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
 APPS_CPP_SRCS=$(shell find $(APPS_SRC) -name '*.cpp')
