@@ -40,7 +40,7 @@ int main(int argc, const char* argv[]) {
 	cmd.parse(argc, argv);
 
 	boost::shared_ptr<Logger> logger(
-			new PrintfLogger(verboseArg.getValue() ? Logger::Level::DEBUG : Logger::Level::INFO));
+			new PrintfLogger(verboseArg.getValue() ? Logger::DEBUG : Logger::INFO));
 	Server server(logger);
 	if (lameTimeoutArg.isSet()) {
 		server.setLameConnectionTimeoutSeconds(lameTimeoutArg.getValue());

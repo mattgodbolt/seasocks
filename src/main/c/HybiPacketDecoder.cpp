@@ -51,7 +51,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::string
 	messageOut.reserve(payloadLength);
 	for (auto i = 0u; i < payloadLength; ++i) {
 		auto byteShift = (3 - (i & 3)) * 8;
-		messageOut.push_back(static_cast<char>(_buffer[ptr++] ^ (mask >> byteShift) & 0xff));
+		messageOut.push_back(static_cast<char>((_buffer[ptr++] ^ (mask >> byteShift)) & 0xff));
 	}
 	_messageStart = ptr;
 	switch (opcode) {

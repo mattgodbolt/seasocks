@@ -33,7 +33,7 @@ public:
 };
 
 int main(int argc, const char* argv[]) {
-	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::INFO));
+	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::INFO));
 
 	Server server(logger);
 	auto sso = SsoOptions::test();

@@ -66,7 +66,7 @@ private:
 };
 
 int main(int argc, const char* argv[]) {
-	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::DEBUG));
+	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
 
 	Server server(logger);
 	server.enableSingleSignOn(SsoOptions::test());

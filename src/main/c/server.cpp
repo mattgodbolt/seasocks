@@ -64,7 +64,7 @@ namespace SeaSocks {
 Server::Server(boost::shared_ptr<Logger> logger)
 	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
 	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
-	  _nextDeadConnectionCheck(0), _terminate(false), _threadId(0) {
+	  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = boost::shared_ptr<SsoAuthenticator>();
 
@@ -84,7 +84,7 @@ Server::Server(boost::shared_ptr<Logger> logger)
 		return;
 	}
 
-	epoll_event eventWake = { EPOLLIN, &_pipes[0] };
+	epoll_event eventWake = { EPOLLIN, { &_pipes[0] } };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _pipes[0], &eventWake) == -1) {
 		LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
 		return;
@@ -194,7 +194,7 @@ bool Server::startListening(int port) {
 		LS_ERROR(_logger, "Unable to listen on socket: " << getLastError());
 		return false;
 	}
-	epoll_event event = { EPOLLIN, this };
+	epoll_event event = { EPOLLIN, { this } };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
 		LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
 		return false;
@@ -367,7 +367,7 @@ void Server::handleAccept() {
 	}
 	LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
 	Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
-	epoll_event event = { EPOLLIN, newConnection };
+	epoll_event event = { EPOLLIN, { newConnection } };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
 		LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
 		delete newConnection;
@@ -379,7 +379,7 @@ void Server::handleAccept() {
 
 void Server::remove(Connection* connection) {
 	checkThread();
-	epoll_event event = { 0, connection };
+	epoll_event event = { 0, { connection } };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to remove from epoll: " << getLastError());
 	}
@@ -387,7 +387,7 @@ void Server::remove(Connection* connection) {
 }
 
 bool Server::subscribeToWriteEvents(Connection* connection) {
-	epoll_event event = { EPOLLIN | EPOLLOUT, connection };
+	epoll_event event = { EPOLLIN | EPOLLOUT, { connection } };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to subscribe to write events: " << getLastError());
 		return false;
@@ -396,7 +396,7 @@ bool Server::subscribeToWriteEvents(Connection* connection) {
 }
 
 bool Server::unsubscribeFromWriteEvents(Connection* connection) {
-	epoll_event event = { EPOLLIN, connection };
+	epoll_event event = { EPOLLIN, { connection } };
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
 		LS_ERROR(_logger, "Unable to unsubscribe from write events: " << getLastError());
 		return false;

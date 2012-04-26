@@ -49,7 +49,6 @@ uint32_t parseWebSocketKey(const char* key) {
 }
 
 char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
-	uint8_t* ptr = first;
 	for (uint8_t* ptr = first; ptr < last - 1; ++ptr) {
 		if (ptr[0] == '\r' && ptr[1] == '\n') {
 			ptr[0] = 0;
@@ -180,16 +179,17 @@ Connection::Connection(
 	: _logger(new PrefixWrapper(formatAddress(address) + " : ", logger)),
 	  _server(server),
 	  _fd(fd),
-	  _state(READING_HEADERS),
       _shutdown(false),
       _hadSendError(false),
 	  _closeOnEmpty(false),
 	  _registeredForWriteEvents(false),
+      _address(address),
 	  _bytesSent(0),
 	  _bytesReceived(0),
-	  _address(address),
 	  _sso(sso),
-	  _shutdownByUser(false){
+	  _connectionTime(),
+	  _shutdownByUser(false),
+	  _state(READING_HEADERS) {
   if (server) {
   	assert(server->getStaticPath() != "");
   }

@@ -232,8 +232,6 @@ std::string SsoAuthenticator::encodeUriComponent(const std::string& value, bool 
 
 std::string SsoAuthenticator::decodeUriComponent(const char* value, const char* end) {
 	std::string result;
-	char hexbuffer[3];
-	hexbuffer[2] = '\0';
 	while (value != end) {
 		if (*value == '%' && value + 2 < end && isxdigit(*(value + 1)) && isxdigit(*(value + 2))) {
 			result += (char) (hexDigit(value[1]) << 4 | hexDigit(value[2]));
@@ -368,6 +366,8 @@ void SsoAuthenticator::parseUriParameters(const std::string& uri, std::map<std::
 				state = State::KEY;
 				keyStart = pos + 1;
 				break;
+			default:
+			    break;
 			}
 			break;
 		case '&':
@@ -384,6 +384,8 @@ void SsoAuthenticator::parseUriParameters(const std::string& uri, std::map<std::
 				}
 				// DO IT
 				break;
+            default:
+                break;
 			}
 			if (*pos == '\0') {
 				return;
@@ -399,6 +401,8 @@ void SsoAuthenticator::parseUriParameters(const std::string& uri, std::map<std::
 				state = State::VALUE;
 				valueStart = pos + 1;
 				break;
+            default:
+                break;
 			}
 			break;
 		}
