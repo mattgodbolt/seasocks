@@ -1,4 +1,4 @@
-#include "tinytest.h"
+#include <gmock/gmock.h>
 
 #include <string>
 #include "internal/HybiAccept.h"
@@ -19,10 +19,10 @@ void testSingleString(
 		uint32_t size = 0) {
 	HybiPacketDecoder decoder(ignore, v);
 	std::string decoded;
-	ASSERT_EQUALS(expectedState, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS(expectedPayload, decoded);
-	ASSERT_EQUALS(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS(size ? size : v.size(), decoder.numBytesDecoded());
+	ASSERT_EQ(expectedState, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ(expectedPayload, decoded);
+	ASSERT_EQ(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ(size ? size : v.size(), decoder.numBytesDecoded());
 }
 
 void testLongString(size_t size, std::vector<uint8_t> v) {
@@ -31,13 +31,13 @@ void testLongString(size_t size, std::vector<uint8_t> v) {
 	}
 	HybiPacketDecoder decoder(ignore, v);
 	std::string decoded;
-	ASSERT_EQUALS(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS(size, decoded.size());
+	ASSERT_EQ(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ(size, decoded.size());
 	for (size_t i = 0; i < size; ++i) {
-		ASSERT_EQUALS('A', decoded[i]);
+		ASSERT_EQ('A', decoded[i]);
 	}
-	ASSERT_EQUALS(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS(v.size(), decoder.numBytesDecoded());
+	ASSERT_EQ(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ(v.size(), decoder.numBytesDecoded());
 }
 
 void testTextExamples() {
@@ -60,12 +60,12 @@ void testWithTwoMessages() {
 		0x81, 0x07, 0x47, 0x6f, 0x6f, 0x64, 0x62, 0x79, 0x65};
 	HybiPacketDecoder decoder(ignore, data);
 	std::string decoded;
-	ASSERT_EQUALS(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS("Hello", decoded);
-	ASSERT_EQUALS(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS("Goodbye", decoded);
-	ASSERT_EQUALS(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
-	ASSERT_EQUALS(data.size(), decoder.numBytesDecoded());
+	ASSERT_EQ(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ("Hello", decoded);
+	ASSERT_EQ(HybiPacketDecoder::Message, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ("Goodbye", decoded);
+	ASSERT_EQ(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ(data.size(), decoder.numBytesDecoded());
 }
 
 void testLongStringExamples() {
@@ -75,15 +75,5 @@ void testLongStringExamples() {
 }
 
 void testAccept() {
-	ASSERT_EQUALS("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", getAcceptKey("dGhlIHNhbXBsZSBub25jZQ=="));
+	ASSERT_EQ("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", getAcceptKey("dGhlIHNhbXBsZSBub25jZQ=="));
 }
-
-int main(int argc, const char* argv[]) {
-	RUN(testTextExamples);
-	RUN(testWithPartialMessageFollowing);
-	RUN(testWithTwoMessages);
-	RUN(testLongStringExamples);
-	RUN(testAccept);
-	return TEST_REPORT();
-}
-

@@ -28,10 +28,11 @@ else
 endif
 
 $(FIG_DEP): package.fig
-	rm -rf lib include
-	fig -m && touch $@
+	fig --update-if-missing --log-level warn --config build 
+	touch $@
 
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
+TEST_SRCS=$(shell find $(TEST_SRC) -name '*.cpp')
 APPS_CPP_SRCS=$(shell find $(APPS_SRC) -name '*.cpp')
 TARGETS=$(patsubst $(APPS_SRC)/%.cpp,$(BIN_DIR)/%,$(APPS_CPP_SRCS))
 
@@ -44,6 +45,7 @@ debug:
 fig: $(FIG_DEP)
 
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
+TEST_OBJS=$(patsubst $(TEST_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 APPS_OBJS=$(patsubst $(APPS_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(APPS_CPP_SRCS))
 ALL_OBJS=$(OBJS) $(APPS_OBJS)
 GEN_OBJS=$(OBJ_DIR)/embedded.o
@@ -55,6 +57,10 @@ $(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp $(FIG_DEP)
 	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
 
 $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
+
+$(TEST_OBJS) : $(OBJ_DIR)/%.o : $(TEST_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
 
@@ -79,20 +85,12 @@ $(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) $(FIG_DEP) sr
 run: $(BIN_DIR)/ws_test
 	$(BIN_DIR)/ws_test
 
-$(BIN_DIR)/test_ssoauthenticator: $(TEST_SRC)/test_ssoauthenticator.cpp $(BIN_DIR)/libseasocks.a
-	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
+$(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a
+	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^ -lgmock -lgtest
 	
-$(BIN_DIR)/test_connection: $(TEST_SRC)/test_connection.cpp $(BIN_DIR)/libseasocks.a
-	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
-
-$(BIN_DIR)/test_hybi: $(TEST_SRC)/test_hybi.cpp $(BIN_DIR)/libseasocks.a
-	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^
-
-.tests-pass: $(BIN_DIR)/test_ssoauthenticator $(BIN_DIR)/test_connection $(BIN_DIR)/test_hybi
+.tests-pass: $(BIN_DIR)/tests
 	@rm -f .tests-pass
-	$(BIN_DIR)/test_ssoauthenticator
-	$(BIN_DIR)/test_connection
-	$(BIN_DIR)/test_hybi
+	$(BIN_DIR)/tests
 	@touch .tests-pass
 
 test: .tests-pass

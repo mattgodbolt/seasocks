@@ -13,3 +13,7 @@ config default
   include boost/1.49.0.redhat5
 end
 
+config build
+  include :default
+  include gmock/1.6.0-rh6 
+end

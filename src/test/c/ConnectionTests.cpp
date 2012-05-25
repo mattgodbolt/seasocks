@@ -1,4 +1,4 @@
-#include "tinytest.h"
+#include <gmock/gmock.h>
 
 #include <string>
 #include "seasocks/connection.h"
@@ -16,17 +16,19 @@ public:
 		_stage(0) {
 	}
 	~TestHandler() {
-		ASSERT_EQUALS(2, _stage);
+	    if (_stage != 2) {
+	        ADD_FAILURE() << "Invalid state";
+	    }
 	}
 	virtual void onConnect(WebSocket*) {
 	}
 	virtual void onData(WebSocket*, const char* data) {
 		if (_stage == 0) {
-			ASSERT_STRING_EQUALS(data, "a");
+			ASSERT_STREQ(data, "a");
 		} else if (_stage == 1) {
-			ASSERT_STRING_EQUALS(data, "b");
+		    ASSERT_STREQ(data, "b");
 		} else {
-			ASSERT_EQUALS(0, 1);
+			FAIL() << "unexpected state";
 		}
 		++_stage;
 	}
@@ -34,7 +36,7 @@ public:
 	}
 };
 
-void breaks_hixie_apart_messages_in_same_buffer() {
+TEST(ConnectionTests, shouldBreakHixieMessagesApartInSameBuffer) {
 	sockaddr_in addr;
 	boost::shared_ptr<Logger> logger(new IgnoringLogger);
 	Connection connection(logger, NULL, -1, addr, boost::shared_ptr<SsoAuthenticator>());
@@ -43,11 +45,5 @@ void breaks_hixie_apart_messages_in_same_buffer() {
 	uint8_t foo[] = { 0x00, 'a', 0xff, 0x00, 'b', 0xff };
 	connection.getInputBuffer().assign(&foo[0], &foo[sizeof(foo)]);
 	connection.handleHixieWebSocket();
-	ASSERT_EQUALS(true, true);
+	SUCCEED();
 }
-
-int main(int argc, const char* argv[]) {
-	RUN(breaks_hixie_apart_messages_in_same_buffer);
-	return TEST_REPORT();
-}
-

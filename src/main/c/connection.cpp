@@ -119,6 +119,7 @@ const boost::unordered_map<std::string, std::string> contentTypes = {
 	{ "swf", "application/x-shockwave-flash" },
 	{ "mp3", "audio/mpeg" },
 	{ "wav", "audio/x-wav" },
+	{ "ttf", "font/ttf" },
 };
 
 std::string getExt(const std::string& path) {

@@ -3,7 +3,7 @@
 #include "seasocks/connection.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
-#include "seasocks/json.h"
+#include "seasocks/util/Json.h"
 
 #include "internal/LogStream.h"
 
