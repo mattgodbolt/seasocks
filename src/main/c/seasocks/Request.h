@@ -1,7 +1,7 @@
 #pragma once
 
 #include <netinet/in.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include "seasocks/credentials.h"
 
 #include <cstdint>
@@ -28,7 +28,7 @@ public:
 	/**
 	 * Returns the credentials associated with this request.
 	 */
-	virtual boost::shared_ptr<Credentials> credentials() const = 0;
+	virtual std::shared_ptr<Credentials> credentials() const = 0;
 
 	virtual const sockaddr_in& getRemoteAddress() const = 0;
 

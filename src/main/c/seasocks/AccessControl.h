@@ -1,7 +1,7 @@
 #ifndef ACCESSCONTROL_H_
 #define ACCESSCONTROL_H_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace SeaSocks {
 

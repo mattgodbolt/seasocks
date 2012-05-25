@@ -61,12 +61,12 @@ int gettid() {
 
 namespace SeaSocks {
 
-Server::Server(boost::shared_ptr<Logger> logger)
+Server::Server(std::shared_ptr<Logger> logger)
 	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
 	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
 	  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false) {
 	_pipes[0] = _pipes[1] = -1;
-	_sso = boost::shared_ptr<SsoAuthenticator>();
+	_sso = std::shared_ptr<SsoAuthenticator>();
 
 	_epollFd = epoll_create(10);
 	if (_epollFd == -1) {
@@ -329,7 +329,7 @@ void Server::serve(const char* staticPath, int port) {
 
 void Server::processEventQueue() {
 	for (;;) {
-		boost::shared_ptr<Runnable> runnable = popNextRunnable();
+		std::shared_ptr<Runnable> runnable = popNextRunnable();
 		if (!runnable) break;
 		runnable->run();
 	}
@@ -404,12 +404,12 @@ bool Server::unsubscribeFromWriteEvents(Connection* connection) {
 	return true;
 }
 
-void Server::addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
+void Server::addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
 		bool allowCrossOriginRequests) {
 	_webSocketHandlerMap[endpoint] = { handler, allowCrossOriginRequests };
 }
 
-void Server::setPageHandler(boost::shared_ptr<PageHandler> handler) {
+void Server::setPageHandler(std::shared_ptr<PageHandler> handler) {
 	_pageHandler = handler;
 }
 
@@ -422,20 +422,20 @@ bool Server::isCrossOriginAllowed(const char* endpoint) const {
 	return iter->second.allowCrossOrigin;
 }
 
-boost::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endpoint) const {
+std::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endpoint) const {
 	auto splits = split(endpoint, '?');
 	auto iter = _webSocketHandlerMap.find(splits[0]);
 	if (iter == _webSocketHandlerMap.end()) {
-		return boost::shared_ptr<WebSocket::Handler>();
+		return std::shared_ptr<WebSocket::Handler>();
 	}
 	return iter->second.handler;
 }
 
-boost::shared_ptr<PageHandler> Server::getPageHandler() const {
+std::shared_ptr<PageHandler> Server::getPageHandler() const {
 	return _pageHandler;
 }
 
-void Server::schedule(boost::shared_ptr<Runnable> runnable) {
+void Server::schedule(std::shared_ptr<Runnable> runnable) {
   {
   	LockGuard lock(_pendingRunnableMutex);
   	_pendingRunnables.push_back(runnable);
@@ -448,9 +448,9 @@ void Server::schedule(boost::shared_ptr<Runnable> runnable) {
 	}
 }
 
-boost::shared_ptr<Server::Runnable> Server::popNextRunnable() {
+std::shared_ptr<Server::Runnable> Server::popNextRunnable() {
 	LockGuard lock(_pendingRunnableMutex);
-	boost::shared_ptr<Runnable> runnable;
+	std::shared_ptr<Runnable> runnable;
 	if (!_pendingRunnables.empty()) {
 		runnable = _pendingRunnables.front();
 		_pendingRunnables.pop_front();

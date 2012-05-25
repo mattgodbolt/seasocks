@@ -14,7 +14,7 @@ class ResponseBuilder {
     std::string _contentType;
     bool _keepAlive;
     Response::Headers _headers;
-    boost::shared_ptr<std::ostringstream> _stream;
+    std::shared_ptr<std::ostringstream> _stream;
 public:
     ResponseBuilder(ResponseCode code = ResponseCode::Ok);
 
@@ -48,7 +48,7 @@ public:
         return *this;
     }
 
-    boost::shared_ptr<Response> build();
+    std::shared_ptr<Response> build();
 };
 
 }

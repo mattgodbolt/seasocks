@@ -6,11 +6,11 @@ print """
 #include "internal/Embedded.h"
 
 #include <string>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 namespace {
 
-boost::unordered_map<std::string, EmbeddedContent> embedded = {
+std::unordered_map<std::string, EmbeddedContent> embedded = {
 """
 
 for f in sys.argv[1:]:

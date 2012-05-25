@@ -9,7 +9,7 @@
 
 #include <tclap/CmdLine.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <iostream>
 
 using namespace SeaSocks;
@@ -39,7 +39,7 @@ int main(int argc, const char* argv[]) {
 	UnlabeledValueArg<std::string> rootArg("serve-from-dir", "Use DIR as file serving root", true, "", "DIR", cmd);
 	cmd.parse(argc, argv);
 
-	boost::shared_ptr<Logger> logger(
+	std::shared_ptr<Logger> logger(
 			new PrintfLogger(verboseArg.getValue() ? Logger::DEBUG : Logger::INFO));
 	Server server(logger);
 	if (lameTimeoutArg.isSet()) {

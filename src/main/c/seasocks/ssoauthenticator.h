@@ -6,7 +6,7 @@
 #include "seasocks/Request.h"
 #include "seasocks/Response.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <string>
 #include <map>
@@ -96,7 +96,7 @@ struct SsoOptions {
 	 * The default value is null, which creates an access control object that requires
 	 * login for all domains, but doesn't restrict by username.
 	 */
-	boost::shared_ptr<AccessControl> accessController;
+	std::shared_ptr<AccessControl> accessController;
 
 	enum ProtocolVersion { VERSION_1 = 1, VERSION_2 = 2};
 
@@ -216,8 +216,8 @@ public:
 	bool hasAccess(const Request& request) const;
 	bool isBounceBackFromSsoServer(const Request& request) const;
 	bool validateSignature(const Request& request) const;
-	boost::shared_ptr<Response> respondWithLocalCookieAndRedirectToOriginalPage(const Request& request);
-	boost::shared_ptr<Response> respondWithRedirectToAuthenticationServer(const Request& request);
+	std::shared_ptr<Response> respondWithLocalCookieAndRedirectToOriginalPage(const Request& request);
+	std::shared_ptr<Response> respondWithRedirectToAuthenticationServer(const Request& request);
 	void extractCredentialsFromLocalCookie(Request& request) const;
 	bool requestExplicityForbidsDrwSsoRedirect(const Request& request) const;
 	std::string secureHash(const std::string& string) const;

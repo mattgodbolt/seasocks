@@ -8,7 +8,7 @@
 namespace SeaSocks {
 
 class PageRequest : public SeaSocks::Request {
-	boost::shared_ptr<SeaSocks::Credentials> _credentials;
+	std::shared_ptr<SeaSocks::Credentials> _credentials;
 	const sockaddr_in _remoteAddress;
 	const std::string _requestUri;
 	const Verb _verb;
@@ -28,7 +28,7 @@ public:
 		return _verb;
 	}
 
-	virtual boost::shared_ptr<SeaSocks::Credentials> credentials() const {
+	virtual std::shared_ptr<SeaSocks::Credentials> credentials() const {
 		return _credentials;
 	}
 

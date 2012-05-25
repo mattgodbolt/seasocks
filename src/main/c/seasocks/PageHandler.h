@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include "seasocks/credentials.h"
 #include "seasocks/Response.h"
 
@@ -13,7 +13,7 @@ class PageHandler {
 public:
 	virtual ~PageHandler() {}
 
-	virtual boost::shared_ptr<Response> handle(const Request& request) = 0;
+	virtual std::shared_ptr<Response> handle(const Request& request) = 0;
 };
 
 }

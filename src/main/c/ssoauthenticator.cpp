@@ -96,7 +96,7 @@ bool SsoAuthenticator::validateSignature(const Request& request) const {
 	return true;
 }
 
-boost::shared_ptr<Response> SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const Request& request) {
+std::shared_ptr<Response> SsoAuthenticator::respondWithLocalCookieAndRedirectToOriginalPage(const Request& request) {
 	std::map<std::string, std::string> params;
 	parseUriParameters(request.getRequestUri(), params);
 	if (params.count("user") == 0 || params.count("continue") == 0) {
@@ -132,7 +132,7 @@ boost::shared_ptr<Response> SsoAuthenticator::respondWithLocalCookieAndRedirectT
 	        .build();
 }
 
-boost::shared_ptr<Response> SsoAuthenticator::respondWithRedirectToAuthenticationServer(const Request& request) {
+std::shared_ptr<Response> SsoAuthenticator::respondWithRedirectToAuthenticationServer(const Request& request) {
 	std::stringstream baseUrl;
 	if (_options.basePath.empty()) {
 		baseUrl	<< "http://" << request.getHeader("Host");

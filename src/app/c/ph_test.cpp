@@ -5,7 +5,7 @@
 #include <string>
 #include <cstring>
 #include <sstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <set>
 #include <iostream>
 #include <sstream>
@@ -14,7 +14,7 @@ using namespace SeaSocks;
 
 class MyPageHandler: public PageHandler {
 public:
-	virtual boost::shared_ptr<Response> handle(const Request& request) {
+	virtual std::shared_ptr<Response> handle(const Request& request) {
 		if (request.verb() == Request::Post) {
 			std::string content(request.content(), request.content() + request.contentLength());
 			return Response::textResponse("Thanks for the post. You said: " + content);
@@ -33,14 +33,14 @@ public:
 };
 
 int main(int argc, const char* argv[]) {
-	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::INFO));
+	std::shared_ptr<Logger> logger(new PrintfLogger(Logger::INFO));
 
 	Server server(logger);
 	auto sso = SsoOptions::test();
 	sso.requestUserAttributes.insert("fullName");
 	server.enableSingleSignOn(sso);
 	
-	boost::shared_ptr<PageHandler> handler(new MyPageHandler());
+	std::shared_ptr<PageHandler> handler(new MyPageHandler());
 	server.setPageHandler(handler);
 	server.serve("src/ws_test_web", 9090);
 	return 0;

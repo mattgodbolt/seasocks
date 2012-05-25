@@ -5,7 +5,7 @@
 
 #include "seasocks/util/CrackedUri.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace SeaSocks {
 
@@ -13,7 +13,7 @@ class CrackedUriPageHandler {
 public:
     virtual ~CrackedUriPageHandler() {}
 
-    virtual boost::shared_ptr<SeaSocks::Response> handle(const CrackedUri& uri, const SeaSocks::Request& request) = 0;
+    virtual std::shared_ptr<SeaSocks::Response> handle(const CrackedUri& uri, const SeaSocks::Request& request) = 0;
 };
 
 }

@@ -2,7 +2,7 @@
 
 #include <seasocks/ResponseCode.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <map>
 
@@ -23,15 +23,15 @@ public:
 	typedef std::multimap<std::string, std::string> Headers;
     virtual Headers getAdditionalHeaders() const = 0;
 
-	static boost::shared_ptr<Response> unhandled();
+	static std::shared_ptr<Response> unhandled();
 
-	static boost::shared_ptr<Response> notFound();
+	static std::shared_ptr<Response> notFound();
 
-	static boost::shared_ptr<Response> error(ResponseCode code, const std::string& error);
+	static std::shared_ptr<Response> error(ResponseCode code, const std::string& error);
 
-	static boost::shared_ptr<Response> textResponse(const std::string& response);
-	static boost::shared_ptr<Response> jsonResponse(const std::string& response);
-	static boost::shared_ptr<Response> htmlResponse(const std::string& response);
+	static std::shared_ptr<Response> textResponse(const std::string& response);
+	static std::shared_ptr<Response> jsonResponse(const std::string& response);
+	static std::shared_ptr<Response> htmlResponse(const std::string& response);
 };
 
 }

@@ -24,7 +24,7 @@ PageRequest::PageRequest(
 		const char* verb,
 		size_t contentLength,
 		const std::map<std::string, std::string>& headers) :
-		    _credentials(boost::shared_ptr<Credentials>(new Credentials())),
+		    _credentials(std::shared_ptr<Credentials>(new Credentials())),
 			_remoteAddress(remoteAddress),
 			_requestUri(requestUri),
 			_verb(lookup(verb)),

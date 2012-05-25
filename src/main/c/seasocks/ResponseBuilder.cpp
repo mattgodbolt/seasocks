@@ -58,8 +58,8 @@ ResponseBuilder& ResponseBuilder::addHeader(const std::string& name, const std::
     return *this;
 }
 
-boost::shared_ptr<Response> ResponseBuilder::build() {
-    return boost::shared_ptr<Response>(new ConcreteResponse(_code, _stream->str(), _contentType, _headers, _keepAlive));
+std::shared_ptr<Response> ResponseBuilder::build() {
+    return std::shared_ptr<Response>(new ConcreteResponse(_code, _stream->str(), _contentType, _headers, _keepAlive));
 }
 
 }

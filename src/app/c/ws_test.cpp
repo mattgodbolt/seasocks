@@ -5,7 +5,7 @@
 #include <string>
 #include <cstring>
 #include <sstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <set>
 #include <iostream>
 
@@ -66,12 +66,12 @@ private:
 };
 
 int main(int argc, const char* argv[]) {
-	boost::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
+	std::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
 
 	Server server(logger);
 	server.enableSingleSignOn(SsoOptions::test());
 	
-	boost::shared_ptr<MyHandler> handler(new MyHandler(&server));
+	std::shared_ptr<MyHandler> handler(new MyHandler(&server));
 	server.addWebSocketHandler("/ws", handler);
 	server.serve("src/ws_test_web", 9090);
 	return 0;

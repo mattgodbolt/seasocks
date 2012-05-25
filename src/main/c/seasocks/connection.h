@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <list>
 #include <vector>
@@ -24,11 +24,11 @@ class Response;
 class Connection : public WebSocket {
 public:
 	Connection(
-			boost::shared_ptr<Logger> logger,
+			std::shared_ptr<Logger> logger,
 			Server* server,
 			int fd,
 			const sockaddr_in& address,
-			boost::shared_ptr<SsoAuthenticator> sso);
+			std::shared_ptr<SsoAuthenticator> sso);
 	virtual ~Connection();
 
 	bool write(const void* data, size_t size, bool flush);
@@ -42,7 +42,7 @@ public:
 	virtual void close();
 
 	// From Request.
-	virtual boost::shared_ptr<Credentials> credentials() const;
+	virtual std::shared_ptr<Credentials> credentials() const;
 	virtual const sockaddr_in& getRemoteAddress() const { return _address; }
 	virtual const std::string& getRequestUri() const { return _requestUri; }
 	virtual Request::Verb verb() const { return Request::WebSocket; }
@@ -63,7 +63,7 @@ public:
 	std::vector<uint8_t>& getInputBuffer() { return _inBuf; }
 	void handleHixieWebSocket();
 	void handleHybiWebSocket();
-	void setHandler(boost::shared_ptr<WebSocket::Handler> handler) {
+	void setHandler(std::shared_ptr<WebSocket::Handler> handler) {
 		_webSocketHandler = handler;
 	}
 
@@ -98,7 +98,7 @@ private:
 
 	void sendHybi(int opcode, const char* webSocketResponse, size_t messageLength);
 
-	bool sendResponse(boost::shared_ptr<Response> response);
+	bool sendResponse(std::shared_ptr<Response> response);
 
 	bool processHeaders(uint8_t* first, uint8_t* last);
 	bool sendData(const std::string& type, const char* start, size_t size);
@@ -119,7 +119,7 @@ private:
 
 	std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 
-	boost::shared_ptr<Logger> _logger;
+	std::shared_ptr<Logger> _logger;
 	Server* _server;
 	int _fd;
 	bool _shutdown;
@@ -134,8 +134,8 @@ private:
 	std::vector<uint8_t> _outBuf;
 	// Populated only during Hixie web socket header parsing.
 	std::string _hixieExtraHeaders;
-	boost::shared_ptr<WebSocket::Handler> _webSocketHandler;
-	boost::shared_ptr<SsoAuthenticator> _sso;
+	std::shared_ptr<WebSocket::Handler> _webSocketHandler;
+	std::shared_ptr<SsoAuthenticator> _sso;
 	std::string _requestUri;
 	time_t _connectionTime;
 	bool _shutdownByUser;

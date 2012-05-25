@@ -5,8 +5,8 @@
 #include "ssoauthenticator.h"
 #include "mutex.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
+#include <memory>
+#include <unordered_map>
 #include <sys/types.h>
 #include <list>
 #include <map>
@@ -20,14 +20,14 @@ class PageHandler;
 
 class Server {
 public:
-	Server(boost::shared_ptr<Logger> logger);
+	Server(std::shared_ptr<Logger> logger);
 	~Server();
 
 	void enableSingleSignOn(SsoOptions ssoOptions);
 
-	void setPageHandler(boost::shared_ptr<PageHandler> handler);
+	void setPageHandler(std::shared_ptr<PageHandler> handler);
 
-	void addWebSocketHandler(const char* endpoint, boost::shared_ptr<WebSocket::Handler> handler,
+	void addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
 			bool allowCrossOriginRequests = false);
 
 	// If we haven't heard anything ever on a connection for this long, kill it.
@@ -51,10 +51,10 @@ public:
 	bool unsubscribeFromWriteEvents(Connection* connection);
 
 	const std::string& getStaticPath() const { return _staticPath; }
-	boost::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
+	std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
 	bool isCrossOriginAllowed(const char* endpoint) const;
 
-	boost::shared_ptr<PageHandler> getPageHandler() const;
+	std::shared_ptr<PageHandler> getPageHandler() const;
 
 	std::string getStatsDocument() const;
 
@@ -63,14 +63,14 @@ public:
 		virtual ~Runnable() {}
 		virtual void run() = 0;
 	};
-	void schedule(boost::shared_ptr<Runnable> runnable);
+	void schedule(std::shared_ptr<Runnable> runnable);
 
 	void checkThread() const;
 private:
 	bool makeNonBlocking(int fd) const;
 	bool configureSocket(int fd) const;
 	void handleAccept();
-	boost::shared_ptr<Runnable> popNextRunnable();
+	std::shared_ptr<Runnable> popNextRunnable();
 	void processEventQueue();
 
 	bool startListening(int port);
@@ -83,7 +83,7 @@ private:
 
 	// Connections, mapped to initial connection time.
 	std::map<Connection*, time_t> _connections;
-	boost::shared_ptr<Logger> _logger;
+	std::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;
 	int _pipes[2];
@@ -92,17 +92,17 @@ private:
 	time_t _nextDeadConnectionCheck;
 
 	struct WebSocketHandlerEntry {
-		boost::shared_ptr<WebSocket::Handler> handler;
+		std::shared_ptr<WebSocket::Handler> handler;
 		bool allowCrossOrigin;
 	};
-	typedef boost::unordered_map<std::string, WebSocketHandlerEntry> WebSocketHandlerMap;
+	typedef std::unordered_map<std::string, WebSocketHandlerEntry> WebSocketHandlerMap;
 	WebSocketHandlerMap _webSocketHandlerMap;
 
-	boost::shared_ptr<PageHandler> _pageHandler;
+	std::shared_ptr<PageHandler> _pageHandler;
 
 	Mutex _pendingRunnableMutex;
-	std::list<boost::shared_ptr<Runnable>> _pendingRunnables;
-	boost::shared_ptr<SsoAuthenticator> _sso;
+	std::list<std::shared_ptr<Runnable>> _pendingRunnables;
+	std::shared_ptr<SsoAuthenticator> _sso;
 
 	pid_t _threadId;
 

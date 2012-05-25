@@ -28,7 +28,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 #include <fstream>
 
 #include "md5/md5.h"
@@ -95,7 +95,7 @@ public:
 	}
 };
 
-const boost::unordered_map<std::string, std::string> contentTypes = {
+const std::unordered_map<std::string, std::string> contentTypes = {
 	{ "txt", "text/plain" },
 	{ "css", "text/css" },
 	{ "csv", "text/csv" },
@@ -157,9 +157,9 @@ const size_t MaxHeadersSize = 64 * 1024;
 
 class PrefixWrapper : public SeaSocks::Logger {
 	std::string _prefix;
-	boost::shared_ptr<Logger> _logger;
+	std::shared_ptr<Logger> _logger;
 public:
-	PrefixWrapper(const std::string& prefix, boost::shared_ptr<Logger> logger) :
+	PrefixWrapper(const std::string& prefix, std::shared_ptr<Logger> logger) :
 		_prefix(prefix), _logger(logger) {}
 
 	virtual void log(Level level, const char* message) {
@@ -172,11 +172,11 @@ public:
 namespace SeaSocks {
 
 Connection::Connection(
-		boost::shared_ptr<Logger> logger,
+		std::shared_ptr<Logger> logger,
 		Server* server,
 		int fd,
 		const sockaddr_in& address,
-		boost::shared_ptr<SsoAuthenticator> sso)
+		std::shared_ptr<SsoAuthenticator> sso)
 	: _logger(new PrefixWrapper(formatAddress(address) + " : ", logger)),
 	  _server(server),
 	  _fd(fd),
@@ -498,7 +498,7 @@ void Connection::sendHybi(int opcode, const char* webSocketResponse, size_t mess
 	write(webSocketResponse, messageLength, true);
 }
 
-boost::shared_ptr<Credentials> Connection::credentials() const {
+std::shared_ptr<Credentials> Connection::credentials() const {
 	_server->checkThread();
 	return _request->credentials();
 }
@@ -784,7 +784,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
 bool Connection::handlePageRequest() {
 	auto handler = _server->getPageHandler();
-	boost::shared_ptr<Response> response;
+	std::shared_ptr<Response> response;
 	try {
 		response = handler->handle(*_request);
 	} catch (const std::exception& e) {
@@ -800,7 +800,7 @@ bool Connection::handlePageRequest() {
 	return sendResponse(response);
 }
 
-bool Connection::sendResponse(boost::shared_ptr<Response> response) {
+bool Connection::sendResponse(std::shared_ptr<Response> response) {
 	const auto requestUri = _request->getRequestUri();
 	if (response->responseCode() == ResponseCode::NotFound) {
 		// TODO: better here; we use this purely to serve our own embedded content.
