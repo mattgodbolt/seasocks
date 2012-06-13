@@ -11,7 +11,7 @@ HybiPacketDecoder::HybiPacketDecoder(Logger& logger, const std::vector<uint8_t>&
 	_messageStart(0) {
 }
 
-HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::string& messageOut) {
+HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::vector<uint8_t>& messageOut) {
 	if (_messageStart + 1 >= _buffer.size()) {
 		return NoMessage;
 	}
@@ -59,7 +59,9 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::string
 		LS_ERROR(&_logger, "Received hybi frame with unknown opcode " << opcode);
 		return Error;
 	case OPCODE_TEXT:
-		return Message;
+		return TextMessage;
+	case OPCODE_BINARY:
+		return BinaryMessage;
 	case OPCODE_PING:
 		return Ping;
 	case OPCODE_CLOSE:
