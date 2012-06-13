@@ -435,7 +435,7 @@ void Connection::handleWebSocketKey3() {
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
 	bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
-	bufferLine("Upgrade: WebSocket");
+	bufferLine("Upgrade: websocket");
 	bufferLine("Connection: Upgrade");
 	write(&_hixieExtraHeaders[0], _hixieExtraHeaders.size(), false);
 	bufferLine("");
@@ -847,7 +847,7 @@ bool Connection::handleHybiHandshake(
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
 	bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
-	bufferLine("Upgrade: WebSocket");
+	bufferLine("Upgrade: websocket");
 	bufferLine("Connection: Upgrade");
 	bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
 	bufferLine("");
