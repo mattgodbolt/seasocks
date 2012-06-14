@@ -435,7 +435,7 @@ void Connection::handleWebSocketKey3() {
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
 	bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
-	bufferLine("Upgrade: WebSocket");
+	bufferLine("Upgrade: websocket");
 	bufferLine("Connection: Upgrade");
 	write(&_hixieExtraHeaders[0], _hixieExtraHeaders.size(), false);
 	bufferLine("");
@@ -475,10 +475,25 @@ void Connection::send(const char* webSocketResponse) {
 		write(&effeff, 1, true);
 		return;
 	}
-	sendHybi(HybiPacketDecoder::OPCODE_TEXT, webSocketResponse, messageLength);
+	sendHybi(HybiPacketDecoder::OPCODE_TEXT, reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
 }
 
-void Connection::sendHybi(int opcode, const char* webSocketResponse, size_t messageLength) {
+void Connection::send(const uint8_t* data, size_t length) {
+	_server->checkThread();
+	if (_shutdown) {
+		if (_shutdownByUser) {
+			LS_ERROR(_logger, "Client wrote to connection after closing it");
+		}
+		return;
+	}
+	if (_state == HANDLING_HIXIE_WEBSOCKET) {
+		LS_ERROR(_logger, "Hixie does no support binary");
+    return;
+	}
+	sendHybi(HybiPacketDecoder::OPCODE_BINARY, data, length);
+}
+
+void Connection::sendHybi(int opcode, const uint8_t* webSocketResponse, size_t messageLength) {
 	uint8_t firstByte = 0x80 | opcode;
 	if (!write(&firstByte, 1, false)) return;
 	if (messageLength < 126) {
@@ -524,7 +539,7 @@ void Connection::handleHixieWebSocket() {
 		}
 		if (endOfMessage != 0) {
 			_inBuf[endOfMessage] = 0;
-			handleWebSocketMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]));
+			handleWebSocketTextMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]));
 			messageStart = endOfMessage + 1;
 		} else {
 			break;
@@ -546,7 +561,7 @@ void Connection::handleHybiWebSocket() {
 	HybiPacketDecoder decoder(*_logger, _inBuf);
 	bool done = false;
 	while (!done) {
-		std::string decodedMessage;
+		std::vector<uint8_t> decodedMessage;
 		switch (decoder.decodeNextMessage(decodedMessage)) {
 		default:
 			closeInternal();
@@ -555,11 +570,15 @@ void Connection::handleHybiWebSocket() {
 		case HybiPacketDecoder::Error:
 			closeInternal();
 			return;
-		case HybiPacketDecoder::Message:
-			handleWebSocketMessage(decodedMessage.c_str());
+		case HybiPacketDecoder::TextMessage:
+      decodedMessage.push_back(0);  // avoids a copy
+			handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
+			break;
+		case HybiPacketDecoder::BinaryMessage:
+			handleWebSocketBinaryMessage(decodedMessage);
 			break;
 		case HybiPacketDecoder::Ping:
-			sendHybi(HybiPacketDecoder::OPCODE_PONG, decodedMessage.c_str(), decodedMessage.size());
+			sendHybi(HybiPacketDecoder::OPCODE_PONG, &decodedMessage[0], decodedMessage.size());
 			break;
 		case HybiPacketDecoder::NoMessage:
 			done = true;
@@ -579,10 +598,17 @@ void Connection::handleHybiWebSocket() {
 	}
 }
 
-void Connection::handleWebSocketMessage(const char* message) {
-	LS_DEBUG(_logger, "Got web socket message: '" << message << "'");
+void Connection::handleWebSocketTextMessage(const char* message) {
+	LS_DEBUG(_logger, "Got text web socket message: '" << message << "'");
 	if (_webSocketHandler) {
 		_webSocketHandler->onData(this, message);
+	}
+}
+
+void Connection::handleWebSocketBinaryMessage(const std::vector<uint8_t>& message) {
+	LS_DEBUG(_logger, "Got binary web socket message (size: " << message.size() << ")");
+	if (_webSocketHandler) {
+		_webSocketHandler->onData(this, &message[0], message.size());
 	}
 }
 
@@ -847,7 +873,7 @@ bool Connection::handleHybiHandshake(
 	LS_DEBUG(_logger, "Attempting websocket upgrade");
 
 	bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
-	bufferLine("Upgrade: WebSocket");
+	bufferLine("Upgrade: websocket");
 	bufferLine("Connection: Upgrade");
 	bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
 	bufferLine("");

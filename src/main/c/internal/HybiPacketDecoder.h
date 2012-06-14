@@ -26,12 +26,13 @@ public:
 
 	enum MessageState {
 		NoMessage,
-		Message,
+		TextMessage,
+    BinaryMessage,
 		Error,
 		Ping,
 		Close
 	};
-	MessageState decodeNextMessage(std::string& messageOut);
+	MessageState decodeNextMessage(std::vector<uint8_t>& messageOut);
 
 	size_t numBytesDecoded() const;
 };

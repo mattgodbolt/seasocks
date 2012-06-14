@@ -39,6 +39,7 @@ public:
 
 	// From WebSocket.
 	virtual void send(const char* webSocketResponse);
+	virtual void send(const uint8_t* webSocketResponse, size_t length);
 	virtual void close();
 
 	// From Request.
@@ -77,7 +78,8 @@ private:
 	void handleNewData();
 	void handleHeaders();
 	void handleWebSocketKey3();
-	void handleWebSocketMessage(const char* message);
+	void handleWebSocketTextMessage(const char* message);
+	void handleWebSocketBinaryMessage(const std::vector<uint8_t>& message);
 	void handleBufferingPostData();
 	bool handlePageRequest();
 
@@ -96,7 +98,7 @@ private:
 	bool sendBadRequest(const std::string& reason);
 	bool sendISE(const std::string& error);
 
-	void sendHybi(int opcode, const char* webSocketResponse, size_t messageLength);
+	void sendHybi(int opcode, const uint8_t* webSocketResponse, size_t messageLength);
 
 	bool sendResponse(std::shared_ptr<Response> response);
 
