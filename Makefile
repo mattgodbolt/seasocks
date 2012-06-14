@@ -8,7 +8,7 @@ VERSION_STRING=SeaSocks/$(or $(VERSION),unversioned) ($(shell git rev-parse HEAD
 INCLUDES=-I $(C_SRC) -Iinclude -Llib
 CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -Wall -Werror $(INCLUDES) -std=c++0x '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"'
 
-STATIC_LIBS= 
+STATIC_LIBS=
 APP_LIBS=
 
 .PHONY: all clean run test clobber
@@ -28,7 +28,7 @@ else
 endif
 
 $(FIG_DEP): package.fig
-	fig --update-if-missing --log-level warn --config build 
+	fig --update-if-missing --log-level warn --config build
 	touch $@
 
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
@@ -47,22 +47,22 @@ fig: $(FIG_DEP)
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
 TEST_OBJS=$(patsubst $(TEST_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 APPS_OBJS=$(patsubst $(APPS_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(APPS_CPP_SRCS))
-ALL_OBJS=$(OBJS) $(APPS_OBJS)
+ALL_OBJS=$(OBJS) $(APPS_OBJS) $(TEST_OBJS)
 GEN_OBJS=$(OBJ_DIR)/embedded.o
 
 -include $(ALL_OBJS:.o=.d)
 
 $(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
+	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
+	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(TEST_OBJS) : $(OBJ_DIR)/%.o : $(TEST_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -c -o "$@" "$<" 
+	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
@@ -87,7 +87,7 @@ run: $(BIN_DIR)/ws_test
 
 $(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a
 	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^ -lgmock -lgtest
-	
+
 .tests-pass: $(BIN_DIR)/tests
 	@rm -f .tests-pass
 	$(BIN_DIR)/tests
