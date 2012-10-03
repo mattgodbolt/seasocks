@@ -31,22 +31,22 @@ struct EventBits {
 std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 	uint32_t bits = b.bits;
 #define DO_BIT(NAME) \
-	do { if (bits & (NAME)) { if (bits != b.bits) {o << ", "; } o << #NAME; bits &= ~(NAME); } } while (0)
-    DO_BIT(EPOLLIN);
-    DO_BIT(EPOLLPRI);
-    DO_BIT(EPOLLOUT);
-    DO_BIT(EPOLLRDNORM);
-    DO_BIT(EPOLLRDBAND);
-    DO_BIT(EPOLLWRNORM);
-    DO_BIT(EPOLLWRBAND);
-    DO_BIT(EPOLLMSG);
-    DO_BIT(EPOLLERR);
-    DO_BIT(EPOLLHUP);
+		do { if (bits & (NAME)) { if (bits != b.bits) {o << ", "; } o << #NAME; bits &= ~(NAME); } } while (0)
+	DO_BIT(EPOLLIN);
+	DO_BIT(EPOLLPRI);
+	DO_BIT(EPOLLOUT);
+	DO_BIT(EPOLLRDNORM);
+	DO_BIT(EPOLLRDBAND);
+	DO_BIT(EPOLLWRNORM);
+	DO_BIT(EPOLLWRBAND);
+	DO_BIT(EPOLLMSG);
+	DO_BIT(EPOLLERR);
+	DO_BIT(EPOLLHUP);
 #ifdef EPOLLRDHUP
-    DO_BIT(EPOLLRDHUP);
+	DO_BIT(EPOLLRDHUP);
 #endif
-    DO_BIT(EPOLLONESHOT);
-    DO_BIT(EPOLLET);
+	DO_BIT(EPOLLONESHOT);
+	DO_BIT(EPOLLET);
 #undef DO_BIT
 	return o;
 }
@@ -62,9 +62,9 @@ int gettid() {
 namespace SeaSocks {
 
 Server::Server(std::shared_ptr<Logger> logger)
-	: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
-	  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
-	  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false) {
+: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
+  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
+  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = std::shared_ptr<SsoAuthenticator>();
 
@@ -165,8 +165,8 @@ bool Server::configureSocket(int fd) const {
 }
 
 void Server::terminate() {
-    _terminate = true;
-    uint64_t one = 1;
+	_terminate = true;
+	uint64_t one = 1;
 	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
 		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
 	}
@@ -210,7 +210,7 @@ void Server::handlePipe() {
 	}
 	if (errno != EAGAIN || errno != EWOULDBLOCK) {
 		LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
-        _terminate = true;
+		_terminate = true;
 	}
 	// It's a "wake up" event; this will just cause the epoll loop to wake up.
 }
@@ -256,7 +256,7 @@ void Server::checkAndDispatchEpoll() {
 		time_t now = time(NULL);
 		if (now - lastWarnTime >= 60) {
 			LS_WARNING(_logger, "Full event queue; may start starving connections. "
-					   "Will warn at most once a minute");
+					"Will warn at most once a minute");
 			lastWarnTime = now;
 		}
 	}
@@ -436,20 +436,20 @@ std::shared_ptr<PageHandler> Server::getPageHandler() const {
 }
 
 void Server::schedule(std::shared_ptr<Runnable> runnable) {
-  {
-  	LockGuard lock(_pendingRunnableMutex);
-  	_pendingRunnables.push_back(runnable);
-  }
+	std::unique_lock<decltype(_pendingRunnableMutex)> lock(_pendingRunnableMutex);
+	_pendingRunnables.push_back(runnable);
+	lock.unlock();
+
 	uint64_t one = 1;
 	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
-    if (errno != EAGAIN && errno != EWOULDBLOCK) {
-  		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
-    }
+		if (errno != EAGAIN && errno != EWOULDBLOCK) {
+			LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+		}
 	}
 }
 
 std::shared_ptr<Server::Runnable> Server::popNextRunnable() {
-	LockGuard lock(_pendingRunnableMutex);
+	std::lock_guard<decltype(_pendingRunnableMutex)> lock(_pendingRunnableMutex);
 	std::shared_ptr<Runnable> runnable;
 	if (!_pendingRunnables.empty()) {
 		runnable = _pendingRunnables.front();
@@ -475,7 +475,7 @@ std::string Server::getStatsDocument() const {
 				"read", connection->bytesReceived(),
 				"output", connection->outputBufferSize(),
 				"written", connection->bytesSent()
-				);
+		);
 		doc << "});" << std::endl;
 	}
 	return doc.str();

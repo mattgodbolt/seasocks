@@ -2,8 +2,6 @@
 
 #include <seasocks/Response.h>
 
-#include <boost/lexical_cast.hpp>
-
 #include <string>
 #include <sstream>
 
@@ -33,13 +31,13 @@ public:
     ResponseBuilder& withHeader(const std::string& name, const std::string& value);
     template<typename T>
     ResponseBuilder& withHeader(const std::string& name, const T& t) {
-        return withHeader(name, boost::lexical_cast<std::string>(t));
+        return withHeader(name, toString(t));
     }
 
     ResponseBuilder& addHeader(const std::string& name, const std::string& value);
     template<typename T>
     ResponseBuilder& addHeader(const std::string& name, const T& t) {
-        return addHeader(name, boost::lexical_cast<std::string>(t));
+        return addHeader(name, toString(t));
     }
 
     template<typename T>

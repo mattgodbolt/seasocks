@@ -3,11 +3,12 @@
 
 #include "websocket.h"
 #include "ssoauthenticator.h"
-#include "mutex.h"
 
+#include <sys/types.h>
+
+#include <mutex>
 #include <memory>
 #include <unordered_map>
-#include <sys/types.h>
 #include <list>
 #include <map>
 #include <string>
@@ -100,7 +101,7 @@ private:
 
 	std::shared_ptr<PageHandler> _pageHandler;
 
-	Mutex _pendingRunnableMutex;
+	std::mutex _pendingRunnableMutex;
 	std::list<std::shared_ptr<Runnable>> _pendingRunnables;
 	std::shared_ptr<SsoAuthenticator> _sso;
 

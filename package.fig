@@ -9,11 +9,10 @@ config default
   append LIBPATH=@/bin/libseasocks.so
   append LIBPATH=@/bin/libseasocks.a
   append INCLUDEPATH=@/src/main/c//seasocks
-  include tclap/1.2.0
-  include boost/1.49.0.redhat5
 end
 
 config build
   include :default
+  include tclap/1.2.0
   include gmock/1.6.0-rh6 
 end

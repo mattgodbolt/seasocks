@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/lexical_cast.hpp>
+#include "seasocks/ToString.h"
 
 #include <functional>
 #include <list>
@@ -41,13 +41,13 @@ public:
     template<typename T>
     static Element textElement(const T& text) {
         Element e;
-        e._nameOrText = boost::lexical_cast<std::string>(text);
+        e._nameOrText = toString(text);
         return e;
     }
 
     template<typename T>
     Element& addAttribute(const char* attr, const T& value) {
-        _attributes += std::string(" ") + attr + "=\"" + boost::lexical_cast<std::string>(value) + "\"";
+        _attributes += std::string(" ") + attr + "=\"" + toString(value) + "\"";
         return *this;
     }
 

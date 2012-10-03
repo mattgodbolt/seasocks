@@ -18,14 +18,19 @@ BIN_DIR=bin
 
 FIG_DEP=.fig-up-to-date
 UNAME_R:=$(shell uname -r)
+export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/
 ifeq "" "$(findstring el5,$(UNAME_R))"
-  CC=g++
+  GCC_DIR=/site/apps/gcc-4.7.2-drw.patched.1
+  OS_VERSION=redhat5
+  GCC_VERSION=472
 else
-  GCC_DIR=/site/apps/gcc-4.5.0
-  CC=$(GCC_DIR)/bin/g++
-  GCC_LIB_PATH=$(GCC_DIR)/lib64
-  export LD_LIBRARY_PATH=$(GCC_LIB_PATH)
+  GCC_DIR=/site/apps/gcc-4.7.2-drw.patched.1.rh5
+  OS_VERSION=redhat6
+  GCC_VERSION=472
 endif
+CC=$(GCC_DIR)/bin/g++
+GCC_LIB_PATH=$(GCC_DIR)/lib64
+export LD_LIBRARY_PATH=$(GCC_LIB_PATH)
 
 $(FIG_DEP): package.fig
 	fig --update-if-missing --log-level warn --config build
@@ -102,7 +107,7 @@ clobber: clean
 	rm -rf lib include $(FIG_DEP)
 
 publish: all
-	fig --publish seasocks/$(VERSION)
+	fig --publish seasocks/$(VERSION).$(OS_VERSION).gcc$(GCC_VERSION)
 
 publish-local: all
 	fig --publish-local seasocks/local

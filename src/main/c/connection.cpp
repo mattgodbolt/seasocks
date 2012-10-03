@@ -3,6 +3,7 @@
 #include "seasocks/AccessControl.h"
 #include "seasocks/credentials.h"
 #include "seasocks/PageHandler.h"
+#include "seasocks/ToString.h"
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/logger.h"
@@ -10,8 +11,8 @@
 #include "internal/Embedded.h"
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
-#include "internal/PageRequest.h"
 #include "internal/LogStream.h"
+#include "internal/PageRequest.h"
 #include "internal/Version.h"
 
 #include <assert.h>
@@ -20,14 +21,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits>
 #include <iostream>
 #include <sstream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/noncopyable.hpp>
 #include <unordered_map>
 #include <fstream>
 
@@ -76,12 +76,14 @@ std::string now() {
 	return webtime(time(NULL));
 }
 
-class RaiiFd : public boost::noncopyable {
+class RaiiFd {
 	int _fd;
 public:
 	RaiiFd(const char* filename) {
 		_fd = ::open(filename, O_RDONLY);
 	}
+	RaiiFd(const RaiiFd&) = delete;
+	RaiiFd& operator=(const RaiiFd&) = delete;
 	~RaiiFd() {
 		if (_fd != -1) {
 			::close(_fd);
@@ -621,7 +623,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
 	std::string document;
 	if (errorContent) {
 		document.assign(errorContent->data, errorContent->data + errorContent->length);
-		replace(document, "%%ERRORCODE%%", boost::lexical_cast<std::string>(errorNumber));
+		replace(document, "%%ERRORCODE%%", toString(errorNumber));
 		replace(document, "%%MESSAGE%%", message);
 		replace(document, "%%BODY%%", body);
 	} else {
@@ -631,7 +633,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
 				<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
 		document = documentStr.str();
 	}
-	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(document.length()));
+	bufferLine("Content-Length: " + toString(document.length()));
 	bufferLine("Connection: close");
 	bufferLine("");
 	bufferLine(document);
@@ -740,11 +742,11 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 			_hixieExtraHeaders += "\r\n";
 			host = strValue;
 		} else if (strcasecmp(key, "Sec-WebSocket-Version") == 0) {
-			webSocketVersion = boost::lexical_cast<int>(strValue);
+			webSocketVersion = atoi(strValue.c_str());
 		} else if (strcasecmp(key, "Range") == 0) {
 			rangeHeader = strValue;
 		} else if (strcasecmp(key, "Content-Length") == 0) {
-			contentLength = boost::lexical_cast<size_t>(strValue);
+			contentLength = atoi(strValue.c_str());
 		}
 	}
 
@@ -836,7 +838,7 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
 	}
 
 	bufferResponseAndCommonHeaders(response->responseCode());
-	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(response->payloadSize()));
+	bufferLine("Content-Length: " + toString(response->payloadSize()));
 	bufferLine("Content-Type: " + response->contentType());
 	if (response->keepConnectionAlive()) {
 	    bufferLine("Connection: keep-alive");
@@ -894,15 +896,15 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
 	}
 	if (minusPos == 0) {
 		// A range like "-500" means 500 bytes from end of file to end.
-		range.start = boost::lexical_cast<int>(rangeStr);
+		range.start = atoi(rangeStr.c_str());
 		range.end = std::numeric_limits<long>::max();
 		return true;
 	} else {
-		range.start = boost::lexical_cast<int>(rangeStr.substr(0, minusPos));
+		range.start = atoi(rangeStr.substr(0, minusPos).c_str());
 		if (minusPos == rangeStr.size()-1) {
 			range.end = std::numeric_limits<long>::max();
 		} else {
-			range.end = boost::lexical_cast<int>(rangeStr.substr(minusPos + 1));
+			range.end = atoi(rangeStr.substr(minusPos + 1).c_str());
 		}
 		return true;
 	}
@@ -932,7 +934,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 	if (origRanges.empty()) {
 		// Easy case: a non-range request.
 		bufferResponseAndCommonHeaders(ResponseCode::Ok);
-		bufferLine("Content-Length: " + boost::lexical_cast<std::string>(fileSize));
+		bufferLine("Content-Length: " + toString(fileSize));
 		return { Range { 0, fileSize - 1 } };
 	}
 
@@ -959,7 +961,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 	}
 	rangeLine << "/" << fileSize;
 	bufferLine(rangeLine.str());
-	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(contentLength));
+	bufferLine("Content-Length: " + toString(contentLength));
 	return sendRanges;
 }
 
@@ -1026,7 +1028,7 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
 bool Connection::sendData(const std::string& type, const char* start, size_t size) {
 	bufferResponseAndCommonHeaders(ResponseCode::Ok);
 	bufferLine("Content-Type: " + type);
-	bufferLine("Content-Length: " + boost::lexical_cast<std::string>(size));
+	bufferLine("Content-Length: " + toString(size));
 	bufferLine("Connection: keep-alive");
 	bufferLine("");
 	bool result = write(start, size, true);
@@ -1036,7 +1038,7 @@ bool Connection::sendData(const std::string& type, const char* start, size_t siz
 void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
     auto responseCodeInt = static_cast<int>(code);
     auto responseCodeName = ::name(code);
-    auto response = std::string("HTTP/1.1 " + boost::lexical_cast<std::string>(responseCodeInt) + " " + responseCodeName);
+    auto response = std::string("HTTP/1.1 " + toString(responseCodeInt) + " " + responseCodeName);
 	LS_INFO(_logger, "Response: " << response);
 	bufferLine(response);
 	bufferLine("Server: " SEASOCKS_VERSION_STRING);
