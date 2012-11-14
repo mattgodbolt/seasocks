@@ -2,12 +2,13 @@
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/websocket.h"
-#include <string>
+
 #include <cstring>
-#include <sstream>
+#include <iostream>
 #include <memory>
 #include <set>
-#include <iostream>
+#include <sstream>
+#include <string>
 
 /* Simple server that echo any text or binary WebSocket messages back. */
 

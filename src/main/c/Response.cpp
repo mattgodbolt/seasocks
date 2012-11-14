@@ -1,6 +1,6 @@
-#include "seasocks/Response.h"
-
 #include "internal/ConcreteResponse.h"
+
+#include "seasocks/Response.h"
 
 using namespace SeaSocks;
 

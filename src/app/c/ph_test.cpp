@@ -1,14 +1,15 @@
+#include "seasocks/PageHandler.h"
 #include "seasocks/printflogger.h"
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
-#include "seasocks/PageHandler.h"
-#include <string>
+
 #include <cstring>
-#include <sstream>
+#include <iostream>
 #include <memory>
 #include <set>
-#include <iostream>
 #include <sstream>
+#include <sstream>
+#include <string>
 
 using namespace SeaSocks;
 
@@ -39,7 +40,7 @@ int main(int argc, const char* argv[]) {
 	auto sso = SsoOptions::test();
 	sso.requestUserAttributes.insert("fullName");
 	server.enableSingleSignOn(sso);
-	
+
 	std::shared_ptr<PageHandler> handler(new MyPageHandler());
 	server.setPageHandler(handler);
 	server.serve("src/ws_test_web", 9090);

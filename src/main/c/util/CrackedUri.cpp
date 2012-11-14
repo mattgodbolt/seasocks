@@ -1,6 +1,5 @@
-#include "seasocks/util/CrackedUri.h"
-
 #include "seasocks/stringutil.h"
+#include "seasocks/util/CrackedUri.h"
 
 #include <algorithm>
 #include <sstream>

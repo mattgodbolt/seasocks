@@ -1,12 +1,14 @@
-#include <gmock/gmock.h>
-
-#include <string>
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
+
 #include "seasocks/ignoringlogger.h"
+
+#include <gmock/gmock.h>
+
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <string>
 
 using namespace SeaSocks;
 

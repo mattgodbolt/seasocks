@@ -1,25 +1,23 @@
-#include "seasocks/server.h"
-
-#include "seasocks/connection.h"
-#include "seasocks/stringutil.h"
-#include "seasocks/logger.h"
-#include "seasocks/util/Json.h"
-
 #include "internal/LogStream.h"
 
-#include <string.h>
+#include "seasocks/connection.h"
+#include "seasocks/logger.h"
+#include "seasocks/server.h"
+#include "seasocks/stringutil.h"
+#include "seasocks/util/Json.h"
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/ioctl.h>
+
 #include <sys/epoll.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <stdexcept>
-#include <unistd.h>
+#include <sys/syscall.h>
 
 #include <memory>
-
-#include <sys/syscall.h>
+#include <stdexcept>
+#include <string.h>
+#include <unistd.h>
 
 namespace {
 

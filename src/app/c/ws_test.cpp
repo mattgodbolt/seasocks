@@ -2,12 +2,13 @@
 #include "seasocks/server.h"
 #include "seasocks/stringutil.h"
 #include "seasocks/websocket.h"
-#include <string>
+
 #include <cstring>
-#include <sstream>
+#include <iostream>
 #include <memory>
 #include <set>
-#include <iostream>
+#include <sstream>
+#include <string>
 
 using namespace SeaSocks;
 
@@ -70,7 +71,7 @@ int main(int argc, const char* argv[]) {
 
 	Server server(logger);
 	server.enableSingleSignOn(SsoOptions::test());
-	
+
 	std::shared_ptr<MyHandler> handler(new MyHandler(&server));
 	server.addWebSocketHandler("/ws", handler);
 	server.serve("src/ws_test_web", 9090);

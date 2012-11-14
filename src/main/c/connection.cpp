@@ -1,13 +1,3 @@
-#include "seasocks/connection.h"
-
-#include "seasocks/AccessControl.h"
-#include "seasocks/credentials.h"
-#include "seasocks/PageHandler.h"
-#include "seasocks/ToString.h"
-#include "seasocks/server.h"
-#include "seasocks/stringutil.h"
-#include "seasocks/logger.h"
-
 #include "internal/Embedded.h"
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
@@ -15,23 +5,32 @@
 #include "internal/PageRequest.h"
 #include "internal/Version.h"
 
+#include "md5/md5.h"
+
+#include "seasocks/AccessControl.h"
+#include "seasocks/PageHandler.h"
+#include "seasocks/ToString.h"
+#include "seasocks/connection.h"
+#include "seasocks/credentials.h"
+#include "seasocks/logger.h"
+#include "seasocks/server.h"
+#include "seasocks/stringutil.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <limits>
-#include <iostream>
-#include <sstream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
 #include <unordered_map>
-#include <fstream>
-
-#include "md5/md5.h"
 
 namespace {
 
@@ -683,7 +682,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		return sendBadRequest("Malformed request line");
 	}
 	_requestUri = std::string(requestUri);
-	
+
 	const char* httpVersion = shift(requestLine);
 	if (httpVersion == NULL) {
 		return sendBadRequest("Malformed request line");

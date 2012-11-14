@@ -1,20 +1,19 @@
-#include "seasocks/ssoauthenticator.h"
+#include "md5/md5.h"
 
 #include "seasocks/AccessControl.h"
 #include "seasocks/ResponseBuilder.h"
+#include "seasocks/ssoauthenticator.h"
 #include "seasocks/stringutil.h"
 
-#include "md5/md5.h"
-
-#include <string.h>
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <vector>
-#include <string>
-#include <iomanip>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <stdexcept>
+#include <string.h>
+#include <string>
+#include <vector>
 
 namespace {
 
@@ -320,7 +319,7 @@ void SsoAuthenticator::parseCookie(const std::string& cookieString, std::map<std
 				}
 			}
 			break;
-		case State::QUOTED_VALUE: 
+		case State::QUOTED_VALUE:
 			switch (*pos) {
 			case '\\':
 				pos++;

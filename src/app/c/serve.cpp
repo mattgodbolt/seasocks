@@ -1,16 +1,16 @@
+#include "internal/Version.h"
+
 #include "seasocks/AccessControl.h"
+#include "seasocks/UsernameAccessControl.h"
 #include "seasocks/printflogger.h"
 #include "seasocks/server.h"
 #include "seasocks/ssoauthenticator.h"
 #include "seasocks/stringutil.h"
-#include "seasocks/UsernameAccessControl.h"
-
-#include "internal/Version.h"
 
 #include <tclap/CmdLine.h>
 
-#include <memory>
 #include <iostream>
+#include <memory>
 
 using namespace SeaSocks;
 using namespace TCLAP;
