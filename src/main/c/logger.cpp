@@ -22,6 +22,11 @@ void Logger::debug(const char* message, ...) {
 #endif
 }
 
+void Logger::access(const char* message, ...) {
+	PRINT_TO_MESSAGEBUF();
+	log(ACCESS, messageBuf);
+}
+
 void Logger::info(const char* message, ...) {
 	PRINT_TO_MESSAGEBUF();
 	log(INFO, messageBuf);

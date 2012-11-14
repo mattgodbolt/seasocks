@@ -6,6 +6,7 @@
 
 #include <sys/types.h>
 
+#include <atomic>
 #include <mutex>
 #include <memory>
 #include <unordered_map>
@@ -42,9 +43,22 @@ public:
 	// A value of 0 disables keep alives, which is the default.
 	void setMaxKeepAliveDrops(int maxKeepAliveDrops);
 
-	// Serves static content from the given port on the current thread, until terminate is called
-	void serve(const char* staticPath, int port);
+	// Serves static content from the given port on the current thread, until terminate is called.
+	// Roughly equivalent to startListening(port); setStaticPath(staticPath); loop();
+	// Returns whether exiting was expected.
+	bool serve(const char* staticPath, int port);
 
+	// Starts listening on a given port.  Returns true if all was ok.
+	bool startListening(int port);
+
+	void setStaticPath(const char* staticPath);
+
+	// Loop (until terminate called from another thread).
+	// Returns true if terminate() was used to exit the loop, false if there
+	// was an error.
+	bool loop();
+
+	// Terminate any loop(). May be called from any thread.
 	void terminate();
 
 	void remove(Connection* connection);
@@ -74,7 +88,6 @@ private:
 	std::shared_ptr<Runnable> popNextRunnable();
 	void processEventQueue();
 
-	bool startListening(int port);
 	void shutdown();
 
 	void checkAndDispatchEpoll();
@@ -108,7 +121,8 @@ private:
 	pid_t _threadId;
 
 	std::string _staticPath;
-    volatile bool _terminate;
+    std::atomic<bool> _terminate;
+    std::atomic<bool> _expectedTerminate;
 };
 
 }  // namespace SeaSocks

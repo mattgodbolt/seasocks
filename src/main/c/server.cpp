@@ -64,7 +64,8 @@ namespace SeaSocks {
 Server::Server(std::shared_ptr<Logger> logger)
 : _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
   _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
-  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false) {
+  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false),
+  _expectedTerminate(false) {
 	_pipes[0] = _pipes[1] = -1;
 	_sso = std::shared_ptr<SsoAuthenticator>();
 
@@ -165,6 +166,7 @@ bool Server::configureSocket(int fd) const {
 }
 
 void Server::terminate() {
+	_expectedTerminate = true;
 	_terminate = true;
 	uint64_t one = 1;
 	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
@@ -173,6 +175,11 @@ void Server::terminate() {
 }
 
 bool Server::startListening(int port) {
+	if (_epollFd == -1 || _pipes[0] == -1 || _pipes[1] == -1) {
+		LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
+		return false;
+	}
+
 	_listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listenSock == -1) {
 		LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
@@ -199,6 +206,10 @@ bool Server::startListening(int port) {
 		LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
 		return false;
 	}
+
+	char buf[1024];
+	::gethostname(buf, sizeof(buf));
+	LS_INFO(_logger, "Listening on http://" << buf << ":" << port << "/");
 
 	return true;
 }
@@ -299,22 +310,23 @@ void Server::checkAndDispatchEpoll() {
 	}
 }
 
-void Server::serve(const char* staticPath, int port) {
-	if (_epollFd == -1 || _pipes[0] == -1 || _pipes[1] == -1) {
-		LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
-		return;
-	}
-	// Stash away "the" server thread id and the path we're serving from.
-	_threadId = gettid();
+void Server::setStaticPath(const char* staticPath) {
+	LS_INFO(_logger, "Serving content from " << staticPath);
 	_staticPath = staticPath;
+}
 
+bool Server::serve(const char* staticPath, int port) {
+	setStaticPath(staticPath);
 	if (!startListening(port)) {
-		return;
+		return false;
 	}
 
-	char buf[1024];
-	::gethostname(buf, sizeof(buf));
-	LS_INFO(_logger, "Listening on http://" << buf << ":" << port << "/");
+	return loop();
+}
+
+bool Server::loop() {
+	// Stash away "the" server thread id.
+	_threadId = gettid();
 
 	while (!_terminate) {
 		// Always process events first to catch start up events.
@@ -325,6 +337,7 @@ void Server::serve(const char* staticPath, int port) {
 	processEventQueue();
 	LS_INFO(_logger, "Server terminating");
 	shutdown();
+	return _expectedTerminate;
 }
 
 void Server::processEventQueue() {

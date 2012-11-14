@@ -238,7 +238,7 @@ void Connection::finalise() {
 	}
 	if (_fd != -1) {
 		_server->remove(this);
-		LS_INFO(_logger, "Closing socket");
+		LS_DEBUG(_logger, "Closing socket");
 		::close(_fd);
 	}
 	_fd = -1;
@@ -320,7 +320,7 @@ void Connection::handleDataReadyForRead() {
 		return;
 	}
 	if (result == 0) {
-		LS_INFO(_logger, "Remote end closed connection");
+		LS_DEBUG(_logger, "Remote end closed connection");
 		closeInternal();
 		return;
 	}
@@ -672,7 +672,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	char* requestLine = extractLine(first, last);
 	assert(requestLine != NULL);
 
-	LS_INFO(_logger, "Request: " << requestLine);
+	LS_ACCESS(_logger, "Request: " << requestLine);
 
 	const char* verb = shift(requestLine);
 	if (verb == NULL) {
@@ -1039,7 +1039,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
     auto responseCodeInt = static_cast<int>(code);
     auto responseCodeName = ::name(code);
     auto response = std::string("HTTP/1.1 " + toString(responseCodeInt) + " " + responseCodeName);
-	LS_INFO(_logger, "Response: " << response);
+	LS_ACCESS(_logger, "Response: " << response);
 	bufferLine(response);
 	bufferLine("Server: " SEASOCKS_VERSION_STRING);
 	bufferLine("Date: " + now());

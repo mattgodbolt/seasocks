@@ -40,7 +40,7 @@ int main(int argc, const char* argv[]) {
 	cmd.parse(argc, argv);
 
 	std::shared_ptr<Logger> logger(
-			new PrintfLogger(verboseArg.getValue() ? Logger::DEBUG : Logger::INFO));
+			new PrintfLogger(verboseArg.getValue() ? Logger::DEBUG : Logger::ACCESS));
 	Server server(logger);
 	if (lameTimeoutArg.isSet()) {
 		server.setLameConnectionTimeoutSeconds(lameTimeoutArg.getValue());
