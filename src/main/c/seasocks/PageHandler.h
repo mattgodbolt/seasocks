@@ -2,7 +2,7 @@
 
 #include <string>
 #include <memory>
-#include "seasocks/credentials.h"
+#include "seasocks/Credentials.h"
 #include "seasocks/Response.h"
 
 namespace SeaSocks {

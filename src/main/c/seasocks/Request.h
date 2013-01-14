@@ -2,7 +2,7 @@
 
 #include <netinet/in.h>
 #include <memory>
-#include "seasocks/credentials.h"
+#include "seasocks/Credentials.h"
 
 #include <cstdint>
 

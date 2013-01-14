@@ -1,6 +1,6 @@
 #include "internal/Debug.h"
 
-#include "seasocks/logger.h"
+#include "seasocks/Logger.h"
 
 #include <stdarg.h>
 #include <stdio.h>

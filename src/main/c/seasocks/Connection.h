@@ -1,8 +1,8 @@
 #ifndef _SEASOCKS_CONNECTION_H_
 #define _SEASOCKS_CONNECTION_H_
 
-#include "websocket.h"
-#include "seasocks/ssoauthenticator.h"
+#include "seasocks/WebSocket.h"
+#include "seasocks/SsoAuthenticator.h"
 #include "seasocks/ResponseCode.h"
 
 #include <inttypes.h>

@@ -1,4 +1,4 @@
-#include "seasocks/stringutil.h"
+#include "seasocks/StringUtil.h"
 #include "seasocks/util/CrackedUri.h"
 
 #include <algorithm>

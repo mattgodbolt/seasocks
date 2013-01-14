@@ -1,4 +1,4 @@
-#include "seasocks/stringutil.h"
+#include "seasocks/StringUtil.h"
 
 #include <ctype.h>
 #include <errno.h>

@@ -1,5 +1,5 @@
-#include "seasocks/connection.h"
-#include "seasocks/ignoringlogger.h"
+#include "seasocks/Connection.h"
+#include "seasocks/IgnoringLogger.h"
 
 #include <gmock/gmock.h>
 

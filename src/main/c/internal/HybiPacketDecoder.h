@@ -1,6 +1,6 @@
 #pragma once
 
-#include "seasocks/logger.h"
+#include "seasocks/Logger.h"
 
 #include <memory>
 #include <string>

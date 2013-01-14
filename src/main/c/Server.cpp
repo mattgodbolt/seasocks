@@ -1,9 +1,9 @@
 #include "internal/LogStream.h"
 
-#include "seasocks/connection.h"
-#include "seasocks/logger.h"
-#include "seasocks/server.h"
-#include "seasocks/stringutil.h"
+#include "seasocks/Connection.h"
+#include "seasocks/Logger.h"
+#include "seasocks/Server.h"
+#include "seasocks/StringUtil.h"
 #include "seasocks/util/Json.h"
 
 #include <netinet/in.h>
@@ -173,6 +173,10 @@ void Server::terminate() {
 }
 
 bool Server::startListening(int port) {
+	return startListening(INADDR_ANY, port);
+}
+
+bool Server::startListening(uint32_t hostAddr, int port) {
 	if (_epollFd == -1 || _pipes[0] == -1 || _pipes[1] == -1) {
 		LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
 		return false;
@@ -189,7 +193,7 @@ bool Server::startListening(int port) {
 	sockaddr_in sock;
 	memset(&sock, 0, sizeof(sock));
 	sock.sin_port = htons(port);
-	sock.sin_addr.s_addr = INADDR_ANY;
+	sock.sin_addr.s_addr = htonl(hostAddr);
 	sock.sin_family = AF_INET;
 	if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
 		LS_ERROR(_logger, "Unable to bind socket: " << getLastError());

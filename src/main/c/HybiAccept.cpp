@@ -1,5 +1,5 @@
 #include "internal/HybiAccept.h"
-#include "internal/base64.h"
+#include "internal/Base64.h"
 
 #include "sha1/sha1.h"
 

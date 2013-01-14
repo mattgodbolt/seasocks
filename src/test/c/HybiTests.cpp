@@ -1,7 +1,7 @@
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
 
-#include "seasocks/ignoringlogger.h"
+#include "seasocks/IgnoringLogger.h"
 
 #include <gmock/gmock.h>
 

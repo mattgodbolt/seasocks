@@ -10,11 +10,11 @@
 #include "seasocks/AccessControl.h"
 #include "seasocks/PageHandler.h"
 #include "seasocks/ToString.h"
-#include "seasocks/connection.h"
-#include "seasocks/credentials.h"
-#include "seasocks/logger.h"
-#include "seasocks/server.h"
-#include "seasocks/stringutil.h"
+#include "seasocks/Connection.h"
+#include "seasocks/Credentials.h"
+#include "seasocks/Logger.h"
+#include "seasocks/Server.h"
+#include "seasocks/StringUtil.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>

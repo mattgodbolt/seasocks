@@ -1,18 +1,18 @@
-#ifndef _SEASOCKS_SERVER_H_
-#define _SEASOCKS_SERVER_H_
+#pragma once
 
-#include "websocket.h"
-#include "ssoauthenticator.h"
+#include "SsoAuthenticator.h"
+#include "WebSocket.h"
 
 #include <sys/types.h>
 
 #include <atomic>
-#include <mutex>
-#include <memory>
-#include <unordered_map>
+#include <cstdint>
 #include <list>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 
 namespace SeaSocks {
 
@@ -48,7 +48,12 @@ public:
 	// Returns whether exiting was expected.
 	bool serve(const char* staticPath, int port);
 
-	// Starts listening on a given port.  Returns true if all was ok.
+	// Starts listening on a given interface (in host order) and port.
+	// Returns true if all was ok.
+	bool startListening(uint32_t ipInHostOrder, int port);
+
+	// Starts listening on a port on all interfaces.
+	// Returns true if all was ok.
 	bool startListening(int port);
 
 	void setStaticPath(const char* staticPath);
@@ -126,5 +131,3 @@ private:
 };
 
 }  // namespace SeaSocks
-
-#endif  // _SEASOCKS_SERVER_H_

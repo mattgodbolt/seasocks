@@ -1,7 +1,7 @@
 #ifndef _SEASOCKS_PRINTFLOGGER_H_INCLUDED
 #define _SEASOCKS_PRINTFLOGGER_H_INCLUDED
 
-#include "logger.h"
+#include "Logger.h"
 #include <stdio.h>
 
 namespace SeaSocks {

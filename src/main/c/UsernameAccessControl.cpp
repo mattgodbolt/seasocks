@@ -1,5 +1,5 @@
 #include "seasocks/UsernameAccessControl.h"
-#include "seasocks/ssoauthenticator.h"
+#include "seasocks/SsoAuthenticator.h"
 
 namespace SeaSocks {
 

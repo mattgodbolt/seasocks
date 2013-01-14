@@ -1,7 +1,7 @@
 #include "seasocks/PageHandler.h"
-#include "seasocks/printflogger.h"
-#include "seasocks/server.h"
-#include "seasocks/stringutil.h"
+#include "seasocks/PrintfLogger.h"
+#include "seasocks/Server.h"
+#include "seasocks/StringUtil.h"
 
 #include <cstring>
 #include <iostream>

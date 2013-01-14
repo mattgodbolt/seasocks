@@ -2,10 +2,10 @@
 
 #include "seasocks/AccessControl.h"
 #include "seasocks/UsernameAccessControl.h"
-#include "seasocks/printflogger.h"
-#include "seasocks/server.h"
-#include "seasocks/ssoauthenticator.h"
-#include "seasocks/stringutil.h"
+#include "seasocks/PrintfLogger.h"
+#include "seasocks/Server.h"
+#include "seasocks/SsoAuthenticator.h"
+#include "seasocks/StringUtil.h"
 
 #include <tclap/CmdLine.h>
 
