@@ -9,7 +9,8 @@ bool isOk(seasocks::ResponseCode code) {
 const char* name(ResponseCode code) {
 	switch (code) {
 #define SEASOCKS_DEFINE_RESPONSECODE(CODE,SYMBOLICNAME,STRINGNAME) case ResponseCode::SYMBOLICNAME: return STRINGNAME;
-#include <seasocks/ResponseCodeDefs.h>
+#include "seasocks/ResponseCodeDefs.h"
+
 #undef SEASOCKS_DEFINE_RESPONSECODE
 	}
 	return "Unknown";

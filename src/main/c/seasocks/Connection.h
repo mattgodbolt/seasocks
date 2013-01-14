@@ -1,17 +1,17 @@
-#ifndef _SEASOCKS_CONNECTION_H_
-#define _SEASOCKS_CONNECTION_H_
+#pragma once
 
-#include "seasocks/WebSocket.h"
-#include "seasocks/SsoAuthenticator.h"
 #include "seasocks/ResponseCode.h"
+#include "seasocks/SsoAuthenticator.h"
+#include "seasocks/WebSocket.h"
 
-#include <inttypes.h>
 #include <netinet/in.h>
+
 #include <sys/socket.h>
 
+#include <inttypes.h>
+#include <list>
 #include <memory>
 #include <string>
-#include <list>
 #include <vector>
 
 namespace seasocks {
@@ -158,5 +158,3 @@ private:
 };
 
 }  // namespace seasocks
-
-#endif  // _SEASOCKS_CONNECTION_H_

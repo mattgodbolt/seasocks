@@ -1,5 +1,4 @@
-#ifndef USERNAMEACCESSCONTROL_H_
-#define USERNAMEACCESSCONTROL_H_
+#pragma once
 
 #include "seasocks/AccessControl.h"
 
@@ -17,5 +16,3 @@ public:
 };
 
 }
-
-#endif /* USERNAMEACCESSCONTROL_H_ */

@@ -1,9 +1,10 @@
 #pragma once
 
-#include <string>
-#include <memory>
 #include "seasocks/Credentials.h"
 #include "seasocks/Response.h"
+
+#include <memory>
+#include <string>
 
 namespace seasocks {
 

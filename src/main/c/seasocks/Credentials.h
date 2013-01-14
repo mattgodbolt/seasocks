@@ -1,25 +1,24 @@
-#ifndef _SEASOCKS_CREDENTIALS_H_
-#define _SEASOCKS_CREDENTIALS_H_
+#pragma once
 
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
-#include <iostream>
 
 namespace seasocks {
 
 struct Credentials {
-	
+
 	/**
 	 * Whether user was successfuly authenticated.
 	 */
 	bool authenticated;
-	
+
 	/**
 	 * e.g. "mgodbolt" (or "" for unauthenticated users)
 	 */
 	std::string username;
-	
+
 	/**
 	 * Groups the user is in. NB only groups requested in the SsoOptions will be returned.
 	 */
@@ -29,10 +28,10 @@ struct Credentials {
 	 * Attributes for the user. NB only attributes requested in the SsoOptions will be returned.
 	 */
 	std::map<std::string, std::string> attributes;
-	
+
 	Credentials(): authenticated(false) {
 	}
-	
+
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Credentials& credentials) {
@@ -50,5 +49,3 @@ inline std::ostream &operator<<(std::ostream &os, const Credentials& credentials
 }
 
 }  // namespace seasocks
-
-#endif  // _SEASOCKS_CREDENTIALS_H_

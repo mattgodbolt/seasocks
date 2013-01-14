@@ -1,7 +1,6 @@
-#ifndef _SEASOCKS_IGNORINGLOGGER_H_INCLUDED
-#define _SEASOCKS_IGNORINGLOGGER_H_INCLUDED
+#pragma once
 
-#include "Logger.h"
+#include "seasocks/Logger.h"
 
 namespace seasocks {
 
@@ -12,5 +11,3 @@ public:
 };
 
 }  // namespace seasocks
-
-#endif  // _SEASOCKS_IGNORINGLOGGER_H_INCLUDED

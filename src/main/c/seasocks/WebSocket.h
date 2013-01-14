@@ -1,5 +1,4 @@
-#ifndef _SEASOCKS_WEBSOCKET_H_
-#define _SEASOCKS_WEBSOCKET_H_
+#pragma once
 
 #include "seasocks/Request.h"
 
@@ -60,5 +59,3 @@ protected:
 };
 
 }  // namespace seasocks
-
-#endif  // _SEASOCKS_WEBSOCKET_H_

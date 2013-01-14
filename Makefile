@@ -111,3 +111,13 @@ publish: all
 
 publish-local: all
 	fig --publish-local seasocks/local
+
+ifneq ($(shell git status --porcelain src 2>/dev/null | wc -l),0)
+tidy_source:
+	@echo Not tidying source - you have local modifications
+	@false
+else
+tidy_source:
+	bash -c "python <(curl https://git.drwholdings.com/cpp-infrastructure/tidy-source/raw/master/tidy) $(SYSTEM_INCLUDES) -i src/main/c src"
+endif
+

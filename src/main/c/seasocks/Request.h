@@ -1,10 +1,11 @@
 #pragma once
 
-#include <netinet/in.h>
-#include <memory>
 #include "seasocks/Credentials.h"
 
+#include <netinet/in.h>
+
 #include <cstdint>
+#include <memory>
 
 namespace seasocks {
 

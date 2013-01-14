@@ -8,13 +8,13 @@
 #include "md5/md5.h"
 
 #include "seasocks/AccessControl.h"
-#include "seasocks/PageHandler.h"
-#include "seasocks/ToString.h"
 #include "seasocks/Connection.h"
 #include "seasocks/Credentials.h"
 #include "seasocks/Logger.h"
+#include "seasocks/PageHandler.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
+#include "seasocks/ToString.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>

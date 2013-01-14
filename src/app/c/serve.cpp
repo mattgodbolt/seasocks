@@ -1,11 +1,11 @@
 #include "internal/Version.h"
 
 #include "seasocks/AccessControl.h"
-#include "seasocks/UsernameAccessControl.h"
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
 #include "seasocks/SsoAuthenticator.h"
 #include "seasocks/StringUtil.h"
+#include "seasocks/UsernameAccessControl.h"
 
 #include <tclap/CmdLine.h>
 

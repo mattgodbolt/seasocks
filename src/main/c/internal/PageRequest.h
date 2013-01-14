@@ -2,8 +2,8 @@
 
 #include "seasocks/Request.h"
 
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace seasocks {
 

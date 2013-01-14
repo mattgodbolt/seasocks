@@ -1,5 +1,4 @@
-#ifndef SEASOCKS_LOGGER_H_INCLUDED
-#define SEASOCKS_LOGGER_H_INCLUDED
+#pragma once
 
 namespace seasocks {
 
@@ -42,5 +41,3 @@ public:
 };
 
 }  // namespace seasocks
-
-#endif // SEASOCKS_LOGGER_H_INCLUDED

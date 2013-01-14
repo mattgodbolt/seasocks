@@ -1,3 +1,4 @@
+// DO NOT REFORMAT <- for tidy
 /*
  *  sha1.cpp
  *

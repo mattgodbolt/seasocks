@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SsoAuthenticator.h"
-#include "WebSocket.h"
+#include "seasocks/SsoAuthenticator.h"
+#include "seasocks/WebSocket.h"
 
 #include <sys/types.h>
 

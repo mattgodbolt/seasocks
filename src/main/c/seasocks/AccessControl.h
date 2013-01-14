@@ -1,5 +1,4 @@
-#ifndef ACCESSCONTROL_H_
-#define ACCESSCONTROL_H_
+#pragma once
 
 #include <memory>
 
@@ -24,5 +23,3 @@ public:
 };
 
 }
-
-#endif /* ACCESSCONTROL_H_ */

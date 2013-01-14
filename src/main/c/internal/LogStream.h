@@ -1,5 +1,4 @@
-#ifndef LOGSTREAM_H_
-#define LOGSTREAM_H_
+#pragma once
 
 #include "internal/Debug.h"
 
@@ -19,5 +18,3 @@
 #define LS_WARNING(LOG, STUFF) 	LS_LOG(LOG, WARNING, STUFF)
 #define LS_ERROR(LOG, STUFF) 	LS_LOG(LOG, ERROR, STUFF)
 #define LS_SEVERE(LOG, STUFF) 	LS_LOG(LOG, SEVERE, STUFF)
-
-#endif /* LOGSTREAM_H_ */

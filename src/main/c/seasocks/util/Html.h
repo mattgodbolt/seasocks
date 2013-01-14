@@ -3,10 +3,10 @@
 #include "seasocks/ToString.h"
 
 #include <functional>
-#include <list>
-#include <string>
 #include <iostream>
+#include <list>
 #include <sstream>
+#include <string>
 
 namespace seasocks {
 

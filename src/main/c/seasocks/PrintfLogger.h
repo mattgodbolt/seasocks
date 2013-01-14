@@ -1,7 +1,7 @@
-#ifndef _SEASOCKS_PRINTFLOGGER_H_INCLUDED
-#define _SEASOCKS_PRINTFLOGGER_H_INCLUDED
+#pragma once
 
-#include "Logger.h"
+#include "seasocks/Logger.h"
+
 #include <stdio.h>
 
 namespace seasocks {
@@ -24,5 +24,3 @@ public:
 };
 
 }  // namespace seasocks
-
-#endif  // _SEASOCKS_PRINTFLOGGER_H_INCLUDED
