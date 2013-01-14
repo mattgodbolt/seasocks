@@ -5,7 +5,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-namespace SeaSocks {
+namespace seasocks {
 
 const int MAX_MESSAGE_LENGTH = 1024;
 
@@ -48,4 +48,4 @@ void Logger::severe(const char* message, ...) {
 	log(SEVERE, messageBuf);
 }
 
-}  // namespace SeaSocks
+}  // namespace seasocks

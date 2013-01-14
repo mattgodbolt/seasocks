@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class Request {
 public:
@@ -43,4 +43,4 @@ public:
 	virtual std::string getHeader(const std::string& name) const = 0;
 };
 
-}  // namespace SeaSocks
+}  // namespace seasocks

@@ -6,7 +6,7 @@
 #include <string>
 #include <map>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class Response {
 public:

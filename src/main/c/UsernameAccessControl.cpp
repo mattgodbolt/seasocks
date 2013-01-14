@@ -1,7 +1,7 @@
 #include "seasocks/UsernameAccessControl.h"
 #include "seasocks/SsoAuthenticator.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 UsernameAccessControl::UsernameAccessControl(const std::set<std::string> users) : _users(users) {
 }

@@ -12,7 +12,7 @@
 #include <iostream>
 #include <memory>
 
-using namespace SeaSocks;
+using namespace seasocks;
 using namespace TCLAP;
 
 namespace {

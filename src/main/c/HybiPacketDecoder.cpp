@@ -3,7 +3,7 @@
 
 #include <arpa/inet.h>
 
-namespace SeaSocks {
+namespace seasocks {
 
 HybiPacketDecoder::HybiPacketDecoder(Logger& logger, const std::vector<uint8_t>& buffer) :
 	_logger(logger),

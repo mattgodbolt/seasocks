@@ -2,7 +2,7 @@
 
 #include "seasocks/Response.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 class ConcreteResponse : public Response {
     ResponseCode _responseCode;

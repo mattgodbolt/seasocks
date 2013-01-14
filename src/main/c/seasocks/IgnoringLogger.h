@@ -3,7 +3,7 @@
 
 #include "Logger.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 class IgnoringLogger : public Logger {
 public:
@@ -11,6 +11,6 @@ public:
 	}
 };
 
-}  // namespace SeaSocks
+}  // namespace seasocks
 
 #endif  // _SEASOCKS_IGNORINGLOGGER_H_INCLUDED

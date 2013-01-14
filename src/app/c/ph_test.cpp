@@ -11,7 +11,7 @@
 #include <sstream>
 #include <string>
 
-using namespace SeaSocks;
+using namespace seasocks;
 
 class MyPageHandler: public PageHandler {
 public:
@@ -22,7 +22,7 @@ public:
 		}
 		if (request.verb() != Request::Get) return Response::unhandled();
 		std::ostringstream ostr;
-		ostr << "<html><head><title>SeaSocks example</title></head>"
+		ostr << "<html><head><title>seasocks example</title></head>"
 				"<body>Hello, " << request.credentials()->attributes["fullName"] << "! You asked for " << request.getRequestUri()
 				<< " and your ip is " << request.getRemoteAddress().sin_addr.s_addr
 				<< " and a random number is " << rand()

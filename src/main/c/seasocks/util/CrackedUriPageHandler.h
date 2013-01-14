@@ -7,13 +7,13 @@
 
 #include <memory>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class CrackedUriPageHandler {
 public:
     virtual ~CrackedUriPageHandler() {}
 
-    virtual std::shared_ptr<SeaSocks::Response> handle(const CrackedUri& uri, const SeaSocks::Request& request) = 0;
+    virtual std::shared_ptr<seasocks::Response> handle(const CrackedUri& uri, const seasocks::Request& request) = 0;
 };
 
 }

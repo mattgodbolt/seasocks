@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class JsonnedString : public std::string {
 public:

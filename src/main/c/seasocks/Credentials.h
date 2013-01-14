@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-namespace SeaSocks {
+namespace seasocks {
 
 struct Credentials {
 	
@@ -49,6 +49,6 @@ inline std::ostream &operator<<(std::ostream &os, const Credentials& credentials
 	return os << "}}";
 }
 
-}  // namespace SeaSocks
+}  // namespace seasocks
 
 #endif  // _SEASOCKS_CREDENTIALS_H_

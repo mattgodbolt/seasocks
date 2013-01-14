@@ -3,7 +3,7 @@
 
 #include <memory>
 
-namespace SeaSocks {
+namespace seasocks {
 
 struct Credentials;
 class Request;

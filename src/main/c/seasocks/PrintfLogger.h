@@ -4,7 +4,7 @@
 #include "Logger.h"
 #include <stdio.h>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class PrintfLogger : public Logger {
 public:
@@ -23,6 +23,6 @@ public:
 	Level minLevelToLog;
 };
 
-}  // namespace SeaSocks
+}  // namespace seasocks
 
 #endif  // _SEASOCKS_PRINTFLOGGER_H_INCLUDED

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace SeaSocks {
+namespace seasocks {
 
 namespace html {
 
@@ -178,4 +178,4 @@ template<typename...Args> inline Element a(const std::string& href, Args&&... ar
 
 }  // namespace html
 
-}  // namespace SeaSocks
+}  // namespace seasocks

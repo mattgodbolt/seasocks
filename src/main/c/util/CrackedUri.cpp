@@ -20,7 +20,7 @@ char fromHex(char c) {
 }
 
 std::string unescape(std::string uri) {
-    SeaSocks::replace(uri, "+", " ");
+    seasocks::replace(uri, "+", " ");
     size_t pos = 0;
     while (pos < uri.size()) {
         pos = uri.find('%', pos);
@@ -40,7 +40,7 @@ std::string unescape(std::string uri) {
 
 }
 
-namespace SeaSocks {
+namespace seasocks {
 
 CrackedUri::CrackedUri(const std::string& uri) {
     if (uri.empty() || uri[0] != '/') {
@@ -56,13 +56,13 @@ CrackedUri::CrackedUri(const std::string& uri) {
         remainder = uri.substr(endOfPath + 1);
     }
 
-    _path = SeaSocks::split(path, '/');
+    _path = seasocks::split(path, '/');
     std::transform(_path.begin(), _path.end(), _path.begin(), unescape);
 
-    auto splitRemainder = SeaSocks::split(remainder, '&');
+    auto splitRemainder = seasocks::split(remainder, '&');
     for (auto iter = splitRemainder.cbegin(); iter != splitRemainder.cend(); ++iter) {
         if (iter->empty()) continue;
-        auto split = SeaSocks::split(*iter, '=');
+        auto split = seasocks::split(*iter, '=');
         std::transform(split.begin(), split.end(), split.begin(), unescape);
         if (split.size() == 1) {
             _queryParams.insert(std::make_pair(split[0], std::string()));

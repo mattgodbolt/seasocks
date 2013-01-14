@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace SeaSocks {
+namespace seasocks {
 
 extern std::string getAcceptKey(const std::string& challenge);
 

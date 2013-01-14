@@ -2,9 +2,9 @@
 
 #include "seasocks/Response.h"
 
-using namespace SeaSocks;
+using namespace seasocks;
 
-namespace SeaSocks {
+namespace seasocks {
 
 std::shared_ptr<Response> Response::unhandled() {
 	static std::shared_ptr<Response> unhandled;

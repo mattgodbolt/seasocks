@@ -6,7 +6,7 @@
 #include <set>
 #include <string>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class UsernameAccessControl : public AccessControl {
 	std::set<std::string> _users;

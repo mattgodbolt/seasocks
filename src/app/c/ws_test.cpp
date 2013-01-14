@@ -10,7 +10,7 @@
 #include <sstream>
 #include <string>
 
-using namespace SeaSocks;
+using namespace seasocks;
 
 class MyHandler: public WebSocket::Handler {
 public:

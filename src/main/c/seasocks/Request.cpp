@@ -1,6 +1,6 @@
 #include "seasocks/Request.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 const char* Request::name(Verb v) {
     switch(v) {
@@ -14,4 +14,4 @@ const char* Request::name(Verb v) {
     }
 }
 
-}  // namespace SeaSocks
+}  // namespace seasocks

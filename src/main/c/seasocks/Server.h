@@ -14,7 +14,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class Connection;
 class Logger;
@@ -130,4 +130,4 @@ private:
     std::atomic<bool> _expectedTerminate;
 };
 
-}  // namespace SeaSocks
+}  // namespace seasocks

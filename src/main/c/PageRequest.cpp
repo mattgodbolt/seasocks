@@ -4,7 +4,7 @@
 
 namespace {
 
-using namespace SeaSocks;
+using namespace seasocks;
 
 Request::Verb lookup(const char* verb) {
 	if (std::strcmp(verb, "GET") == 0) return Request::Get;
@@ -16,7 +16,7 @@ Request::Verb lookup(const char* verb) {
 
 }
 
-namespace SeaSocks {
+namespace seasocks {
 
 PageRequest::PageRequest(
 		const sockaddr_in& remoteAddress,
@@ -43,4 +43,4 @@ bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
 	return true;
 }
 
-}  // namespace SeaSocks
+}  // namespace seasocks

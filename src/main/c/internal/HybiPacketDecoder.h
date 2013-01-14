@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class HybiPacketDecoder {
 	Logger& _logger;

@@ -2,7 +2,7 @@
 
 #include "internal/ConcreteResponse.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 ResponseBuilder::ResponseBuilder(ResponseCode code) :
         _code(code),

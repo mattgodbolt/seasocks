@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 
 using namespace testing;
-using namespace SeaSocks;
+using namespace seasocks;
 
 namespace {
 

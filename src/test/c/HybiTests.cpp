@@ -10,7 +10,7 @@
 #include <string.h>
 #include <string>
 
-using namespace SeaSocks;
+using namespace seasocks;
 
 static IgnoringLogger ignore;
 

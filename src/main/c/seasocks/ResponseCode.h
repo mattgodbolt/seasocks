@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace SeaSocks {
+namespace seasocks {
 
 #define SEASOCKS_DEFINE_RESPONSECODE(CODE,SYMBOLICNAME,STRINGNAME) SYMBOLICNAME = CODE,
 enum class ResponseCode {
@@ -12,5 +12,5 @@ enum class ResponseCode {
 
 }
 
-const char* name(SeaSocks::ResponseCode code);
-bool isOk(SeaSocks::ResponseCode code);
+const char* name(seasocks::ResponseCode code);
+bool isOk(seasocks::ResponseCode code);

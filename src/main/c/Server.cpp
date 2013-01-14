@@ -57,7 +57,7 @@ int gettid() {
 
 }
 
-namespace SeaSocks {
+namespace seasocks {
 
 Server::Server(std::shared_ptr<Logger> logger)
 : _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
@@ -510,10 +510,10 @@ void Server::checkThread() const {
 	auto thisTid = gettid();
 	if (thisTid != _threadId) {
 		std::ostringstream o;
-		o << "SeaSocks called on wrong thread : " << thisTid << " instead of " << _threadId;
+		o << "seasocks called on wrong thread : " << thisTid << " instead of " << _threadId;
 		LS_SEVERE(_logger, o.str());
 		throw std::runtime_error(o.str());
 	}
 }
 
-}  // namespace SeaSocks
+}  // namespace seasocks

@@ -5,7 +5,7 @@
 #include "seasocks/Credentials.h"
 #include "seasocks/Response.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 class Request;
 

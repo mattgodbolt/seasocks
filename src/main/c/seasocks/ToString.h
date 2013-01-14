@@ -3,7 +3,7 @@
 #include <sstream>
 #include <string>
 
-namespace SeaSocks {
+namespace seasocks {
 
 template<typename T>
 std::string toString(const T& obj) {

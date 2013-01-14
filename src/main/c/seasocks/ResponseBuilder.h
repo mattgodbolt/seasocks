@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class ResponseBuilder {
     ResponseCode _code;

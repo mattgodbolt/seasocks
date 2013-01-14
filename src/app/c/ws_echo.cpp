@@ -12,7 +12,7 @@
 
 /* Simple server that echo any text or binary WebSocket messages back. */
 
-using namespace SeaSocks;
+using namespace seasocks;
 
 class EchoHandler: public WebSocket::Handler {
 public:

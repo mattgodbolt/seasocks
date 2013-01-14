@@ -14,7 +14,7 @@
 #include <list>
 #include <vector>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class Logger;
 class Server;
@@ -157,6 +157,6 @@ private:
 	Connection& operator =(Connection& other) = delete;
 };
 
-}  // namespace SeaSocks
+}  // namespace seasocks
 
 #endif  // _SEASOCKS_CONNECTION_H_

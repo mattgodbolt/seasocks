@@ -2,8 +2,8 @@
 
 #include <gmock/gmock.h>
 
-using namespace SeaSocks;
-using namespace SeaSocks::html;
+using namespace seasocks;
+using namespace seasocks::html;
 
 TEST(HtmlTests, shouldRenderASimpleDocument) {
     auto document = html::html(head(title("Hello")), body(h1("A header"), "This is a document"));

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace SeaSocks {
+namespace seasocks {
 
 const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -22,4 +22,4 @@ std::string base64Encode(const void* dataVoid, size_t length) {
 	return output;
 }
 
-} // namespace SeaSocks
+} // namespace seasocks

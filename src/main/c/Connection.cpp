@@ -156,7 +156,7 @@ const size_t ReadWriteBufferSize = 16 * 1024;
 const size_t MaxWebsocketMessageSize = 16384;
 const size_t MaxHeadersSize = 64 * 1024;
 
-class PrefixWrapper : public SeaSocks::Logger {
+class PrefixWrapper : public seasocks::Logger {
 	std::string _prefix;
 	std::shared_ptr<Logger> _logger;
 public:
@@ -170,7 +170,7 @@ public:
 
 }  // namespace
 
-namespace SeaSocks {
+namespace seasocks {
 
 Connection::Connection(
 		std::shared_ptr<Logger> logger,
@@ -629,7 +629,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
 		std::stringstream documentStr;
 		documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
 				<< "<body><h1>" << errorNumber << " - " << message << "</h1>"
-				<< "<div>" << body << "</div><hr/><div><i>Powered by SeaSocks</i></div></body></html>";
+				<< "<div>" << body << "</div><hr/><div><i>Powered by seasocks</i></div></body></html>";
 		document = documentStr.str();
 	}
 	bufferLine("Content-Length: " + toString(document.length()));
@@ -1064,4 +1064,4 @@ std::string Connection::getHeader(const std::string& header) const {
     return _request->getHeader(header);
 }
 
-}  // SeaSocks
+}  // seasocks

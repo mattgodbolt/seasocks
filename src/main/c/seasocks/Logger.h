@@ -1,7 +1,7 @@
 #ifndef SEASOCKS_LOGGER_H_INCLUDED
 #define SEASOCKS_LOGGER_H_INCLUDED
 
-namespace SeaSocks {
+namespace seasocks {
 
 /**
  * Class to send debug logging information to.
@@ -41,6 +41,6 @@ public:
 	}
 };
 
-}  // namespace SeaSocks
+}  // namespace seasocks
 
 #endif // SEASOCKS_LOGGER_H_INCLUDED

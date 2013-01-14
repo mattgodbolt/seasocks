@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace SeaSocks {
+namespace seasocks {
 
 class CrackedUri {
     std::vector<std::string> _path;

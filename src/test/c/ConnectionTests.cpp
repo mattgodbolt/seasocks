@@ -8,7 +8,7 @@
 #include <string.h>
 #include <string>
 
-using namespace SeaSocks;
+using namespace seasocks;
 
 class TestHandler: public WebSocket::Handler {
 public:

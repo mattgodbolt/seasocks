@@ -1,6 +1,6 @@
 #include "seasocks/util/Json.h"
 
-namespace SeaSocks {
+namespace seasocks {
 
 void jsonToStream(std::ostream& str, const char* t) {
     str << '"';

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace SeaSocks {
+namespace seasocks {
 
 char* skipWhitespace(char* str) {
 	while (isspace(*str)) ++str;

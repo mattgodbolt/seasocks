@@ -1,8 +1,8 @@
 #include "seasocks/ResponseCode.h"
 
-using namespace SeaSocks;
+using namespace seasocks;
 
-bool isOk(SeaSocks::ResponseCode code) {
+bool isOk(seasocks::ResponseCode code) {
 	return static_cast<int>(code) < 400;
 }
 

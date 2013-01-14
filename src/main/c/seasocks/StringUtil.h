@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace SeaSocks {
+namespace seasocks {
 
 char* skipWhitespace(char* str);
 char* skipNonWhitespace(char* str);
@@ -18,6 +18,6 @@ std::vector<std::string> split(const std::string& input, char splitChar);
 
 void replace(std::string& string, const std::string& find, const std::string& replace);
 
-}  // namespace SeaSocks
+}  // namespace seasocks
 
 #endif  // _SEASOCKS_STRINGUTIL_H_
