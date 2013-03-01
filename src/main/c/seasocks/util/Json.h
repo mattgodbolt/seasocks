@@ -107,6 +107,22 @@ JsonnedString makeArray(Args... args) {
     return JsonnedString(str);
 }
 
+template<typename T>
+seasocks::JsonnedString makeArray(const T &list) {
+    std::stringstream str;
+    str << '[';
+    bool first = true;
+    for (const auto &s : list) {
+        if (!first) {
+            str << ',';
+        }
+        first = false;
+        seasocks::jsonToStream(str, s);
+    };
+    str << ']';
+    return seasocks::JsonnedString(str);
+}
+
 template<typename ... Args>
 JsonnedString makeExecString(const char* function, Args... args) {
     std::stringstream str;

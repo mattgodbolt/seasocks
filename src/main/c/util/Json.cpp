@@ -11,7 +11,7 @@ void jsonToStream(std::ostream& str, const char* t) {
             break;
         case '"':
         case '\\':
-            str << 'Z';
+            str << '\\';
             str << *t;
             break;
         }
