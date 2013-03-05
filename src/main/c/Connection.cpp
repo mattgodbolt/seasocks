@@ -315,7 +315,7 @@ void Connection::handleDataReadyForRead() {
 	_inBuf.resize(curSize + ReadWriteBufferSize);
 	int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
 	if (result == -1) {
-		LS_ERROR(_logger, "Unable to read from socket : " << getLastError());
+		LS_WARNING(_logger, "Unable to read from socket : " << getLastError());
 		return;
 	}
 	if (result == 0) {
@@ -463,7 +463,7 @@ void Connection::send(const char* webSocketResponse) {
 	_server->checkThread();
 	if (_shutdown) {
 		if (_shutdownByUser) {
-			LS_ERROR(_logger, "Client wrote to connection after closing it");
+			LS_ERROR(_logger, "Server wrote to connection after closing it");
 		}
 		return;
 	}
@@ -488,8 +488,8 @@ void Connection::send(const uint8_t* data, size_t length) {
 		return;
 	}
 	if (_state == HANDLING_HIXIE_WEBSOCKET) {
-		LS_ERROR(_logger, "Hixie does no support binary");
-    return;
+		LS_ERROR(_logger, "Hixie does not support binary");
+		return;
 	}
 	sendHybi(HybiPacketDecoder::OPCODE_BINARY, data, length);
 }
@@ -526,7 +526,7 @@ void Connection::handleHixieWebSocket() {
 	size_t messageStart = 0;
 	while (messageStart < _inBuf.size()) {
 		if (_inBuf[messageStart] != 0) {
-			LS_ERROR(_logger, "Error in WebSocket input stream (got " << (int)_inBuf[messageStart] << ")");
+		    LS_WARNING(_logger, "Error in WebSocket input stream (got " << (int)_inBuf[messageStart] << ")");
 			closeInternal();
 			return;
 		}
@@ -550,7 +550,7 @@ void Connection::handleHixieWebSocket() {
 		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + messageStart);
 	}
 	if (_inBuf.size() > MaxWebsocketMessageSize) {
-		LS_ERROR(_logger, "WebSocket message too long");
+	    LS_WARNING(_logger, "WebSocket message too long");
 		closeInternal();
 	}
 }
@@ -566,7 +566,7 @@ void Connection::handleHybiWebSocket() {
 		switch (decoder.decodeNextMessage(decodedMessage)) {
 		default:
 			closeInternal();
-			LS_ERROR(_logger, "Unknown HybiPacketDecoder state");
+			LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
 			return;
 		case HybiPacketDecoder::Error:
 			closeInternal();
@@ -594,7 +594,7 @@ void Connection::handleHybiWebSocket() {
 		_inBuf.erase(_inBuf.begin(), _inBuf.begin() + decoder.numBytesDecoded());
 	}
 	if (_inBuf.size() > MaxWebsocketMessageSize) {
-		LS_ERROR(_logger, "WebSocket message too long");
+	    LS_WARNING(_logger, "WebSocket message too long");
 		closeInternal();
 	}
 }
@@ -782,7 +782,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		}
 		_webSocketHandler = _server->getWebSocketHandler(requestUri);
 		if (!_webSocketHandler) {
-			LS_ERROR(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
+		    LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
 			return send404(requestUri);
 		}
 		if (webSocketVersion == 0) {
@@ -890,7 +890,7 @@ bool Connection::handleHybiHandshake(
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
 	size_t minusPos = rangeStr.find('-');
 	if (minusPos == std::string::npos) {
-		LS_ERROR(_logger, "Bad range: '" << rangeStr << "'");
+	    LS_WARNING(_logger, "Bad range: '" << rangeStr << "'");
 		return false;
 	}
 	if (minusPos == 0) {
@@ -913,7 +913,7 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
 bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges) const {
 	static const std::string expectedPrefix = "bytes=";
 	if (range.length() < expectedPrefix.length() || range.substr(0, expectedPrefix.length()) != expectedPrefix) {
-		LS_ERROR(_logger, "Bad range request prefix: '" << range << "'");
+	    LS_WARNING(_logger, "Bad range request prefix: '" << range << "'");
 		return false;
 	}
 	auto rangesText = split(range.substr(expectedPrefix.length()), ',');

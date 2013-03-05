@@ -18,11 +18,11 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::vector
 	if ((_buffer[_messageStart] & 0x80) == 0) {
 		// FIN bit is not clear...
 		// TODO: support
-		LS_ERROR(&_logger, "Received hybi frame without FIN bit set - unsupported");
+	    LS_WARNING(&_logger, "Received hybi frame without FIN bit set - unsupported");
 		return Error;
 	}
 	if ((_buffer[_messageStart] & (7<<4)) != 0) {
-		LS_ERROR(&_logger, "Received hybi frame with reserved bits set - error");
+	    LS_WARNING(&_logger, "Received hybi frame with reserved bits set - error");
 		return Error;
 	}
 	auto opcode = _buffer[_messageStart] & 0xf;
@@ -56,7 +56,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::vector
 	_messageStart = ptr;
 	switch (opcode) {
 	default:
-		LS_ERROR(&_logger, "Received hybi frame with unknown opcode " << opcode);
+	    LS_WARNING(&_logger, "Received hybi frame with unknown opcode " << opcode);
 		return Error;
 	case OPCODE_TEXT:
 		return TextMessage;
