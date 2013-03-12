@@ -1,5 +1,7 @@
 #include "seasocks/util/Json.h"
 
+#include <iomanip>
+
 namespace seasocks {
 
 void jsonToStream(std::ostream& str, const char* t) {
@@ -7,10 +9,19 @@ void jsonToStream(std::ostream& str, const char* t) {
     for (; *t; ++t) {
         switch (*t) {
         default:
-            str << *t;
+            if (*t >= 32) {
+                str << *t;
+            } else {
+                str << "\\u" << std::setw(4)
+                    << std::setfill('0') << std::hex << (int)*t;
+            }
             break;
-        case '"':
-        case '\\':
+        case 8: str << "\\b"; break;
+        case 9: str << "\\t"; break;
+        case 10: str << "\\n"; break;
+        case 12: str << "\\f"; break;
+        case 13: str << "\\r"; break;
+        case '"': case '\\':
             str << '\\';
             str << *t;
             break;
