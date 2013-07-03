@@ -485,7 +485,8 @@ std::string Server::getStatsDocument() const {
 				"id", reinterpret_cast<uint64_t>(connection),
 				"uri", connection->getRequestUri(),
 				"addr", formatAddress(connection->getRemoteAddress()),
-				"user", connection->credentials()->username,
+				"user", connection->credentials() ?
+				        connection->credentials()->username : "(not authed)",
 				"input", connection->inputBufferSize(),
 				"read", connection->bytesReceived(),
 				"output", connection->outputBufferSize(),

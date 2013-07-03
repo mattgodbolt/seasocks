@@ -516,7 +516,7 @@ void Connection::sendHybi(int opcode, const uint8_t* webSocketResponse, size_t m
 
 std::shared_ptr<Credentials> Connection::credentials() const {
 	_server->checkThread();
-	return _request->credentials();
+	return _request ? _request->credentials() : std::shared_ptr<Credentials>();
 }
 
 void Connection::handleHixieWebSocket() {
