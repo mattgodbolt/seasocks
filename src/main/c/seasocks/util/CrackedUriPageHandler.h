@@ -12,7 +12,7 @@ class CrackedUriPageHandler {
 public:
     virtual ~CrackedUriPageHandler() {}
 
-    virtual std::shared_ptr<seasocks::Response> handle(const CrackedUri& uri, const seasocks::Request& request) = 0;
+    virtual std::shared_ptr<Response> handle(const CrackedUri& uri, const Request& request) = 0;
 };
 
 }

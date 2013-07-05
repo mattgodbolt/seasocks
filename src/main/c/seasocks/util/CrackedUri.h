@@ -9,6 +9,7 @@ namespace seasocks {
 class CrackedUri {
     std::vector<std::string> _path;
     std::unordered_multimap<std::string, std::string> _queryParams;
+
 public:
     CrackedUri(const std::string& uri);
 
@@ -21,6 +22,11 @@ public:
     std::string queryParam(const std::string& param, const std::string& def = std::string()) const;
 
     std::vector<std::string> allQueryParams(const std::string& param) const;
+
+    // Returns a new uri with the frontmost path item shifted off.  The path
+    // is always guaranteed to be non-empty. In the case of shifting the last
+    // path element, returns a path of {""}.
+    CrackedUri shift() const;
 };
 
 }

@@ -90,4 +90,15 @@ std::vector<std::string> CrackedUri::allQueryParams(const std::string& param) co
     return params;
 }
 
+CrackedUri CrackedUri::shift() const {
+    CrackedUri shifted(*this);
+    if (_path.size() > 1) {
+        shifted._path = std::vector<std::string>(_path.begin() + 1, _path.end());
+    } else {
+        shifted._path = {""};
+    }
+
+    return shifted;
+}
+
 }
