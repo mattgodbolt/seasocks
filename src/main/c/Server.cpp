@@ -10,6 +10,7 @@
 #include <netinet/tcp.h>
 
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
@@ -60,11 +61,11 @@ int gettid() {
 namespace seasocks {
 
 Server::Server(std::shared_ptr<Logger> logger)
-: _logger(logger), _listenSock(-1), _epollFd(-1), _maxKeepAliveDrops(0),
+: _logger(logger), _listenSock(-1), _epollFd(-1), _eventFd(-1),
+  _maxKeepAliveDrops(0),
   _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
-  _nextDeadConnectionCheck(0), _threadId(0),  _terminate(false),
+  _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
   _expectedTerminate(false) {
-	_pipes[0] = _pipes[1] = -1;
 	_sso = std::shared_ptr<SsoAuthenticator>();
 
 	_epollFd = epoll_create(10);
@@ -73,18 +74,14 @@ Server::Server(std::shared_ptr<Logger> logger)
 		return;
 	}
 
-	/* TASK: once RH5 is dead and gone, use: _wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC); instead. It's lower overhead than this. */
-	if (pipe(_pipes) != 0) {
-		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
-		return;
-	}
-	if (!makeNonBlocking(_pipes[0]) || !makeNonBlocking(_pipes[1])) {
-		LS_ERROR(_logger, "Unable to create event signal pipe: " << getLastError());
+	_eventFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+	if (_eventFd == -1) {
+		LS_ERROR(_logger, "Unable to create event FD: " << getLastError());
 		return;
 	}
 
-	epoll_event eventWake = { EPOLLIN, { &_pipes[0] } };
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _pipes[0], &eventWake) == -1) {
+	epoll_event eventWake = { EPOLLIN, { &_eventFd } };
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _eventFd, &eventWake) == -1) {
 		LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
 		return;
 	}
@@ -97,12 +94,9 @@ void Server::enableSingleSignOn(SsoOptions ssoOptions) {
 Server::~Server() {
 	LS_INFO(_logger, "Server destruction");
 	shutdown();
-	// Only shut the pipes and epoll at the very end so any scheduled work
-	if (_pipes[0] != -1) {
-		close(_pipes[0]);
-	}
-	if (_pipes[1] != -1) {
-		close(_pipes[1]);
+	// Only shut the eventfd and epoll at the very end
+	if (_eventFd != -1) {
+		close(_eventFd);
 	}
 	if (_epollFd != -1) {
 		close(_epollFd);
@@ -167,7 +161,7 @@ void Server::terminate() {
 	_expectedTerminate = true;
 	_terminate = true;
 	uint64_t one = 1;
-	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
+	if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
 		LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
 	}
 }
@@ -177,7 +171,7 @@ bool Server::startListening(int port) {
 }
 
 bool Server::startListening(uint32_t hostAddr, int port) {
-	if (_epollFd == -1 || _pipes[0] == -1 || _pipes[1] == -1) {
+	if (_epollFd == -1 || _eventFd == -1) {
 		LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
 		return false;
 	}
@@ -218,7 +212,7 @@ bool Server::startListening(uint32_t hostAddr, int port) {
 
 void Server::handlePipe() {
 	uint64_t dummy;
-	while (::read(_pipes[0], &dummy, sizeof(dummy)) != -1) {
+	while (::read(_eventFd, &dummy, sizeof(dummy)) != -1) {
 		// Spin, draining the pipe until it returns EWOULDBLOCK or similar.
 	}
 	if (errno != EAGAIN || errno != EWOULDBLOCK) {
@@ -282,7 +276,7 @@ void Server::checkAndDispatchEpoll() {
 				break;
 			}
 			handleAccept();
-		} else if (events[i].data.ptr == &_pipes[0]) {
+		} else if (events[i].data.ptr == &_eventFd) {
 			if (events[i].events & ~EPOLLIN) {
 				LS_SEVERE(_logger, "Got unexpected event on management pipe ("
 						<< EventBits(events[i].events) << ") - terminating");
@@ -456,7 +450,7 @@ void Server::schedule(std::shared_ptr<Runnable> runnable) {
 	lock.unlock();
 
 	uint64_t one = 1;
-	if (_pipes[1] != -1 && ::write(_pipes[1], &one, sizeof(one)) == -1) {
+	if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
 		if (errno != EAGAIN && errno != EWOULDBLOCK) {
 			LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
 		}

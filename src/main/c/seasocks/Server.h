@@ -105,7 +105,7 @@ private:
 	std::shared_ptr<Logger> _logger;
 	int _listenSock;
 	int _epollFd;
-	int _pipes[2];
+	int _eventFd;
 	int _maxKeepAliveDrops;
 	int _lameConnectionTimeoutSeconds;
 	time_t _nextDeadConnectionCheck;
