@@ -19,14 +19,12 @@ BIN_DIR=bin
 FIG_DEP=.fig-up-to-date
 UNAME_R:=$(shell uname -r)
 export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/
-ifeq "" "$(findstring el6,$(UNAME_R))"
-  GCC_DIR=/site/apps/gcc-4.7.2-drw.patched.1
-  OS_VERSION=redhat5
-  GCC_VERSION=472
-else
-  GCC_DIR=/site/apps/gcc-4.7.2-drw.patched.1.rh5
+GCC_DIR=/site/apps/gcc-4.7.2-drw.patched.6
+GCC_VERSION=472
+ifeq "el6" "$(findstring el6,$(UNAME_R))"
   OS_VERSION=redhat6
-  GCC_VERSION=472
+else
+  OS_VERSION=unknown
 endif
 CC=$(GCC_DIR)/bin/g++
 GCC_LIB_PATH=$(GCC_DIR)/lib64
