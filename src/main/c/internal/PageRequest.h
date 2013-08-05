@@ -2,7 +2,7 @@
 
 #include "seasocks/Request.h"
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace seasocks {
@@ -14,7 +14,7 @@ class PageRequest : public seasocks::Request {
 	const Verb _verb;
 	const size_t _contentLength;
 	std::vector<uint8_t> _content;
-	std::map<std::string, std::string> _headers;
+	std::unordered_map<std::string, std::string> _headers;
 
 public:
 	PageRequest(
@@ -22,7 +22,7 @@ public:
 			const std::string& requestUri,
 			const char* verb,
 			size_t contentLength,
-			const std::map<std::string, std::string>& headers);
+			std::unordered_map<std::string, std::string>&& headers);
 
 	virtual Verb verb() const {
 		return _verb;

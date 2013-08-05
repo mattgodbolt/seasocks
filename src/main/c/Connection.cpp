@@ -697,7 +697,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 	bool haveConnectionUpgrade = false;
 	bool haveWebSocketUpgrade = false;
 	bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
-	std::map<std::string, std::string> allHeaders;
+	std::unordered_map<std::string, std::string> allHeaders(31);
 	// TODO: move all this lot to the new header map.
 	std::string host;
 	std::string rangeHeader;
@@ -749,7 +749,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 		}
 	}
 
-    _request.reset(new PageRequest(_address, requestUri, verb, contentLength, allHeaders));
+    _request.reset(new PageRequest(_address, requestUri, verb, contentLength, std::move(allHeaders)));
 
 	// <SSO>
 	if (_sso && findEmbeddedContent(requestUri) == NULL) {

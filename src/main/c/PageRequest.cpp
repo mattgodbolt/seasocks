@@ -23,13 +23,13 @@ PageRequest::PageRequest(
 		const std::string& requestUri,
 		const char* verb,
 		size_t contentLength,
-		const std::map<std::string, std::string>& headers) :
+		std::unordered_map<std::string, std::string>&& headers) :
 		    _credentials(std::shared_ptr<Credentials>(new Credentials())),
 			_remoteAddress(remoteAddress),
 			_requestUri(requestUri),
 			_verb(lookup(verb)),
 			_contentLength(contentLength),
-			_headers(headers) {
+			_headers(std::move(headers)) {
 }
 
 bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
