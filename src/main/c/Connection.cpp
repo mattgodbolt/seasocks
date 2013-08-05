@@ -572,7 +572,7 @@ void Connection::handleHybiWebSocket() {
 			closeInternal();
 			return;
 		case HybiPacketDecoder::TextMessage:
-      decodedMessage.push_back(0);  // avoids a copy
+			decodedMessage.push_back(0);  // avoids a copy
 			handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
 			break;
 		case HybiPacketDecoder::BinaryMessage:

@@ -38,7 +38,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(std::vector
 		ptr += 8;
 	}
 	uint32_t mask = 0;
-	if (_buffer[1] & 0x80) {
+	if (_buffer[ptr + 1] & 0x80) {
 		// MASK is set.
 		if (_buffer.size() < ptr + 4) { return NoMessage; }
 		mask = htonl(*reinterpret_cast<const uint32_t*>(&_buffer[ptr]));

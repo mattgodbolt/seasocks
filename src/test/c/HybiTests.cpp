@@ -81,6 +81,22 @@ TEST(HybiTests, withTwoMessages) {
 	ASSERT_EQ(data.size(), decoder.numBytesDecoded());
 }
 
+TEST(HybiTests, withTwoMessagesOneBeingMaskedd) {
+	std::vector<uint8_t> data {
+		0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f,  // hello
+		0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58  // also hello
+	};
+	HybiPacketDecoder decoder(ignore, data);
+	std::vector<uint8_t> decoded;
+	ASSERT_EQ(HybiPacketDecoder::TextMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ("Hello", std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()));
+	ASSERT_EQ(HybiPacketDecoder::TextMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ("Hello", std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()));
+	ASSERT_EQ(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
+	ASSERT_EQ(data.size(), decoder.numBytesDecoded());
+
+}
+
 TEST(HybiTests, longStringExamples) {
 	// These are the binary examples, but cast as strings.
 	testLongString(256, {0x81, 0x7E, 0x01, 0x00});

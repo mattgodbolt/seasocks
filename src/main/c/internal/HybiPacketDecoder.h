@@ -27,7 +27,7 @@ public:
 	enum MessageState {
 		NoMessage,
 		TextMessage,
-    BinaryMessage,
+		BinaryMessage,
 		Error,
 		Ping,
 		Close
