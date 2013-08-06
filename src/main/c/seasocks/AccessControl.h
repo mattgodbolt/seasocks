@@ -13,13 +13,13 @@ class Request;
  */
 class AccessControl {
 public:
-	virtual ~AccessControl() {}
+    virtual ~AccessControl() {}
 
-	// Returns true to indicate a given request requires login.
-	virtual bool requiresAuthentication(const Request& request) = 0;
+    // Returns true to indicate a given request requires login.
+    virtual bool requiresAuthentication(const Request& request) = 0;
 
-	// Returns true if this request can be satisfied for the request's credentials.
-	virtual bool hasAccess(const Request& request) = 0;
+    // Returns true if this request can be satisfied for the request's credentials.
+    virtual bool hasAccess(const Request& request) = 0;
 };
 
 }

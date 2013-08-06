@@ -7,16 +7,16 @@ UsernameAccessControl::UsernameAccessControl(const std::set<std::string> users) 
 }
 
 bool UsernameAccessControl::requiresAuthentication(const Request& request) {
-	return true;
+    return true;
 }
 
 bool UsernameAccessControl::hasAccess(const Request& request) {
     auto credentials = request.credentials();
-	std::cout << "hello " << credentials->username << "@" << request.getRequestUri() << std::endl;
-	if (!credentials->authenticated) {
-		return false;
-	}
-	return _users.find(credentials->username) != _users.end();
+    std::cout << "hello " << credentials->username << "@" << request.getRequestUri() << std::endl;
+    if (!credentials->authenticated) {
+        return false;
+    }
+    return _users.find(credentials->username) != _users.end();
 }
 
 }

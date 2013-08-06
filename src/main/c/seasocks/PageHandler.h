@@ -12,9 +12,9 @@ class Request;
 
 class PageHandler {
 public:
-	virtual ~PageHandler() {}
+    virtual ~PageHandler() {}
 
-	virtual std::shared_ptr<Response> handle(const Request& request) = 0;
+    virtual std::shared_ptr<Response> handle(const Request& request) = 0;
 };
 
 }

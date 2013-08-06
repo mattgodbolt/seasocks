@@ -6,8 +6,8 @@ namespace seasocks {
 
 class IgnoringLogger : public Logger {
 public:
-	virtual void log(Level level, const char* message) {
-	}
+    virtual void log(Level level, const char* message) {
+    }
 };
 
 }  // namespace seasocks

@@ -7,9 +7,9 @@ namespace seasocks {
 
 template<typename T>
 std::string toString(const T& obj) {
-	std::stringstream str;
-	str << obj;
-	return str.str();
+    std::stringstream str;
+    str << obj;
+    return str.str();
 }
 
 }
