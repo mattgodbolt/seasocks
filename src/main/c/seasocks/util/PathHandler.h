@@ -17,12 +17,24 @@ namespace seasocks {
 // prefix)
 class PathHandler : public CrackedUriPageHandler {
     std::string _path;
-    std::vector<std::shared_ptr<CrackedUriPageHandler>> _handlers;
+    std::vector<CrackedUriPageHandler::Ptr> _handlers;
 
 public:
     PathHandler(const std::string &path) : _path(path) {}
+    template<typename... Args>
+    PathHandler(const std::string &path, Args&&... args) : _path(path) {
+        addMany(std::forward<Args>(args)...);
+    }
 
-    void add(const std::shared_ptr<CrackedUriPageHandler>& handler);
+    CrackedUriPageHandler::Ptr add(const CrackedUriPageHandler::Ptr& handler);
+
+    void addMany() {}
+    void addMany(const CrackedUriPageHandler::Ptr& handler) { add(handler); }
+    template<typename... Rest>
+    void addMany(const CrackedUriPageHandler::Ptr& handler, Rest&&... rest) {
+        add(handler);
+        addMany(std::forward<Rest>(rest)...);
+    }
 
     virtual std::shared_ptr<Response> handle(
             const CrackedUri& uri, const Request& request) override;

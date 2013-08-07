@@ -6,8 +6,9 @@
 
 using namespace seasocks;
 
-void PathHandler::add(const std::shared_ptr<CrackedUriPageHandler>& handler) {
+CrackedUriPageHandler::Ptr PathHandler::add(const CrackedUriPageHandler::Ptr& handler) {
     _handlers.emplace_back(handler);
+    return _handlers.back();
 }
 
 std::shared_ptr<Response> PathHandler::handle(

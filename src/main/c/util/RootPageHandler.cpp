@@ -12,8 +12,9 @@ RootPageHandler::RootPageHandler() {
 RootPageHandler::~RootPageHandler() {
 }
 
-void RootPageHandler::add(const std::shared_ptr<CrackedUriPageHandler>& handler) {
+CrackedUriPageHandler::Ptr RootPageHandler::add(const CrackedUriPageHandler::Ptr& handler) {
     _handlers.emplace_back(handler);
+    return _handlers.back();
 }
 
 std::shared_ptr<Response> RootPageHandler::handle(const Request& request) {

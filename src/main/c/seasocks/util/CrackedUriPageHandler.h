@@ -13,6 +13,8 @@ public:
     virtual ~CrackedUriPageHandler() {}
 
     virtual std::shared_ptr<Response> handle(const CrackedUri& uri, const Request& request) = 0;
+
+    typedef std::shared_ptr<CrackedUriPageHandler> Ptr;
 };
 
 }
