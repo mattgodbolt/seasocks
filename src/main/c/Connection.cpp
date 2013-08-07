@@ -668,6 +668,9 @@ bool Connection::sendISE(const std::string& error) {
 }
 
 bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
+    // Ideally we'd copy off [first, last] now into a header structure here.
+    // Be careful about lifetimes though and multiple requests coming in, should
+    // we ever support HTTP pipelining and/or long-lived requests.
     char* requestLine = extractLine(first, last);
     assert(requestLine != NULL);
 
