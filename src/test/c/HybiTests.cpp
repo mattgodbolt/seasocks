@@ -94,7 +94,19 @@ TEST(HybiTests, withTwoMessagesOneBeingMaskedd) {
     ASSERT_EQ("Hello", std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()));
     ASSERT_EQ(HybiPacketDecoder::NoMessage, decoder.decodeNextMessage(decoded));
     ASSERT_EQ(data.size(), decoder.numBytesDecoded());
+}
 
+TEST(HybiTests, regressionBug) {
+    // top bit set of second byte of message used to trigger a MASK decode of the remainder
+    std::vector<uint8_t> data {
+        0x82, 0x05, 0x80, 0x81, 0x82, 0x83, 0x84  
+    };
+    std::vector<uint8_t> expected_body { 0x80, 0x81, 0x82, 0x83, 0x84 };
+    HybiPacketDecoder decoder(ignore, data);
+    std::vector<uint8_t> decoded;
+    ASSERT_EQ(HybiPacketDecoder::BinaryMessage, decoder.decodeNextMessage(decoded));
+    ASSERT_EQ(expected_body, decoded);
+    ASSERT_EQ(data.size(), decoder.numBytesDecoded());
 }
 
 TEST(HybiTests, longStringExamples) {
