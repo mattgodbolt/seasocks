@@ -13,23 +13,23 @@ namespace seasocks {
 
 class JsonnedString : public std::string {
 public:
-    JsonnedString() {
-
-    }
-    JsonnedString(const std::string& s) : std::string(s) {
-    }
-    JsonnedString(const std::stringstream& str) : std::string(str.str()) {
-    }
+    JsonnedString() {}
+    JsonnedString(const std::string& s) : std::string(s) {}
+    JsonnedString(const std::stringstream& str) : std::string(str.str()) {}
 };
 
 inline void jsonToStream(std::ostream& str) {}
+
 inline void jsonToStream(std::ostream& str, const JsonnedString& done) {
     str << done;
 }
 void jsonToStream(std::ostream& str, const char* t);
+
 void jsonToStream(std::ostream& str, bool b);
+
 struct EpochTimeAsLocal { time_t t; EpochTimeAsLocal(time_t t) : t(t) {} };
 void jsonToStream(std::ostream& str, const EpochTimeAsLocal& t);
+
 inline void jsonToStream(std::ostream& str, const std::string& t) {
     jsonToStream(str, t.c_str());
 }
@@ -53,8 +53,7 @@ void jsonToStream(std::ostream& str, const T& t, Args... args) {
     jsonToStream(str, args...);
 }
 
-inline void jsonKeyPairToStream(std::ostream& str) {
-}
+inline void jsonKeyPairToStream(std::ostream& str) {}
 
 template<typename T>
 void jsonKeyPairToStream(std::ostream& str, const char* key, const T& value) {
@@ -62,10 +61,12 @@ void jsonKeyPairToStream(std::ostream& str, const char* key, const T& value) {
     str << ":";
     jsonToStream(str, value);
 }
+
 template<typename T>
 void jsonKeyPairToStream(std::ostream& str, const std::string& key, const T& value) {
     jsonKeyPairToStream(str, key.c_str(), value);
 }
+
 template<typename K, typename V, typename... Args>
 void jsonKeyPairToStream(std::ostream& str, const K& key, const V& value, Args... args) {
     jsonKeyPairToStream(str, key, value);
@@ -117,7 +118,7 @@ seasocks::JsonnedString makeArray(const T &list) {
             str << ',';
         }
         first = false;
-        seasocks::jsonToStream(str, s);
+        jsonToStream(str, s);
     };
     str << ']';
     return seasocks::JsonnedString(str);
