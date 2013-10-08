@@ -66,7 +66,6 @@ Server::Server(std::shared_ptr<Logger> logger)
   _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
   _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
   _expectedTerminate(false) {
-    _sso = std::shared_ptr<SsoAuthenticator>();
 
     _epollFd = epoll_create(10);
     if (_epollFd == -1) {
@@ -85,10 +84,6 @@ Server::Server(std::shared_ptr<Logger> logger)
         LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
         return;
     }
-}
-
-void Server::enableSingleSignOn(SsoOptions ssoOptions) {
-    _sso.reset(new SsoAuthenticator(ssoOptions));
 }
 
 Server::~Server() {
@@ -375,7 +370,7 @@ void Server::handleAccept() {
         return;
     }
     LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
-    Connection* newConnection = new Connection(_logger, this, fd, address, _sso);
+    Connection* newConnection = new Connection(_logger, this, fd, address);
     epoll_event event = { EPOLLIN, { newConnection } };
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
         LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
@@ -418,8 +413,8 @@ void Server::addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket
     _webSocketHandlerMap[endpoint] = { handler, allowCrossOriginRequests };
 }
 
-void Server::setPageHandler(std::shared_ptr<PageHandler> handler) {
-    _pageHandler = handler;
+void Server::addPageHandler(std::shared_ptr<PageHandler> handler) {
+    _pageHandlers.emplace_back(handler);
 }
 
 bool Server::isCrossOriginAllowed(const char* endpoint) const {
@@ -438,10 +433,6 @@ std::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endp
         return std::shared_ptr<WebSocket::Handler>();
     }
     return iter->second.handler;
-}
-
-std::shared_ptr<PageHandler> Server::getPageHandler() const {
-    return _pageHandler;
 }
 
 void Server::schedule(std::shared_ptr<Runnable> runnable) {
@@ -509,6 +500,14 @@ void Server::checkThread() const {
         LS_SEVERE(_logger, o.str());
         throw std::runtime_error(o.str());
     }
+}
+
+std::shared_ptr<Response> Server::handle(const Request &request) {
+    for (auto handler : _pageHandlers) {
+        auto result = handler->handle(request);
+        if (result != Response::unhandled()) return result;
+    }
+    return Response::unhandled();
 }
 
 }  // namespace seasocks

@@ -40,7 +40,7 @@ public:
 TEST(ConnectionTests, shouldBreakHixieMessagesApartInSameBuffer) {
     sockaddr_in addr;
     std::shared_ptr<Logger> logger(new IgnoringLogger);
-    Connection connection(logger, NULL, -1, addr, std::shared_ptr<SsoAuthenticator>());
+    Connection connection(logger, NULL, -1, addr);
     connection.setHandler(
             std::shared_ptr<WebSocket::Handler>(new TestHandler));
     uint8_t foo[] = { 0x00, 'a', 0xff, 0x00, 'b', 0xff };

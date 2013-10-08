@@ -1,5 +1,6 @@
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
+#include "seasocks/SsoAuthenticator.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
@@ -70,7 +71,7 @@ int main(int argc, const char* argv[]) {
     std::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
 
     Server server(logger);
-    server.enableSingleSignOn(SsoOptions::test());
+    server.addPageHandler(std::make_shared<SsoAuthenticator>(SsoOptions::test()));
 
     std::shared_ptr<MyHandler> handler(new MyHandler(&server));
     server.addWebSocketHandler("/ws", handler);

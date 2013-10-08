@@ -1,6 +1,5 @@
 #pragma once
 
-#include "seasocks/SsoAuthenticator.h"
 #include "seasocks/WebSocket.h"
 
 #include <sys/types.h>
@@ -19,15 +18,15 @@ namespace seasocks {
 class Connection;
 class Logger;
 class PageHandler;
+class Request;
+class Response;
 
 class Server {
 public:
     Server(std::shared_ptr<Logger> logger);
     ~Server();
 
-    void enableSingleSignOn(SsoOptions ssoOptions);
-
-    void setPageHandler(std::shared_ptr<PageHandler> handler);
+    void addPageHandler(std::shared_ptr<PageHandler> handler);
 
     void addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
             bool allowCrossOriginRequests = false);
@@ -74,7 +73,7 @@ public:
     std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
     bool isCrossOriginAllowed(const char* endpoint) const;
 
-    std::shared_ptr<PageHandler> getPageHandler() const;
+    std::shared_ptr<Response> handle(const Request &request);
 
     std::string getStatsDocument() const;
 
@@ -117,11 +116,10 @@ private:
     typedef std::unordered_map<std::string, WebSocketHandlerEntry> WebSocketHandlerMap;
     WebSocketHandlerMap _webSocketHandlerMap;
 
-    std::shared_ptr<PageHandler> _pageHandler;
+    std::list<std::shared_ptr<PageHandler>> _pageHandlers;
 
     std::mutex _pendingRunnableMutex;
     std::list<std::shared_ptr<Runnable>> _pendingRunnables;
-    std::shared_ptr<SsoAuthenticator> _sso;
 
     pid_t _threadId;
 

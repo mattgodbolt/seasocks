@@ -27,8 +27,7 @@ public:
             std::shared_ptr<Logger> logger,
             Server* server,
             int fd,
-            const sockaddr_in& address,
-            std::shared_ptr<SsoAuthenticator> sso);
+            const sockaddr_in& address);
     virtual ~Connection();
 
     bool write(const void* data, size_t size, bool flush);
@@ -137,7 +136,6 @@ private:
     // Populated only during Hixie web socket header parsing.
     std::string _hixieExtraHeaders;
     std::shared_ptr<WebSocket::Handler> _webSocketHandler;
-    std::shared_ptr<SsoAuthenticator> _sso;
     std::string _requestUri;
     time_t _connectionTime;
     bool _shutdownByUser;

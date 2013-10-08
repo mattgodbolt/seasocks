@@ -2,32 +2,18 @@
 
 #include <cstring>
 
-namespace {
-
-using namespace seasocks;
-
-Request::Verb lookup(const char* verb) {
-    if (std::strcmp(verb, "GET") == 0) return Request::Get;
-    if (std::strcmp(verb, "PUT") == 0) return Request::Put;
-    if (std::strcmp(verb, "POST") == 0) return Request::Post;
-    if (std::strcmp(verb, "DELETE") == 0) return Request::Delete;
-    return Request::Invalid;
-}
-
-}
-
 namespace seasocks {
 
 PageRequest::PageRequest(
         const sockaddr_in& remoteAddress,
         const std::string& requestUri,
-        const char* verb,
+        const Verb verb,
         size_t contentLength,
         std::unordered_map<std::string, std::string>&& headers) :
             _credentials(std::shared_ptr<Credentials>(new Credentials())),
             _remoteAddress(remoteAddress),
             _requestUri(requestUri),
-            _verb(lookup(verb)),
+            _verb(verb),
             _contentLength(contentLength),
             _headers(std::move(headers)) {
 }

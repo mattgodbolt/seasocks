@@ -176,8 +176,7 @@ Connection::Connection(
         std::shared_ptr<Logger> logger,
         Server* server,
         int fd,
-        const sockaddr_in& address,
-        std::shared_ptr<SsoAuthenticator> sso)
+        const sockaddr_in& address)
     : _logger(new PrefixWrapper(formatAddress(address) + " : ", logger)),
       _server(server),
       _fd(fd),
@@ -188,7 +187,6 @@ Connection::Connection(
       _address(address),
       _bytesSent(0),
       _bytesReceived(0),
-      _sso(sso),
       _connectionTime(),
       _shutdownByUser(false),
       _state(READING_HEADERS) {
@@ -676,8 +674,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
     LS_ACCESS(_logger, "Request: " << requestLine);
 
-    const char* verb = shift(requestLine);
-    if (verb == NULL) {
+    const char* verbText = shift(requestLine);
+    if (!verbText) {
+        return sendBadRequest("Malformed request line");
+    }
+    auto verb = Request::verb(verbText);
+    if (verb == Request::Verb::Invalid) {
         return sendBadRequest("Malformed request line");
     }
     const char* requestUri = shift(requestLine);
@@ -703,9 +705,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     std::unordered_map<std::string, std::string> allHeaders(31);
     // TODO: move all this lot to the new header map.
     std::string host;
-    std::string rangeHeader;
-    std::string hybiKey;
-    int webSocketVersion = 0;
     size_t contentLength = 0;
     while (first < last) {
         char* colonPos = NULL;
@@ -732,8 +731,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         } else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
             // Hixie only.
             _webSocketKeys[1] = parseWebSocketKey(value);
-        } else if (strcasecmp(key, "Sec-WebSocket-Key") == 0) {
-            hybiKey = strValue;
         } else if (strcasecmp(key, "Origin") == 0 && allowCrossOrigin) {
             _hixieExtraHeaders += "Sec-WebSocket-Origin: " + strValue + "\r\n";
         } else if (strcasecmp(key, "Host") == 0) {
@@ -743,44 +740,13 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
             _hixieExtraHeaders += "Sec-WebSocket-Location: ws://" + strValue + requestUri;
             _hixieExtraHeaders += "\r\n";
             host = strValue;
-        } else if (strcasecmp(key, "Sec-WebSocket-Version") == 0) {
-            webSocketVersion = atoi(strValue.c_str());
-        } else if (strcasecmp(key, "Range") == 0) {
-            rangeHeader = strValue;
         } else if (strcasecmp(key, "Content-Length") == 0) {
             contentLength = atoi(strValue.c_str());
         }
     }
 
-    _request.reset(new PageRequest(_address, requestUri, verb, contentLength, std::move(allHeaders)));
-
-    // <SSO>
-    if (_sso && findEmbeddedContent(requestUri) == NULL) {
-        if (_sso->isBounceBackFromSsoServer(*_request)) {
-            if (_sso->validateSignature(*_request)) {
-                return sendResponse(_sso->respondWithLocalCookieAndRedirectToOriginalPage(*_request));
-            }
-            return sendISE(std::string("Invalid SSO signature at ") + requestUri);
-        }
-
-        _sso->extractCredentialsFromLocalCookie(*_request);
-        if (_sso->enabledFor(*_request)) {
-            if (!_request->credentials()->authenticated) {
-                if (_sso->requestExplicityForbidsDrwSsoRedirect(*_request)) {
-                    return sendError(ResponseCode::Unauthorized, requestUri);
-                }
-                LS_DEBUG(_logger, "Redirecting to server");
-                return sendResponse(_sso->respondWithRedirectToAuthenticationServer(*_request));
-            }
-            if (!_sso->hasAccess(*_request)) {
-                return sendError(ResponseCode::Forbidden, requestUri);
-            }
-        }
-    }
-    // </SSO>
-
     if (haveConnectionUpgrade && haveWebSocketUpgrade) {
-        if (strcmp(verb, "GET") != 0) {
+        if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");
         }
         _webSocketHandler = _server->getWebSocketHandler(requestUri);
@@ -788,19 +754,16 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
             LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
             return send404(requestUri);
         }
-        if (webSocketVersion == 0) {
-            // Hixie
-            LS_DEBUG(_logger, "Got a hixie websocket with key1=0x" << std::hex << _webSocketKeys[0] << ", key2=0x" << _webSocketKeys[1]);
-            _state = READING_WEBSOCKET_KEY3;
-            return true;
-        }
-        return handleHybiHandshake(webSocketVersion, hybiKey);
+        verb = Request::Verb::WebSocket;
     }
 
-    auto handler = _server->getPageHandler();
-    if (!handler) {
-        return sendStaticData(requestUri, rangeHeader);
+    const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
+    if (verb == Request::Verb::Get && embedded) {
+        // MRG: one day, this could be a request handler.
+        return sendData(getContentType(requestUri), embedded->data, embedded->length);
     }
+
+    _request.reset(new PageRequest(_address, requestUri, verb, contentLength, std::move(allHeaders)));
 
     if (contentLength > MaxBufferSize) {
         return sendBadRequest("Content length too long");
@@ -813,10 +776,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 }
 
 bool Connection::handlePageRequest() {
-    auto handler = _server->getPageHandler();
     std::shared_ptr<Response> response;
     try {
-        response = handler->handle(*_request);
+        response = _server->handle(*_request);
     } catch (const std::exception& e) {
         LS_ERROR(_logger, "page error: " << e.what());
         return sendISE(e.what());
@@ -824,14 +786,34 @@ bool Connection::handlePageRequest() {
         LS_ERROR(_logger, "page error: (unknown)");
         return sendISE("(unknown)");
     }
+    auto uri = _request->getRequestUri();
     if (!response) {
-        return sendStaticData(_request->getRequestUri().c_str(), _request->getHeader("Range"));
+        if (_request->verb() == Request::Verb::WebSocket) {
+            _webSocketHandler = _server->getWebSocketHandler(uri.c_str());
+            auto webSocketVersion = atoi(_request->getHeader("Sec-WebSocket-Version").c_str());
+            if (!_webSocketHandler) {
+                LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
+                return send404(uri);
+            }
+            if (webSocketVersion == 0) {
+                // Hixie
+                LS_DEBUG(_logger, "Got a hixie websocket with key1=0x" << std::hex << _webSocketKeys[0] << ", key2=0x" << _webSocketKeys[1]);
+                _state = READING_WEBSOCKET_KEY3;
+                return true;
+            }
+            auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
+            return handleHybiHandshake(webSocketVersion, hybiKey);
+        }
+        return sendStaticData(uri.c_str(), _request->getHeader("Range"));
     }
     return sendResponse(response);
 }
 
 bool Connection::sendResponse(std::shared_ptr<Response> response) {
     const auto requestUri = _request->getRequestUri();
+    if (response == Response::unhandled()) {
+        return sendStaticData(requestUri.c_str(), _request->getHeader("Range"));
+    }
     if (response->responseCode() == ResponseCode::NotFound) {
         // TODO: better here; we use this purely to serve our own embedded content.
         return send404(requestUri);

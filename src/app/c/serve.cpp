@@ -59,7 +59,7 @@ int main(int argc, const char* argv[]) {
         std::set<std::string> userSet;
         userSet.insert(users.begin(), users.end());
         ssoOptions.accessController.reset(new UsernameAccessControl(userSet));
-        server.enableSingleSignOn(ssoOptions);
+        server.addPageHandler(std::make_shared<SsoAuthenticator>(ssoOptions));
     }
     server.serve(rootArg.getValue().c_str(), portArg.getValue());
     return 0;

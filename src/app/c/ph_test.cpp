@@ -1,6 +1,7 @@
 #include "seasocks/PageHandler.h"
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
+#include "seasocks/SsoAuthenticator.h"
 #include "seasocks/StringUtil.h"
 
 #include <cstring>
@@ -37,12 +38,13 @@ int main(int argc, const char* argv[]) {
     std::shared_ptr<Logger> logger(new PrintfLogger(Logger::INFO));
 
     Server server(logger);
+
     auto sso = SsoOptions::test();
     sso.requestUserAttributes.insert("fullName");
-    server.enableSingleSignOn(sso);
 
-    std::shared_ptr<PageHandler> handler(new MyPageHandler());
-    server.setPageHandler(handler);
+    server.addPageHandler(std::make_shared<SsoAuthenticator>(sso));
+    server.addPageHandler(std::make_shared<MyPageHandler>());
+
     server.serve("src/ws_test_web", 9090);
     return 0;
 }

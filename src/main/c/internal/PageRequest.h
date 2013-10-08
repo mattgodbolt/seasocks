@@ -20,7 +20,7 @@ public:
     PageRequest(
             const sockaddr_in& remoteAddress,
             const std::string& requestUri,
-            const char* verb,
+            Verb verb,
             size_t contentLength,
             std::unordered_map<std::string, std::string>&& headers);
 

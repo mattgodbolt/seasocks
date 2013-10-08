@@ -25,6 +25,7 @@ public:
     virtual Verb verb() const = 0;
 
     static const char* name(Verb v);
+    static Verb verb(const char *verb);
 
     /**
      * Returns the credentials associated with this request.
