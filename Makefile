@@ -3,10 +3,10 @@ C_SRC=src/main/c
 TEST_SRC=src/test/c
 APPS_SRC=src/app/c
 
-VERSION_STRING=SeaSocks/$(or $(VERSION),unversioned) ($(shell git rev-parse HEAD))
+VERSION_STRING=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --always --dirty))
 
 INCLUDES=-I $(C_SRC) -Iinclude -Llib
-CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wreturn-type -Wall -Werror $(INCLUDES) -std=c++0x '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"'
+CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wall -Werror $(INCLUDES) -std=c++0x '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"'
 
 STATIC_LIBS=
 APP_LIBS=
