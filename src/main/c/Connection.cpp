@@ -7,7 +7,6 @@
 
 #include "md5/md5.h"
 
-#include "seasocks/AccessControl.h"
 #include "seasocks/Connection.h"
 #include "seasocks/Credentials.h"
 #include "seasocks/Logger.h"

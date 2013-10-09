@@ -1,7 +1,6 @@
 #pragma once
 
 #include "seasocks/ResponseCode.h"
-#include "seasocks/SsoAuthenticator.h"
 #include "seasocks/WebSocket.h"
 
 #include <netinet/in.h>

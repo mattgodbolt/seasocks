@@ -6,7 +6,6 @@ Features
 *   Simple C++ API
 *   Serves static content from disk
 *   API for building WebSocket servers
-*   Integration with [DRW Single Sign On](http://go/sso)
 *   Simple command line binary for quick serving of static files only
 *   Supports newer Hybi-10 and Hybi-16 WebSockets as well as the older Hixie style.
 
@@ -19,4 +18,3 @@ It has been optimized for WebSocket based control.
 Getting started
 ---------------
 See src/app/c/ws_test.cpp for an example.
-

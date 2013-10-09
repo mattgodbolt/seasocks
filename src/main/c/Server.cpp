@@ -3,6 +3,7 @@
 #include "seasocks/Connection.h"
 #include "seasocks/Logger.h"
 #include "seasocks/Server.h"
+#include "seasocks/PageHandler.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/util/Json.h"
 

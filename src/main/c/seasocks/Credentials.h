@@ -8,7 +8,6 @@
 namespace seasocks {
 
 struct Credentials {
-
     /**
      * Whether user was successfuly authenticated.
      */
@@ -20,18 +19,16 @@ struct Credentials {
     std::string username;
 
     /**
-     * Groups the user is in. NB only groups requested in the SsoOptions will be returned.
+     * Groups the user is in.
      */
     std::set<std::string> groups;
 
     /**
-     * Attributes for the user. NB only attributes requested in the SsoOptions will be returned.
+     * Attributes for the user.
      */
     std::map<std::string, std::string> attributes;
 
-    Credentials(): authenticated(false) {
-    }
-
+    Credentials(): authenticated(false) {}
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Credentials& credentials) {

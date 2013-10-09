@@ -19,16 +19,10 @@ BIN_DIR=bin
 FIG_DEP=.fig-up-to-date
 UNAME_R:=$(shell uname -r)
 export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/
-GCC_DIR=/site/apps/gcc-4.7.2-drw.patched.6
-GCC_VERSION=472
-ifeq "el6" "$(findstring el6,$(UNAME_R))"
-  OS_VERSION=redhat6
-else
-  OS_VERSION=unknown
-endif
-CC=$(GCC_DIR)/bin/g++
-GCC_LIB_PATH=$(GCC_DIR)/lib64
-export LD_LIBRARY_PATH=$(GCC_LIB_PATH)
+GCXX_DIR=/site/apps/gcc-4.7.2-drw.patched.6
+CXX=$(GCXX_DIR)/bin/g++
+GCXX_LIB_PATH=$(GCXX_DIR)/lib64
+export LD_LIBRARY_PATH=$(GCXX_LIB_PATH)
 
 $(FIG_DEP): package.fig
 	fig --update-if-missing --log-level warn --config build
@@ -57,23 +51,23 @@ GEN_OBJS=$(OBJ_DIR)/embedded.o
 
 $(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	$(CXX) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	$(CXX) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(TEST_OBJS) : $(OBJ_DIR)/%.o : $(TEST_SRC)/%.cpp $(FIG_DEP)
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	$(CXX) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
-	$(CC) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
 
 $(BIN_DIR)/libseasocks.so: $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
-	$(CC) -shared $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
+	$(CXX) -shared $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
 
 $(BIN_DIR)/libseasocks.a: $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
@@ -83,13 +77,13 @@ $(BIN_DIR)/libseasocks.a: $(OBJS) $(GEN_OBJS)
 EMBEDDED_CONTENT:=$(shell find src/main/web -type f)
 $(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) $(FIG_DEP) src/main/c/internal/Embedded.h
 	@mkdir -p $(dir $@)
-	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CC) $(CPPFLAGS) -x c++ -c -o "$@" -
+	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CXX) $(CPPFLAGS) -x c++ -c -o "$@" -
 
 run: $(BIN_DIR)/ws_test
 	$(BIN_DIR)/ws_test
 
 $(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a
-	$(CC) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^ -lgmock -lgtest
+	$(CXX) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^ -lgmock -lgtest
 
 .tests-pass: $(BIN_DIR)/tests
 	@rm -f .tests-pass
@@ -103,19 +97,4 @@ clean:
 
 clobber: clean
 	rm -rf lib include $(FIG_DEP)
-
-publish: all
-	fig --publish seasocks/$(VERSION).$(OS_VERSION).gcc$(GCC_VERSION)
-
-publish-local: all
-	fig --publish-local seasocks/local
-
-ifneq ($(shell git status --porcelain src 2>/dev/null | wc -l),0)
-tidy_source:
-	@echo Not tidying source - you have local modifications
-	@false
-else
-tidy_source:
-	bash -c "python <(curl https://git.drwholdings.com/cpp-infrastructure/tidy-source/raw/master/tidy) $(SYSTEM_INCLUDES) -i src/main/c src"
-endif
 
