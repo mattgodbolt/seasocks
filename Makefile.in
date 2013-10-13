@@ -3,30 +3,14 @@ C_SRC=src/main/c
 TEST_SRC=src/test/c
 APPS_SRC=src/app/c
 
-VERSION_STRING=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --always --dirty))
-
-INCLUDES=-I $(C_SRC) -Iinclude -Llib
-CPPFLAGS=-g -O2 -m64 -fPIC -pthread -Wall -Werror $(INCLUDES) -std=c++0x '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"'
-
-STATIC_LIBS=
-APP_LIBS=
+VERSION_STRING:=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --always --dirty))
+CPPFLAGS=@CXXFLAGS@ -fPIC -Wall -Werror '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"' -I$(C_SRC)
+CXX=@CXX@
 
 .PHONY: all clean run test clobber
 
 OBJ_DIR=obj
 BIN_DIR=bin
-
-FIG_DEP=.fig-up-to-date
-UNAME_R:=$(shell uname -r)
-export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/
-GCXX_DIR=/site/apps/gcc-4.7.2-drw.patched.6
-CXX=$(GCXX_DIR)/bin/g++
-GCXX_LIB_PATH=$(GCXX_DIR)/lib64
-export LD_LIBRARY_PATH=$(GCXX_LIB_PATH)
-
-$(FIG_DEP): package.fig
-	fig --update-if-missing --log-level warn --config build
-	touch $@
 
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
 TEST_SRCS=$(shell find $(TEST_SRC) -name '*.cpp')
@@ -39,8 +23,6 @@ all: apps $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a test
 debug:
 	echo $($(DEBUG_VAR))
 
-fig: $(FIG_DEP)
-
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
 TEST_OBJS=$(patsubst $(TEST_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 APPS_OBJS=$(patsubst $(APPS_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(APPS_CPP_SRCS))
@@ -49,25 +31,25 @@ GEN_OBJS=$(OBJ_DIR)/embedded.o
 
 -include $(ALL_OBJS:.o=.d)
 
-$(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp $(FIG_DEP)
+$(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	$(CXX) $(CPPFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
-$(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp $(FIG_DEP)
+$(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	$(CXX) $(CPPFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
-$(TEST_OBJS) : $(OBJ_DIR)/%.o : $(TEST_SRC)/%.cpp $(FIG_DEP)
+$(TEST_OBJS) : $(OBJ_DIR)/%.o : $(TEST_SRC)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	$(CXX) $(CPPFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 
 $(TARGETS) : $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
-	$(CXX) $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS) $(APP_LIBS)
+	$(CXX) $(CPPFLAGS) -o $@ $^
 
 $(BIN_DIR)/libseasocks.so: $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
-	$(CXX) -shared $(CPPFLAGS) -o $@ $^ $(STATIC_LIBS)
+	$(CXX) -shared $(CPPFLAGS) -o $@ $^
 
 $(BIN_DIR)/libseasocks.a: $(OBJS) $(GEN_OBJS)
 	mkdir -p $(BIN_DIR)
@@ -75,15 +57,16 @@ $(BIN_DIR)/libseasocks.a: $(OBJS) $(GEN_OBJS)
 	ar cq $@ $^
 
 EMBEDDED_CONTENT:=$(shell find src/main/web -type f)
-$(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) $(FIG_DEP) src/main/c/internal/Embedded.h
+$(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) src/main/c/internal/Embedded.h
 	@mkdir -p $(dir $@)
 	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CXX) $(CPPFLAGS) -x c++ -c -o "$@" -
 
 run: $(BIN_DIR)/ws_test
 	$(BIN_DIR)/ws_test
 
+ifeq ("@HAVE_GMOCK@","1")
 $(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a
-	$(CXX) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^ -lgmock -lgtest
+	$(CXX) $(CPPFLAGS) -I $(TEST_SRC) -o $@ $^ @TEST_LIBS@
 
 .tests-pass: $(BIN_DIR)/tests
 	@rm -f .tests-pass
@@ -91,10 +74,14 @@ $(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a
 	@touch .tests-pass
 
 test: .tests-pass
+else
+test:
+	@echo "Not running tests as no gmock/gtest found during configure"
+endif
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) *.tar.gz .tests-pass
 
 clobber: clean
-	rm -rf lib include $(FIG_DEP)
+	rm -rf lib include
 
