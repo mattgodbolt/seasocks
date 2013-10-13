@@ -1,5 +1,8 @@
+m4_include([scripts/c++11.m4])
+
 AC_PREREQ(2.65)
-AC_INIT([SeaSocks], [0.0], [matt@godbolt.org], [], [http://tbd/])
+AC_INIT([SeaSocks], [0.1], [matt@godbolt.org], [], [https://github.com/mattgodbolt/seasocks])
+
 AC_LANG(C++)
 AC_PROG_CXX
 AC_PROG_CC
@@ -30,7 +33,6 @@ AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([dup2 gethostname memset rmdir socket sqrt strcasecmp strchr strdup strerror])
 
-m4_include([scripts/c++11.m4])
 AX_CXX_COMPILE_STDCXX_11([noext])
 
 SAVED_LDFLAGS=$LDFLAGS
