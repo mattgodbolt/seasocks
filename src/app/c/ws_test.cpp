@@ -23,10 +23,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE.
 
+// An extraordinarily simple test which presents a web page with some buttons.
+// Clicking on the numbered button increments the number, which is visible to
+// other connected clients.  WebSockets are used to do this: by the rather
+// suspicious means of sending raw JavaScript commands to be executed on other
+// clients.
+
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
+#include "seasocks/util/Json.h"
 
 #include <cstring>
 #include <iostream>
@@ -36,6 +43,7 @@
 #include <string>
 
 using namespace seasocks;
+using namespace std;
 
 class MyHandler: public WebSocket::Handler {
 public:
@@ -46,57 +54,58 @@ public:
     virtual void onConnect(WebSocket* connection) {
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
-    std::cout << "Connected: " << connection->getRequestUri() << " : " << formatAddress(connection->getRemoteAddress()) << std::endl;
-        std::cout << "Credentials: " << *(connection->credentials()) << std::endl;
+        cout << "Connected: " << connection->getRequestUri()
+                << " : " << formatAddress(connection->getRemoteAddress())
+                << endl;
+        cout << "Credentials: " << *(connection->credentials()) << endl;
     }
 
     virtual void onData(WebSocket* connection, const char* data) {
-        if (0 == std::strcmp("die", data)) {
+        if (0 == strcmp("die", data)) {
             _server->terminate();
             return;
         }
-        if (0 == std::strcmp("close", data)) {
-            std::cout << "Closing.." << std::endl;
+        if (0 == strcmp("close", data)) {
+            cout << "Closing.." << endl;
             connection->close();
-            std::cout << "Closed." << std::endl;
+            cout << "Closed." << endl;
             return;
         }
 
         int value = atoi(data) + 1;
         if (value > _currentValue) {
             setValue(value);
-            for (auto iter = _connections.cbegin(); iter != _connections.cend(); ++iter) {
-                (*iter)->send(_currentSetValue.c_str());
+            for (auto connection : _connections) {
+                connection->send(_currentSetValue.c_str());
             }
         }
-
     }
 
     virtual void onDisconnect(WebSocket* connection) {
         _connections.erase(connection);
-    std::cout << "Disconnected: " << connection->getRequestUri() << " : " << formatAddress(connection->getRemoteAddress()) << std::endl;
+        cout << "Disconnected: " << connection->getRequestUri()
+                << " : " << formatAddress(connection->getRemoteAddress())
+                << endl;
     }
 
 private:
-    std::set<WebSocket*> _connections;
+    set<WebSocket*> _connections;
     Server* _server;
     int _currentValue;
-    std::string _currentSetValue;
+    string _currentSetValue;
 
     void setValue(int value) {
         _currentValue = value;
-        std::ostringstream ostr;
-        ostr << "set(" << _currentValue << ");";
-        _currentSetValue = ostr.str();
+        _currentSetValue = makeExecString("set", _currentValue);
     }
 };
 
 int main(int argc, const char* argv[]) {
-    std::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
+    shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
 
     Server server(logger);
 
-    std::shared_ptr<MyHandler> handler(new MyHandler(&server));
+    shared_ptr<MyHandler> handler(new MyHandler(&server));
     server.addWebSocketHandler("/ws", handler);
     server.serve("src/ws_test_web", 9090);
     return 0;

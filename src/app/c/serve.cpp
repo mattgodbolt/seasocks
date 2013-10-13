@@ -47,9 +47,6 @@ int main(int argc, const char* argv[]) {
     CmdLine cmd(description, ' ', SEASOCKS_VERSION_STRING);
     ValueArg<int> portArg("p", "port", "Listen for incoming connections on PORT", false, 80, "PORT", cmd);
     SwitchArg verboseArg("v", "verbose", "Output verbose debug information", cmd);
-    ValueArg<std::string> authorizedUsersArg(
-            "u", "authorized-users", "Serve content only to USERS (comma-separated)",
-            false, "", "USERS", cmd);
     ValueArg<int> lameTimeoutArg(
             "", "lame-connection-timeout", "Time out lame connections after SECS seconds",
             false, 0, "SECS", cmd);
