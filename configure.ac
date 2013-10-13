@@ -3,13 +3,29 @@ m4_include([scripts/c++11.m4])
 AC_PREREQ(2.65)
 AC_INIT([SeaSocks], [0.1], [matt@godbolt.org], [], [https://github.com/mattgodbolt/seasocks])
 
+AC_ARG_WITH([gmock],
+            [AS_HELP_STRING([--with-gmock],
+                            [Build tests too, with supplied gmock directory.  SeaSocks will
+                             build gmock and its embedded gtest automatically])],
+                             [],
+                             [AC_MSG_WARN([dnl
+Building without tests enabled. Use --with-gmock=PATH_TO_GMOCK])])
+
+AS_IF([test "x${with_gmock}" != "xno" -a "x${with_gmock}" != "x"],
+      [
+       AS_IF([test -e "${with_gmock}/include/gmock/gmock.h"],
+             [GMOCK_DIR="${with_gmock}"],
+             [AC_MSG_ERROR([dnl
+              Unable to locate gmock source at '${with_gmock}'.])])
+       ])
+AC_SUBST(GMOCK_DIR)
+
 AC_LANG(C++)
-AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_CXX
 
 AC_CONFIG_SRCDIR([src/main/c/seasocks/Server.h])
-#AC_CONFIG_HEADERS([config.h])
 
 CXXFLAGS="$CXXFLAGS -pthread"
 
@@ -35,14 +51,4 @@ AC_CHECK_FUNCS([dup2 gethostname memset rmdir socket sqrt strcasecmp strchr strd
 
 AX_CXX_COMPILE_STDCXX_11([noext])
 
-SAVED_LDFLAGS=$LDFLAGS
-LDFLAGS="$LDFLAGS -lgmock -lgtest"
-AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <gmock/gmock.h>],
-               [testing::Cardinality dummy])],
-               [TEST_LIBS="$TEST_LIBS -lgmock -lgtest"] [HAVE_GMOCK=1],
-               [AC_MSG_WARN([libgmock is not installed.])])
-LDFLAGS=$SAVED_LDFLAGS
-
-AC_SUBST(HAVE_GMOCK,0)
-AC_SUBST(TEST_LIBS)
 AC_OUTPUT([Makefile])
