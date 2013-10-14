@@ -17,4 +17,6 @@ It has been optimized for WebSocket based control.
 
 Getting started
 ---------------
-See src/app/c/ws_test.cpp for an example.
+Check out the [tutorial](https://github.com/mattgodbolt/seasocks/wiki/SeaSocks-quick-tutorial) on the wiki.
+
+See [src/app/c/ws_test.cpp](https://github.com/mattgodbolt/seasocks/blob/master/src/app/c/ws_test.cpp) for an example.
