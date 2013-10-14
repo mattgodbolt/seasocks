@@ -29,37 +29,43 @@
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 
-#include <tclap/CmdLine.h>
-
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <getopt.h>
 #include <memory>
 
 using namespace seasocks;
-using namespace TCLAP;
 
 namespace {
 
 const char description[] = "Serve static files over HTTP.";
+const char usage[] = "Usage: %s [-p PORT] [-v] DIR\n"
+                      "   Serves files from DIR over HTTP on port PORT\n";
 
 }
 
-int main(int argc, const char* argv[]) {
-    CmdLine cmd(description, ' ', SEASOCKS_VERSION_STRING);
-    ValueArg<int> portArg("p", "port", "Listen for incoming connections on PORT", false, 80, "PORT", cmd);
-    SwitchArg verboseArg("v", "verbose", "Output verbose debug information", cmd);
-    ValueArg<int> lameTimeoutArg(
-            "", "lame-connection-timeout", "Time out lame connections after SECS seconds",
-            false, 0, "SECS", cmd);
-
-    UnlabeledValueArg<std::string> rootArg("serve-from-dir", "Use DIR as file serving root", true, "", "DIR", cmd);
-    cmd.parse(argc, argv);
-
-    std::shared_ptr<Logger> logger(
-            new PrintfLogger(verboseArg.getValue() ? Logger::DEBUG : Logger::ACCESS));
-    Server server(logger);
-    if (lameTimeoutArg.isSet()) {
-        server.setLameConnectionTimeoutSeconds(lameTimeoutArg.getValue());
+int main(int argc, char* const argv[]) {
+    int port = 80;
+    bool verbose = false;
+    int opt;
+    while ((opt = getopt(argc, argv, "vp:")) != -1) {
+        switch (opt) {
+        case 'v': verbose = true; break;
+        case 'p': port = atoi(optarg); break;
+        default:
+            fprintf(stderr, usage, argv[0]);
+            exit(1);
+        }
     }
-    server.serve(rootArg.getValue().c_str(), portArg.getValue());
+    if (optind >= argc) {
+        fprintf(stderr, usage, argv[0]);
+        exit(1);
+    }
+
+    auto logger = std::make_shared<PrintfLogger>(
+            verbose ? Logger::DEBUG : Logger::ACCESS);
+    Server server(logger);
+    auto root = argv[optind];
+    server.serve(root, port);
     return 0;
 }

@@ -48,10 +48,7 @@ dnl pthreads; better if we detect this somehow
 CXXFLAGS="$CXXFLAGS -pthread"
 
 dnl System headers and functions used
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/ioctl.h sys/socket.h unistd.h])
-AC_CHECK_FUNCS([dup2 eventfd syscall gethostname memset rmdir socket sqrt strcasecmp strchr strdup strerror])
-
-dnl Non-standard headers used
-AC_CHECK_HEADERS([tclap/CmdLine.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/ioctl.h sys/socket.h unistd.h getopt.h])
+AC_CHECK_FUNCS([dup2 eventfd syscall gethostname memset rmdir socket sqrt strcasecmp strchr strdup strerror getopt])
 
 AC_OUTPUT([Makefile])
