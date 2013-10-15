@@ -64,7 +64,7 @@ public:
 };
 
 TEST(ConnectionTests, shouldBreakHixieMessagesApartInSameBuffer) {
-    sockaddr_in addr;
+    sockaddr_in addr = { AF_INET, 0x1234, { 0x01020304 } };
     std::shared_ptr<Logger> logger(new IgnoringLogger);
     testing::NiceMock<MockServerImpl> mockServer;
     Connection connection(logger, mockServer, -1, addr);
