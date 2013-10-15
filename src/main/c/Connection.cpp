@@ -198,7 +198,7 @@ namespace seasocks {
 
 Connection::Connection(
         std::shared_ptr<Logger> logger,
-        Server* server,
+        ServerImpl& server,
         int fd,
         const sockaddr_in& address)
     : _logger(new PrefixWrapper(formatAddress(address) + " : ", logger)),
@@ -214,16 +214,11 @@ Connection::Connection(
       _connectionTime(),
       _shutdownByUser(false),
       _state(READING_HEADERS) {
-    if (server) {
-        assert(server->getStaticPath() != "");
-    }
     _webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
 Connection::~Connection() {
-    if (_server) {
-        _server->checkThread();
-    }
+    _server.checkThread();
     finalise();
 }
 
@@ -244,7 +239,7 @@ void Connection::closeWhenEmpty() {
 void Connection::closeInternal() {
     // It only actually only calls shutdown on the socket,
     // leaving the close of the FD and the cleanup until the destructor runs.
-    _server->checkThread();
+    _server.checkThread();
     if (_fd != -1 && !_shutdown && ::shutdown(_fd, SHUT_RDWR) == -1) {
         LS_WARNING(_logger, "Unable to shutdown socket : " << getLastError());
     }
@@ -258,7 +253,7 @@ void Connection::finalise() {
         _webSocketHandler.reset();
     }
     if (_fd != -1) {
-        _server->remove(this);
+        _server.remove(this);
         LS_DEBUG(_logger, "Closing socket");
         ::close(_fd);
     }
@@ -367,12 +362,12 @@ bool Connection::flush() {
     }
     _outBuf.erase(_outBuf.begin(), _outBuf.begin() + numSent);
     if (_outBuf.size() > 0 && !_registeredForWriteEvents) {
-        if (!_server->subscribeToWriteEvents(this)) {
+        if (!_server.subscribeToWriteEvents(this)) {
             return false;
         }
         _registeredForWriteEvents = true;
     } else if (_outBuf.empty() && _registeredForWriteEvents) {
-        if (!_server->unsubscribeFromWriteEvents(this)) {
+        if (!_server.unsubscribeFromWriteEvents(this)) {
             return false;
         }
         _registeredForWriteEvents = false;
@@ -482,7 +477,7 @@ void Connection::handleBufferingPostData() {
 }
 
 void Connection::send(const char* webSocketResponse) {
-    _server->checkThread();
+    _server.checkThread();
     if (_shutdown) {
         if (_shutdownByUser) {
             LS_ERROR(_logger, "Server wrote to connection after closing it");
@@ -502,7 +497,7 @@ void Connection::send(const char* webSocketResponse) {
 }
 
 void Connection::send(const uint8_t* data, size_t length) {
-    _server->checkThread();
+    _server.checkThread();
     if (_shutdown) {
         if (_shutdownByUser) {
             LS_ERROR(_logger, "Client wrote to connection after closing it");
@@ -537,7 +532,7 @@ void Connection::sendHybi(int opcode, const uint8_t* webSocketResponse, size_t m
 }
 
 std::shared_ptr<Credentials> Connection::credentials() const {
-    _server->checkThread();
+    _server.checkThread();
     return _request ? _request->credentials() : std::shared_ptr<Credentials>();
 }
 
@@ -674,7 +669,7 @@ bool Connection::send404(const std::string& path) {
     if (embedded) {
         return sendData(getContentType(path), embedded->data, embedded->length);
     } else if (strcmp(path.c_str(), "/_livestats.js") == 0) {
-        auto stats = _server->getStatsDocument();
+        auto stats = _server.getStatsDocument();
         return sendData("text/javascript", stats.c_str(), stats.length());
     } else {
         return sendError(ResponseCode::NotFound, "Unable to find resource for: " + path);
@@ -725,7 +720,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
     bool haveConnectionUpgrade = false;
     bool haveWebSocketUpgrade = false;
-    bool allowCrossOrigin = _server->isCrossOriginAllowed(requestUri);
+    bool allowCrossOrigin = _server.isCrossOriginAllowed(requestUri);
     std::unordered_map<std::string, std::string> allHeaders(31);
     // TODO: move all this lot to the new header map.
     std::string host;
@@ -773,7 +768,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");
         }
-        _webSocketHandler = _server->getWebSocketHandler(requestUri);
+        _webSocketHandler = _server.getWebSocketHandler(requestUri);
         if (!_webSocketHandler) {
             LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
             return send404(requestUri);
@@ -802,7 +797,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 bool Connection::handlePageRequest() {
     std::shared_ptr<Response> response;
     try {
-        response = _server->handle(*_request);
+        response = _server.handle(*_request);
     } catch (const std::exception& e) {
         LS_ERROR(_logger, "page error: " << e.what());
         return sendISE(e.what());
@@ -813,7 +808,7 @@ bool Connection::handlePageRequest() {
     auto uri = _request->getRequestUri();
     if (!response) {
         if (_request->verb() == Request::Verb::WebSocket) {
-            _webSocketHandler = _server->getWebSocketHandler(uri.c_str());
+            _webSocketHandler = _server.getWebSocketHandler(uri.c_str());
             auto webSocketVersion = atoi(_request->getHeader("Sec-WebSocket-Version").c_str());
             if (!_webSocketHandler) {
                 LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
@@ -976,7 +971,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 // TODO: take a Request here.
 bool Connection::sendStaticData(const char* requestUri, const std::string& rangeHeader) {
     // TODO: fold this into the handler way of doing things.
-    std::string path = _server->getStaticPath() + requestUri;
+    std::string path = _server.getStaticPath() + requestUri;
     // Trim any trailing queries.
     size_t queryPos = path.find('?');
     if (queryPos != path.npos) {

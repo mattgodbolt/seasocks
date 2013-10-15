@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "seasocks/ServerImpl.h"
 #include "seasocks/WebSocket.h"
 
 #include <sys/types.h>
@@ -46,10 +47,10 @@ class PageHandler;
 class Request;
 class Response;
 
-class Server {
+class Server : private ServerImpl {
 public:
     Server(std::shared_ptr<Logger> logger);
-    ~Server();
+    virtual ~Server();
 
     void addPageHandler(std::shared_ptr<PageHandler> handler);
 
@@ -80,6 +81,7 @@ public:
     // Returns true if all was ok.
     bool startListening(int port);
 
+    // Sets the path to server static content from.
     void setStaticPath(const char* staticPath);
 
     // Loop (until terminate called from another thread).
@@ -90,18 +92,6 @@ public:
     // Terminate any loop(). May be called from any thread.
     void terminate();
 
-    void remove(Connection* connection);
-    bool subscribeToWriteEvents(Connection* connection);
-    bool unsubscribeFromWriteEvents(Connection* connection);
-
-    const std::string& getStaticPath() const { return _staticPath; }
-    std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const;
-    bool isCrossOriginAllowed(const char* endpoint) const;
-
-    std::shared_ptr<Response> handle(const Request &request);
-
-    std::string getStatsDocument() const;
-
     class Runnable {
     public:
         virtual ~Runnable() {}
@@ -109,8 +99,18 @@ public:
     };
     void schedule(std::shared_ptr<Runnable> runnable);
 
-    void checkThread() const;
 private:
+    // From ServerImpl
+    virtual void remove(Connection* connection) override;
+    virtual bool subscribeToWriteEvents(Connection* connection) override;
+    virtual bool unsubscribeFromWriteEvents(Connection* connection) override;
+    virtual const std::string& getStaticPath() const override { return _staticPath; }
+    virtual std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const override;
+    virtual bool isCrossOriginAllowed(const char* endpoint) const override;
+    virtual std::shared_ptr<Response> handle(const Request &request) override;
+    virtual std::string getStatsDocument() const override;
+    virtual void checkThread() const override;
+
     bool makeNonBlocking(int fd) const;
     bool configureSocket(int fd) const;
     void handleAccept();

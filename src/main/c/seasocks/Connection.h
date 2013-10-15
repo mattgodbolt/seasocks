@@ -41,7 +41,7 @@
 namespace seasocks {
 
 class Logger;
-class Server;
+class ServerImpl;
 class PageRequest;
 class Response;
 
@@ -49,7 +49,7 @@ class Connection : public WebSocket {
 public:
     Connection(
             std::shared_ptr<Logger> logger,
-            Server* server,
+            ServerImpl& server,
             int fd,
             const sockaddr_in& address);
     virtual ~Connection();
@@ -61,19 +61,19 @@ public:
     int getFd() const { return _fd; }
 
     // From WebSocket.
-    virtual void send(const char* webSocketResponse);
-    virtual void send(const uint8_t* webSocketResponse, size_t length);
-    virtual void close();
+    virtual void send(const char* webSocketResponse) override;
+    virtual void send(const uint8_t* webSocketResponse, size_t length) override;
+    virtual void close() override;
 
     // From Request.
-    virtual std::shared_ptr<Credentials> credentials() const;
-    virtual const sockaddr_in& getRemoteAddress() const { return _address; }
-    virtual const std::string& getRequestUri() const { return _requestUri; }
-    virtual Request::Verb verb() const { return Request::WebSocket; }
-    virtual size_t contentLength() const { return 0; }
-    virtual const uint8_t* content() const { return NULL; }
-    virtual bool hasHeader(const std::string&) const;
-    virtual std::string getHeader(const std::string&) const;
+    virtual std::shared_ptr<Credentials> credentials() const override;
+    virtual const sockaddr_in& getRemoteAddress() const override { return _address; }
+    virtual const std::string& getRequestUri() const override { return _requestUri; }
+    virtual Request::Verb verb() const override { return Request::WebSocket; }
+    virtual size_t contentLength() const override { return 0; }
+    virtual const uint8_t* content() const override { return NULL; }
+    virtual bool hasHeader(const std::string&) const override;
+    virtual std::string getHeader(const std::string&) const override;
 
     void setLinger();
 
@@ -145,7 +145,7 @@ private:
     std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 
     std::shared_ptr<Logger> _logger;
-    Server* _server;
+    ServerImpl &_server;
     int _fd;
     bool _shutdown;
     bool _hadSendError;

@@ -23,6 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include "MockServerImpl.h"
 #include "seasocks/Connection.h"
 #include "seasocks/IgnoringLogger.h"
 
@@ -65,7 +66,8 @@ public:
 TEST(ConnectionTests, shouldBreakHixieMessagesApartInSameBuffer) {
     sockaddr_in addr;
     std::shared_ptr<Logger> logger(new IgnoringLogger);
-    Connection connection(logger, NULL, -1, addr);
+    testing::NiceMock<MockServerImpl> mockServer;
+    Connection connection(logger, mockServer, -1, addr);
     connection.setHandler(
             std::shared_ptr<WebSocket::Handler>(new TestHandler));
     uint8_t foo[] = { 0x00, 'a', 0xff, 0x00, 'b', 0xff };

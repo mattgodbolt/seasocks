@@ -396,7 +396,7 @@ void Server::handleAccept() {
         return;
     }
     LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
-    Connection* newConnection = new Connection(_logger, this, fd, address);
+    Connection* newConnection = new Connection(_logger, *this, fd, address);
     epoll_event event = { EPOLLIN, { newConnection } };
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
         LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
