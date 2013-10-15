@@ -97,7 +97,8 @@ public:
         virtual ~Runnable() {}
         virtual void run() = 0;
     };
-    void schedule(std::shared_ptr<Runnable> runnable);
+    // Execute a task on the SeaSocks thread.
+    void execute(std::shared_ptr<Runnable> runnable);
 
 private:
     // From ServerImpl

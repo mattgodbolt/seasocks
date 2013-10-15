@@ -461,7 +461,7 @@ std::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endp
     return iter->second.handler;
 }
 
-void Server::schedule(std::shared_ptr<Runnable> runnable) {
+void Server::execute(std::shared_ptr<Runnable> runnable) {
     std::unique_lock<decltype(_pendingRunnableMutex)> lock(_pendingRunnableMutex);
     _pendingRunnables.push_back(runnable);
     lock.unlock();

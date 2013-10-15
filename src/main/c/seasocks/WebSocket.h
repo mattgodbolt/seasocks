@@ -35,13 +35,13 @@ class WebSocket : public Request {
 public:
     /**
      * Send the given text data. Must be called on the seasocks thread.
-     * See Server::schedule for how to schedule work on the seasocks
+     * See Server::execute for how to run work on the seasocks
      * thread externally.
      */
     virtual void send(const char* data) = 0;
     /**
      * Send the given binary data. Must be called on the seasocks thread.
-     * See Server::schedule for how to schedule work on the seasocks
+     * See Server::execute for how to run work on the seasocks
      * thread externally.
      */
     virtual void send(const uint8_t* data, size_t length) = 0;
