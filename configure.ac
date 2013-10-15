@@ -1,6 +1,6 @@
 m4_include([scripts/c++11.m4])
 
-AC_PREREQ(2.65)
+AC_PREREQ(2.63)
 AC_INIT([SeaSocks], [0.1], [matt@godbolt.org], [], [https://github.com/mattgodbolt/seasocks])
 AC_CONFIG_SRCDIR([src/main/c/seasocks/Server.h])
 
