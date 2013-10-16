@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "internal/Embedded.h"
+#include "internal/HeaderMap.h"
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
@@ -58,13 +59,13 @@
 
 namespace {
 
-uint32_t parseWebSocketKey(const char* key) {
+uint32_t parseWebSocketKey(const std::string& key) {
     uint32_t keyNumber = 0;
     uint32_t numSpaces = 0;
-    for (;*key; ++key) {
-        if (*key >= '0' && *key <= '9') {
-            keyNumber = keyNumber * 10 + *key - '0';
-        } else if (*key == ' ') {
+    for (auto c : key) {
+        if (c >= '0' && c <= '9') {
+            keyNumber = keyNumber * 10 + c - '0';
+        } else if (c == ' ') {
             ++numSpaces;
         }
     }
@@ -214,7 +215,6 @@ Connection::Connection(
       _connectionTime(),
       _shutdownByUser(false),
       _state(READING_HEADERS) {
-    _webSocketKeys[0] = _webSocketKeys[1] = 0;
 }
 
 Connection::~Connection() {
@@ -430,19 +430,25 @@ void Connection::handleHeaders() {
 }
 
 void Connection::handleWebSocketKey3() {
-    if (_inBuf.size() < 8) {
+    constexpr auto WebSocketKeyLen = 8u;
+    if (_inBuf.size() < WebSocketKeyLen) {
         return;
     }
 
     struct {
-        uint32_t key0;
         uint32_t key1;
-        char key2[8];
+        uint32_t key2;
+        char key3[WebSocketKeyLen];
     } md5Source;
 
-    md5Source.key0 = htonl(_webSocketKeys[0]);
-    md5Source.key1 = htonl(_webSocketKeys[1]);
-    memcpy(&md5Source.key2, &_inBuf[0], 8);
+    auto key1 = parseWebSocketKey(_request->getHeader("Sec-WebSocket-Key1"));
+    auto key2 = parseWebSocketKey(_request->getHeader("Sec-WebSocket-Key2"));
+
+    LS_DEBUG(_logger, "Got a hixie websocket with key1=0x" << std::hex << key1 << ", key2=0x" << key2);
+
+    md5Source.key1 = htonl(key1);
+    md5Source.key2 = htonl(key2);
+    memcpy(&md5Source.key3, &_inBuf[0], WebSocketKeyLen);
 
     uint8_t digest[16];
     md5_state_t md5state;
@@ -455,7 +461,17 @@ void Connection::handleWebSocketKey3() {
     bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
     bufferLine("Upgrade: websocket");
     bufferLine("Connection: Upgrade");
-    write(&_hixieExtraHeaders[0], _hixieExtraHeaders.size(), false);
+    bool allowCrossOrigin = _server.isCrossOriginAllowed(_request->getRequestUri());
+    if (_request->hasHeader("Origin") && allowCrossOrigin) {
+        bufferLine("Sec-WebSocket-Origin: " +  _request->getHeader("Origin"));
+    }
+    if (_request->hasHeader("Host")) {
+        auto host = _request->getHeader("Host");
+        if (!allowCrossOrigin) {
+            bufferLine("Sec-WebSocket-Origin: http://" + host);
+        }
+        bufferLine("Sec-WebSocket-Location: ws://" + host + _request->getRequestUri());
+    }
     bufferLine("");
 
     write(&digest, 16, true);
@@ -705,7 +721,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (requestUri == NULL) {
         return sendBadRequest("Malformed request line");
     }
-    _requestUri = std::string(requestUri);
 
     const char* httpVersion = shift(requestLine);
     if (httpVersion == NULL) {
@@ -718,13 +733,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         return sendBadRequest("Trailing crap after http version");
     }
 
-    bool haveConnectionUpgrade = false;
-    bool haveWebSocketUpgrade = false;
-    bool allowCrossOrigin = _server.isCrossOriginAllowed(requestUri);
-    std::unordered_map<std::string, std::string> allHeaders(31);
-    // TODO: move all this lot to the new header map.
-    std::string host;
-    size_t contentLength = 0;
+    HeaderMap headers(31);
     while (first < last) {
         char* colonPos = NULL;
         char* headerLine = extractLine(first, last, &colonPos);
@@ -736,35 +745,13 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         const char* key = headerLine;
         const char* value = skipWhitespace(colonPos + 1);
         LS_DEBUG(_logger, "Key: " << key << " || " << value);
-        std::string strValue(value);
-        allHeaders[key] = strValue;
-        if (strcasecmp(key, "Connection") == 0) {
-            if (strcasecmp(value, "upgrade") == 0) {
-                haveConnectionUpgrade = true;
-            }
-        } else if (strcasecmp(key, "Upgrade") == 0 && strcasecmp(value, "websocket") == 0) {
-            haveWebSocketUpgrade = true;
-        } else if (strcasecmp(key, "Sec-WebSocket-Key1") == 0) {
-            // Hixie only.
-            _webSocketKeys[0] = parseWebSocketKey(value);
-        } else if (strcasecmp(key, "Sec-WebSocket-Key2") == 0) {
-            // Hixie only.
-            _webSocketKeys[1] = parseWebSocketKey(value);
-        } else if (strcasecmp(key, "Origin") == 0 && allowCrossOrigin) {
-            _hixieExtraHeaders += "Sec-WebSocket-Origin: " + strValue + "\r\n";
-        } else if (strcasecmp(key, "Host") == 0) {
-            if (!allowCrossOrigin) {
-                _hixieExtraHeaders += "Sec-WebSocket-Origin: http://" + strValue + "\r\n";
-            }
-            _hixieExtraHeaders += "Sec-WebSocket-Location: ws://" + strValue + requestUri;
-            _hixieExtraHeaders += "\r\n";
-            host = strValue;
-        } else if (strcasecmp(key, "Content-Length") == 0) {
-            contentLength = atoi(strValue.c_str());
-        }
+        headers.emplace(key, value);
     }
 
-    if (haveConnectionUpgrade && haveWebSocketUpgrade) {
+    // TODO: make comparison case insensitive?
+    if (headers.count("Connection") && headers.count("Upgrade")
+            && headers["Connection"] == "Upgrade" && headers["Upgrade"] == "websocket") {
+        LS_INFO(_logger, "Websocket request for " << requestUri << "'");
         if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");
         }
@@ -776,18 +763,18 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         verb = Request::Verb::WebSocket;
     }
 
+    _request.reset(new PageRequest(_address, requestUri, verb, std::move(headers)));
+
     const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
     if (verb == Request::Verb::Get && embedded) {
         // MRG: one day, this could be a request handler.
         return sendData(getContentType(requestUri), embedded->data, embedded->length);
     }
 
-    _request.reset(new PageRequest(_address, requestUri, verb, contentLength, std::move(allHeaders)));
-
-    if (contentLength > MaxBufferSize) {
+    if (_request->contentLength() > MaxBufferSize) {
         return sendBadRequest("Content length too long");
     }
-    if (contentLength == 0) {
+    if (_request->contentLength() == 0) {
         return handlePageRequest();
     }
     _state = BUFFERING_POST_DATA;
@@ -816,7 +803,6 @@ bool Connection::handlePageRequest() {
             }
             if (webSocketVersion == 0) {
                 // Hixie
-                LS_DEBUG(_logger, "Got a hixie websocket with key1=0x" << std::hex << _webSocketKeys[0] << ", key2=0x" << _webSocketKeys[1]);
                 _state = READING_WEBSOCKET_KEY3;
                 return true;
             }
@@ -1061,11 +1047,16 @@ void Connection::setLinger() {
 }
 
 bool Connection::hasHeader(const std::string& header) const {
-    return _request->hasHeader(header);
+    return _request ? _request->hasHeader(header) : false;
 }
 
 std::string Connection::getHeader(const std::string& header) const {
-    return _request->getHeader(header);
+    return _request ? _request->getHeader(header) : "";
+}
+
+const std::string& Connection::getRequestUri() const {
+    static const std::string empty;
+    return _request ? _request->getRequestUri() : empty;
 }
 
 }  // seasocks

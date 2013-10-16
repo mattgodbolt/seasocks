@@ -68,7 +68,7 @@ public:
     // From Request.
     virtual std::shared_ptr<Credentials> credentials() const override;
     virtual const sockaddr_in& getRemoteAddress() const override { return _address; }
-    virtual const std::string& getRequestUri() const override { return _requestUri; }
+    virtual const std::string& getRequestUri() const override;
     virtual Request::Verb verb() const override { return Request::WebSocket; }
     virtual size_t contentLength() const override { return 0; }
     virtual const uint8_t* content() const override { return NULL; }
@@ -152,15 +152,11 @@ private:
     bool _closeOnEmpty;
     bool _registeredForWriteEvents;
     sockaddr_in _address;
-    uint32_t _webSocketKeys[2];
     size_t _bytesSent;
     size_t _bytesReceived;
     std::vector<uint8_t> _inBuf;
     std::vector<uint8_t> _outBuf;
-    // Populated only during Hixie web socket header parsing.
-    std::string _hixieExtraHeaders;
     std::shared_ptr<WebSocket::Handler> _webSocketHandler;
-    std::string _requestUri;
     time_t _connectionTime;
     bool _shutdownByUser;
     std::unique_ptr<PageRequest> _request;

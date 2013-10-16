@@ -6,6 +6,9 @@ General list of things todo
 * add more tests and have a run-under-valgrind target at least
 * add a test for each public header file being "self-contained"
 * move more things over to the Request/Response way of doing things
+* Double check it's ok to remove hixie, and do so.  Currently no way of testing it anyway
+  (with reference to http://en.wikipedia.org/wiki/WebSocket#Browser_support it's been dead
+  since before Chrome 14)
 
 Further out things
 ------------------

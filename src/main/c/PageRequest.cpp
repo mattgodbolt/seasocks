@@ -25,6 +25,7 @@
 
 #include "internal/PageRequest.h"
 
+#include <cstdlib>
 #include <cstring>
 
 namespace seasocks {
@@ -32,15 +33,14 @@ namespace seasocks {
 PageRequest::PageRequest(
         const sockaddr_in& remoteAddress,
         const std::string& requestUri,
-        const Verb verb,
-        size_t contentLength,
-        std::unordered_map<std::string, std::string>&& headers) :
+        Verb verb,
+        HeaderMap&& headers) :
             _credentials(std::shared_ptr<Credentials>(new Credentials())),
             _remoteAddress(remoteAddress),
             _requestUri(requestUri),
             _verb(verb),
-            _contentLength(contentLength),
-            _headers(std::move(headers)) {
+            _headers(std::move(headers)),
+            _contentLength(getIntHeader("Content-Length")) {
 }
 
 bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
@@ -52,6 +52,11 @@ bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
         buffer.erase(buffer.begin(), buffer.begin() + _contentLength);
     }
     return true;
+}
+
+int PageRequest::getIntHeader(const std::string& name) const {
+    auto iter = _headers.find(name);
+    return iter == _headers.end() ? 0 : atoi(iter->second.c_str());
 }
 
 }  // namespace seasocks

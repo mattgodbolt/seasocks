@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "internal/HeaderMap.h"
 #include "seasocks/Request.h"
 
 #include <unordered_map>
@@ -37,17 +38,16 @@ class PageRequest : public seasocks::Request {
     const sockaddr_in _remoteAddress;
     const std::string _requestUri;
     const Verb _verb;
-    const size_t _contentLength;
     std::vector<uint8_t> _content;
-    std::unordered_map<std::string, std::string> _headers;
+    HeaderMap _headers;
+    const size_t _contentLength;
 
 public:
     PageRequest(
             const sockaddr_in& remoteAddress,
             const std::string& requestUri,
             Verb verb,
-            size_t contentLength,
-            std::unordered_map<std::string, std::string>&& headers);
+            HeaderMap&& headers);
 
     virtual Verb verb() const {
         return _verb;
@@ -83,6 +83,8 @@ public:
     }
 
     bool consumeContent(std::vector<uint8_t>& buffer);
+
+    int getIntHeader(const std::string& name) const;
 };
 
 }  // namespace seasocks

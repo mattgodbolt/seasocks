@@ -107,7 +107,7 @@ private:
     virtual bool unsubscribeFromWriteEvents(Connection* connection) override;
     virtual const std::string& getStaticPath() const override { return _staticPath; }
     virtual std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const override;
-    virtual bool isCrossOriginAllowed(const char* endpoint) const override;
+    virtual bool isCrossOriginAllowed(const std::string &endpoint) const override;
     virtual std::shared_ptr<Response> handle(const Request &request) override;
     virtual std::string getStatsDocument() const override;
     virtual void checkThread() const override;

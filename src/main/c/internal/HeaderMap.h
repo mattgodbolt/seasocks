@@ -25,25 +25,30 @@
 
 #pragma once
 
-#include "seasocks/ServerImpl.h"
-
-#include <gmock/gmock.h>
+#include <cctype>
+#include <cstring>
+#include <string>
+#include <unordered_map>
 
 namespace seasocks {
 
-class MockServerImpl : public ServerImpl {
-public:
-    virtual ~MockServerImpl() {}
-
-    MOCK_METHOD1(remove, void(Connection* connection));
-    MOCK_METHOD1(subscribeToWriteEvents, bool(Connection* connection));
-    MOCK_METHOD1(unsubscribeFromWriteEvents, bool(Connection* connection));
-    MOCK_CONST_METHOD0(getStaticPath, const std::string&());
-    MOCK_CONST_METHOD1(getWebSocketHandler, std::shared_ptr<WebSocket::Handler>(const char *));
-    MOCK_CONST_METHOD1(isCrossOriginAllowed, bool(const std::string&));
-    MOCK_METHOD1(handle, std::shared_ptr<Response>(const Request &));
-    MOCK_CONST_METHOD0(getStatsDocument, std::string());
-    MOCK_CONST_METHOD0(checkThread, void());
+struct CaseInsensitiveHash {
+    size_t operator()(const std::string &string) const {
+        size_t h = 0;
+        for (auto c: string) {
+            h = h * 13 + tolower(c);
+        }
+        return h;
+    }
 };
+
+struct CaseInsensitiveComparison {
+    bool operator()(const std::string &lhs, const std::string &rhs) const {
+        return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
+    }
+};
+
+using HeaderMap = std::unordered_map<std::string, std::string,
+        CaseInsensitiveHash, CaseInsensitiveComparison>;
 
 }

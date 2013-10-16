@@ -443,7 +443,7 @@ void Server::addPageHandler(std::shared_ptr<PageHandler> handler) {
     _pageHandlers.emplace_back(handler);
 }
 
-bool Server::isCrossOriginAllowed(const char* endpoint) const {
+bool Server::isCrossOriginAllowed(const std::string &endpoint) const {
     auto splits = split(endpoint, '?');
     auto iter = _webSocketHandlerMap.find(splits[0]);
     if (iter == _webSocketHandlerMap.end()) {
