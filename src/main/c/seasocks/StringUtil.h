@@ -43,4 +43,6 @@ std::vector<std::string> split(const std::string& input, char splitChar);
 
 void replace(std::string& string, const std::string& find, const std::string& replace);
 
+bool caseInsensitiveSame(const std::string &lhs, const std::string &rhs);
+
 }  // namespace seasocks

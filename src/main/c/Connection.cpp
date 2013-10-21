@@ -748,9 +748,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         headers.emplace(key, value);
     }
 
-    // TODO: make comparison case insensitive?
     if (headers.count("Connection") && headers.count("Upgrade")
-            && headers["Connection"] == "Upgrade" && headers["Upgrade"] == "websocket") {
+            && caseInsensitiveSame(headers["Connection"], "Upgrade")
+            && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
         LS_INFO(_logger, "Websocket request for " << requestUri << "'");
         if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");

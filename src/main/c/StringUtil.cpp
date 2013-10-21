@@ -25,11 +25,11 @@
 
 #include "seasocks/StringUtil.h"
 
-#include <ctype.h>
-#include <errno.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
+#include <cctype>
+#include <cerrno>
+#include <cstddef>
+#include <cstdio>
+#include <cstring>
 
 namespace seasocks {
 
@@ -99,6 +99,10 @@ void replace(std::string& string, const std::string& find, const std::string& re
         string = string.substr(0, pos) + replace + string.substr(pos + findLen);
         pos += replaceLen;
     }
+}
+
+bool caseInsensitiveSame(const std::string &lhs, const std::string &rhs) {
+    return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
 }
 
 }
