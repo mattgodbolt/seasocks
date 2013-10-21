@@ -680,7 +680,8 @@ bool Connection::sendUnsupportedError(const std::string& reason) {
     return sendError(ResponseCode::NotImplemented, reason);
 }
 
-bool Connection::send404(const std::string& path) {
+bool Connection::send404() {
+    auto path = getRequestUri();
     auto embedded = findEmbeddedContent(path);
     if (embedded) {
         return sendData(getContentType(path), embedded->data, embedded->length);
@@ -758,7 +759,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         _webSocketHandler = _server.getWebSocketHandler(requestUri);
         if (!_webSocketHandler) {
             LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
-            return send404(requestUri);
+            return send404();
         }
         verb = Request::Verb::WebSocket;
     }
@@ -788,28 +789,25 @@ bool Connection::handlePageRequest() {
     } catch (const std::exception& e) {
         LS_ERROR(_logger, "page error: " << e.what());
         return sendISE(e.what());
-    } catch ( ... ) {
+    } catch (...) {
         LS_ERROR(_logger, "page error: (unknown)");
         return sendISE("(unknown)");
     }
     auto uri = _request->getRequestUri();
-    if (!response) {
-        if (_request->verb() == Request::Verb::WebSocket) {
-            _webSocketHandler = _server.getWebSocketHandler(uri.c_str());
-            auto webSocketVersion = atoi(_request->getHeader("Sec-WebSocket-Version").c_str());
-            if (!_webSocketHandler) {
-                LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
-                return send404(uri);
-            }
-            if (webSocketVersion == 0) {
-                // Hixie
-                _state = READING_WEBSOCKET_KEY3;
-                return true;
-            }
-            auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
-            return handleHybiHandshake(webSocketVersion, hybiKey);
+    if (!response && _request->verb() == Request::Verb::WebSocket) {
+        _webSocketHandler = _server.getWebSocketHandler(uri.c_str());
+        auto webSocketVersion = atoi(_request->getHeader("Sec-WebSocket-Version").c_str());
+        if (!_webSocketHandler) {
+            LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
+            return send404();
         }
-        return sendStaticData(uri.c_str(), _request->getHeader("Range"));
+        if (webSocketVersion == 0) {
+            // Hixie
+            _state = READING_WEBSOCKET_KEY3;
+            return true;
+        }
+        auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
+        return handleHybiHandshake(webSocketVersion, hybiKey);
     }
     return sendResponse(response);
 }
@@ -817,11 +815,11 @@ bool Connection::handlePageRequest() {
 bool Connection::sendResponse(std::shared_ptr<Response> response) {
     const auto requestUri = _request->getRequestUri();
     if (response == Response::unhandled()) {
-        return sendStaticData(requestUri.c_str(), _request->getHeader("Range"));
+        return sendStaticData();
     }
     if (response->responseCode() == ResponseCode::NotFound) {
         // TODO: better here; we use this purely to serve our own embedded content.
-        return send404(requestUri);
+        return send404();
     } else if (!isOk(response->responseCode())) {
         return sendError(response->responseCode(), response->payload());
     }
@@ -954,10 +952,10 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
     return sendRanges;
 }
 
-// TODO: take a Request here.
-bool Connection::sendStaticData(const char* requestUri, const std::string& rangeHeader) {
+bool Connection::sendStaticData() {
     // TODO: fold this into the handler way of doing things.
-    std::string path = _server.getStaticPath() + requestUri;
+    std::string path = _server.getStaticPath() + getRequestUri();
+    auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
     size_t queryPos = path.find('?');
     if (queryPos != path.npos) {
@@ -969,7 +967,7 @@ bool Connection::sendStaticData(const char* requestUri, const std::string& range
     RaiiFd input(path.c_str());
     struct stat stat;
     if (!input.ok() || ::fstat(input, &stat) == -1) {
-        return send404(requestUri);
+        return send404();
     }
     std::list<Range> ranges;
     if (!rangeHeader.empty() && !parseRanges(rangeHeader, ranges)) {

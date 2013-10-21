@@ -117,7 +117,7 @@ private:
 
     // Send individual errors. Again all return true for convenience.
     bool sendUnsupportedError(const std::string& reason);
-    bool send404(const std::string& path);
+    bool send404();
     bool sendBadRequest(const std::string& reason);
     bool sendISE(const std::string& error);
 
@@ -136,7 +136,7 @@ private:
 
     bool parseRange(const std::string& rangeStr, Range& range) const;
     bool parseRanges(const std::string& range, std::list<Range>& ranges) const;
-    bool sendStaticData(const char* requestUri, const std::string& rangeHeader);
+    bool sendStaticData();
 
     int safeSend(const void* data, size_t size);
 
