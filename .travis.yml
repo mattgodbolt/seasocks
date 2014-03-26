@@ -4,7 +4,10 @@ compiler:
   - clang
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo add-apt-repository ppa:h-rayflood/llvm -y
   - sudo apt-get update -qq
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.7; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
+  - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq --allow-unauthenticated clang-3.4; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.4" CC="clang-3.4"; fi
   - autoconf
