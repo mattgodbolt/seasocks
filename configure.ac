@@ -27,6 +27,22 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11([noext])
+AC_DEFUN([AX_CXX_CHECK_UNORDERED_MAP_EMPLACE], [
+          AC_LANG_PUSH([C++])
+          AC_MSG_CHECKING([whether std::unordered_map supports emplace])
+          AC_COMPILE_IFELSE([AC_LANG_SOURCE[
+                             #include <unordered_map>
+                             void test() { std::unordered_map<int, int> a; a.emplace(2,3); }
+                             ]],
+                             [eval unordered_map_emplace=yes],[eval unordered_map_emplace=no])
+          AC_MSG_RESULT([$unordered_map_emplace])
+          AC_LANG_POP([C++])
+          if test x$unordered_map_emplace = xyes; then
+              AC_DEFINE(HAVE_UNORDERED_MAP_EMPLACE,1, [define if unordered_map supports emplace])
+          fi
+          AC_SUBST(HAVE_UNORDERED_MAP_EMPLACE)
+          ])
+AX_CXX_CHECK_UNORDERED_MAP_EMPLACE
 
 dnl Basic headers and features
 AC_HEADER_STDBOOL
@@ -51,4 +67,5 @@ dnl System headers and functions used
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/ioctl.h sys/socket.h unistd.h getopt.h])
 AC_CHECK_FUNCS([dup2 eventfd syscall gethostname memset rmdir socket sqrt strcasecmp strchr strdup strerror getopt])
 
+AC_CONFIG_HEADERS([src/main/c/internal/Config.h])
 AC_OUTPUT([Makefile])

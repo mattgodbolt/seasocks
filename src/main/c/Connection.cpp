@@ -23,6 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include "internal/Config.h"
 #include "internal/Embedded.h"
 #include "internal/HeaderMap.h"
 #include "internal/HybiAccept.h"
@@ -212,7 +213,6 @@ Connection::Connection(
       _address(address),
       _bytesSent(0),
       _bytesReceived(0),
-      _connectionTime(),
       _shutdownByUser(false),
       _state(READING_HEADERS) {
 }
@@ -746,7 +746,11 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         const char* key = headerLine;
         const char* value = skipWhitespace(colonPos + 1);
         LS_DEBUG(_logger, "Key: " << key << " || " << value);
+#if HAVE_UNORDERED_MAP_EMPLACE
         headers.emplace(key, value);
+#else
+        headers.insert(std::make_pair(key, value));
+#endif
     }
 
     if (headers.count("Connection") && headers.count("Upgrade")
@@ -999,7 +1003,7 @@ bool Connection::sendStaticData() {
             auto bytesRead = ::read(input, buf, std::min(sizeof(buf), bytesLeft));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
-                LS_ERROR(_logger, "Error reading file: " << bytesRead == 0 ? unexpectedEof : getLastError());
+                LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));
                 // We can't send an error document as we've sent the header.
                 return false;
             }

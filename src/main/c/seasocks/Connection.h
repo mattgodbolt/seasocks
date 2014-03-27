@@ -157,7 +157,6 @@ private:
     std::vector<uint8_t> _inBuf;
     std::vector<uint8_t> _outBuf;
     std::shared_ptr<WebSocket::Handler> _webSocketHandler;
-    time_t _connectionTime;
     bool _shutdownByUser;
     std::unique_ptr<PageRequest> _request;
 
