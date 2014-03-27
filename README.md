@@ -1,6 +1,8 @@
 SeaSocks - A tiny embeddable C++ HTTP and WebSocket server
 ==========================================================
 
+[![Build Status](https://travis-ci.org/mattgodbolt/seasocks.svg?branch=master)](https://travis-ci.org/mattgodbolt/seasocks)
+
 Features
 --------
 *   Simple C++ API
