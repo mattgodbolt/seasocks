@@ -112,6 +112,6 @@ endif
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) *.tar.gz .tests-pass
 
-clobber: clean
-	rm -rf lib include
+spotless: clean
+	rm -rf lib include config.log configure config.status src/main/c/internal/Config.h Makefile autom4te.cache
 
