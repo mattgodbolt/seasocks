@@ -10,7 +10,7 @@ C_SRC=src/main/c
 TEST_SRC=src/test/c
 APPS_SRC=src/app/c
 
-VERSION_STRING:=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --always --dirty))
+VERSION_STRING:=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --always --dirty || echo non-git))
 
 CXXFLAGS += -fPIC -Wall -Werror '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"' -I$(C_SRC)
 
