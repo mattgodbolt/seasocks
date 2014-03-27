@@ -38,7 +38,6 @@ using namespace seasocks;
 
 namespace {
 
-const char description[] = "Serve static files over HTTP.";
 const char usage[] = "Usage: %s [-p PORT] [-v] DIR\n"
                       "   Serves files from DIR over HTTP on port PORT\n";
 
