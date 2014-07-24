@@ -66,15 +66,12 @@ struct Object {
     void jsonToStream(std::ostream &ostr) const {
         ostr << makeMap("object", true);
     }
-    // Clang is pernickity about this. We deliberately don't use this function
+    // Clang is pernickity about this. We don't want use this function
     // but it's here to catch errors where we accidentally use it instead of the
     // jsonToStream.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
     friend std::ostream &operator << (std::ostream &o, const Object &ob) {
         return o << "Not this one";
     }
-#pragma clang diagnostic pop
 };
 
 struct Object2 {
@@ -92,6 +89,11 @@ TEST(JsonTests, shouldHandleCustomObjects) {
     EXPECT_EQ(R"({"obj":"This is object 2"})", makeMap("obj", Object2()));
     Object2 o2;
     EXPECT_EQ(R"({"obj":"This is object 2"})", makeMap("obj", o2));
+    // Putting a clang-specific pragma to thwart the unused warning in Object
+    // upsets GCC...so we just put a test for this to ensure it's used.
+    std::ostringstream ost;
+    ost << Object();
+    EXPECT_EQ("Not this one", ost.str()); // See comment
 }
 
 TEST(JsonTests, to_json) {
