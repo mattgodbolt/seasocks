@@ -121,7 +121,7 @@ void jsonKeyPairToStream(std::ostream& str, const std::string& key, const T& val
 
 template<typename T>
 void jsonKeyPairToStream(std::ostream& str, const T&) {
-    static_assert(std::is_same<T, T>::value,  // To make the assertion depend on T
+    static_assert(!std::is_same<T, T>::value,  // To make the assertion depend on T
             "Requires an even number of parameters. If you're trying to build a map from an existing std::map or similar, use makeMapFromContainer");
 }
 
