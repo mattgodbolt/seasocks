@@ -66,9 +66,15 @@ struct Object {
     void jsonToStream(std::ostream &ostr) const {
         ostr << makeMap("object", true);
     }
+    // Clang is pernickity about this. We deliberately don't use this function
+    // but it's here to catch errors where we accidentally use it instead of the
+    // jsonToStream.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
     friend std::ostream &operator << (std::ostream &o, const Object &ob) {
         return o << "Not this one";
     }
+#pragma clang diagnostic pop
 };
 
 struct Object2 {
