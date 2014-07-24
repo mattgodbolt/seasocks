@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+autoconf 
+
+GMOCK_DIR=.gmock/gmock-1.7.0
+
+if [ ! -d "${GMOCK_DIR}" ]; then
+    echo "Grabbing gmock"
+    mkdir -p .gmock
+    pushd .gmock
+    wget https://googlemock.googlecode.com/files/gmock-1.7.0.zip
+    unzip gmock-1.7.0.zip
+    popd
+fi
+
+GCC_HOME=$(fig -m gcc/4.9.0-2 -g GCC_HOME)
+LDFLAGS="-Wl,--rpath,${GCC_HOME}/lib64" CXX=${GCC_HOME}/bin/g++ ./configure --with-gmock=${GMOCK_DIR}

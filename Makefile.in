@@ -5,6 +5,13 @@ ARFLAGS=cru
 CXX=@CXX@
 CXXFLAGS=@CXXFLAGS@
 LDFLAGS=@LDFLAGS@
+# hack for drw gcc on ubuntu
+GCC_MULTIARCH := $(shell gcc -print-multiarch 2>/dev/null)
+ifneq ($(GCC_MULTIARCH),)
+  export LIBRARY_PATH = /usr/lib/$(GCC_MULTIARCH)
+  export C_INCLUDE_PATH = /usr/include/$(GCC_MULTIARCH)
+  export CPLUS_INCLUDE_PATH = /usr/include/$(GCC_MULTIARCH)
+endif
 
 C_SRC=src/main/c
 TEST_SRC=src/test/c
