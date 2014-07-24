@@ -36,28 +36,43 @@
 
 namespace seasocks {
 
-class JsonnedString : public std::string {
-public:
-    JsonnedString() {}
-    JsonnedString(const std::string& s) : std::string(s) {}
-    JsonnedString(const std::stringstream& str) : std::string(str.str()) {}
-};
+///////////////////////////////////
 
 inline void jsonToStream(std::ostream& str) {}
 
-inline void jsonToStream(std::ostream& str, const JsonnedString& done) {
-    str << done;
-}
 void jsonToStream(std::ostream& str, const char* t);
 
 void jsonToStream(std::ostream& str, bool b);
 
-struct EpochTimeAsLocal { time_t t; EpochTimeAsLocal(time_t t) : t(t) {} };
-void jsonToStream(std::ostream& str, const EpochTimeAsLocal& t);
-
 inline void jsonToStream(std::ostream& str, const std::string& t) {
     jsonToStream(str, t.c_str());
 }
+
+template<typename O>
+class is_jsonable {
+    template<typename OO>
+    static auto test(int)
+    -> decltype(&OO::jsonToStream, std::true_type());
+
+    template<typename>
+    static auto test(...) -> std::false_type;
+
+public:
+    static constexpr bool value = decltype(test<O>(0))::value;
+};
+
+template<typename T>
+class is_streamable {
+    template<typename TT>
+    static auto test(int)
+    -> decltype(std::declval<std::ostream&>() << std::declval<TT>(), std::true_type());
+
+    template<typename>
+    static auto test(...) -> std::false_type;
+
+public:
+    static constexpr bool value = decltype(test<T>(0))::value;
+};
 
 template<typename T>
 typename std::enable_if<std::is_fundamental<T>::value, void>::type
@@ -66,17 +81,29 @@ jsonToStream(std::ostream& str, const T& t) {
 }
 
 template<typename T>
-typename std::enable_if<!std::is_fundamental<T>::value, void>::type
+typename std::enable_if<is_jsonable<T>::value, void>::type
+jsonToStream(std::ostream& str, const T& t) {
+    t.jsonToStream(str);
+}
+
+template<typename T>
+typename std::enable_if<
+    !std::is_fundamental<T>::value
+    && is_streamable<T>::value
+    && !is_jsonable<T>::value, void>::type
 jsonToStream(std::ostream& str, const T& t) {
     str << '"' << t << '"';
 }
 
 template<typename T, typename ... Args>
-void jsonToStream(std::ostream& str, const T& t, Args... args) {
+void jsonToStream(std::ostream& str, const T& t, Args&&... args) {
+    static_assert(sizeof...(Args) > 0, "Cannot stream an object with no jsonToStream or operator<< method.");
     jsonToStream(str, t);
     str << ",";
-    jsonToStream(str, args...);
+    jsonToStream(str, std::forward<Args>(args)...);
 }
+
+///////////////////////////////////
 
 inline void jsonKeyPairToStream(std::ostream& str) {}
 
@@ -92,49 +119,87 @@ void jsonKeyPairToStream(std::ostream& str, const std::string& key, const T& val
     jsonKeyPairToStream(str, key.c_str(), value);
 }
 
-template<typename K, typename V, typename... Args>
-void jsonKeyPairToStream(std::ostream& str, const K& key, const V& value, Args... args) {
-    jsonKeyPairToStream(str, key, value);
-    str << ",";
-    jsonKeyPairToStream(str, args...);
+template<typename T>
+void jsonKeyPairToStream(std::ostream& str, const T&) {
+    static_assert(std::is_same<T, T>::value,  // To make the assertion depend on T
+            "Requires an even number of parameters. If you're trying to build a map from an existing std::map or similar, use makeMapFromContainer");
 }
 
-///////////////////////////////////
+template<typename K, typename V, typename... Args>
+void jsonKeyPairToStream(std::ostream& str, const K& key, const V& value, Args&&... args) {
+    jsonKeyPairToStream(str, key, value);
+    str << ",";
+    jsonKeyPairToStream(str, std::forward<Args>(args)...);
+}
+
+struct JsonnedString : std::string {
+    JsonnedString() {}
+    JsonnedString(const std::string& s) : std::string(s) {}
+    JsonnedString(const std::stringstream& str) : std::string(str.str()) {}
+    void jsonToStream(std::ostream &o) const {
+        o << *this;
+    }
+};
+static_assert(is_streamable<JsonnedString>::value, "Internal stream problem");
+static_assert(is_jsonable<JsonnedString>::value, "Internal stream problem");
+
+struct EpochTimeAsLocal {
+    time_t t;
+    EpochTimeAsLocal(time_t t) : t(t) {}
+    void jsonToStream(std::ostream &o) const;
+};
+static_assert(is_jsonable<EpochTimeAsLocal>::value, "Internal stream problem");
 
 template<typename... Args>
-JsonnedString makeMap(Args...args) {
+JsonnedString makeMap(Args&&... args) {
     std::stringstream str;
     str << '{';
-    jsonKeyPairToStream(str, args...);
+    jsonKeyPairToStream(str, std::forward<Args>(args)...);
     str << '}';
     return JsonnedString(str);
 }
 
-template<typename K, typename V>
-JsonnedString makeMap(const std::map<K, V>& m) {
+template<typename T>
+JsonnedString makeMapFromContainer(const T& m) {
     std::stringstream str;
     str << "{";
     bool first = true;
-    std::for_each(m.begin(), m.end(), [&] (decltype(*m.begin()) it) {
+    for (const auto &it : m) {
         if (!first) str << ",";
         first = false;
         jsonKeyPairToStream(str, it.first, it.second);
-    });
+    }
     str << "}";
     return JsonnedString(str);
 }
 
 template<typename ... Args>
-JsonnedString makeArray(Args... args) {
+JsonnedString makeArray(Args&&... args) {
     std::stringstream str;
     str << '[';
-    jsonToStream(str, args...);
+    jsonToStream(str, std::forward<Args>(args)...);
     str << ']';
     return JsonnedString(str);
 }
 
 template<typename T>
-seasocks::JsonnedString makeArray(const T &list) {
+JsonnedString makeArrayFromContainer(const T &list) {
+    std::stringstream str;
+    str << '[';
+    bool first = true;
+    for (const auto &s : list) {
+        if (!first) {
+            str << ',';
+        }
+        first = false;
+        jsonToStream(str, s);
+    };
+    str << ']';
+    return seasocks::JsonnedString(str);
+}
+
+template<typename T>
+seasocks::JsonnedString makeArray(const std::initializer_list<T> &list) {
     std::stringstream str;
     str << '[';
     bool first = true;
@@ -150,27 +215,19 @@ seasocks::JsonnedString makeArray(const T &list) {
 }
 
 template<typename ... Args>
-JsonnedString makeExecString(const char* function, Args... args) {
+JsonnedString makeExecString(const char* function, Args&&... args) {
     std::stringstream str;
     str << function << '(';
-    jsonToStream(str, args...);
+    jsonToStream(str, std::forward<Args>(args)...);
     str << ')';
     return JsonnedString(str);
 }
 
-inline JsonnedString makeArray(const std::vector<JsonnedString>& list) {
+template<typename T>
+JsonnedString to_json(const T &obj) {
     std::stringstream str;
-    str << '[';
-    bool first = true;
-    std::for_each(list.begin(), list.end(), [&] (const JsonnedString& s) {
-        if (!first) {
-            str << ',';
-        }
-        first = false;
-        str << s;
-    });
-    str << ']';
-    return JsonnedString(str);
+    jsonToStream(str, obj);
+    return str.str();
 }
 
 }

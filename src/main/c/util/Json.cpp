@@ -59,8 +59,8 @@ void jsonToStream(std::ostream& str, bool b) {
     str << (b ? "true" : "false");
 }
 
-void jsonToStream(std::ostream& str, const EpochTimeAsLocal& t) {
-   str << "new Date(" << t.t * 1000 << ").toLocaleString()";
+void EpochTimeAsLocal::jsonToStream(std::ostream &o) const {
+    o << "new Date(" << t * 1000 << ").toLocaleString()";
 }
 
 }
