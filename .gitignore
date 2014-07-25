@@ -1,6 +1,7 @@
 *.swp
 /.fig
 /.tests-pass
+/.tests-pass-valgrind
 /Makefile
 /autom4te.cache
 /bin

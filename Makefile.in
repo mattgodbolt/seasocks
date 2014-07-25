@@ -4,6 +4,7 @@ AR=ar
 ARFLAGS=cru
 CXX=@CXX@
 CXXFLAGS=@CXXFLAGS@
+VALGRIND=@VALGRIND@
 LDFLAGS=@LDFLAGS@
 # hack for drw gcc on ubuntu
 GCC_MULTIARCH := $(shell gcc -print-multiarch 2>/dev/null)
@@ -21,7 +22,7 @@ VERSION_STRING:=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --al
 
 CXXFLAGS += -fPIC -Wall -Werror '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"' -I$(C_SRC)
 
-.PHONY: all clean run test spotless header-checks
+.PHONY: all clean run test spotless header-checks valgrind-test
 
 OBJ_DIR=obj
 BIN_DIR=bin
@@ -33,7 +34,7 @@ APPS_CPP_SRCS=$(shell find $(APPS_SRC) -name '*.cpp')
 TARGETS=$(patsubst $(APPS_SRC)/%.cpp,$(BIN_DIR)/%,$(APPS_CPP_SRCS))
 
 apps: $(TARGETS)
-all: apps $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a test header-checks
+all: apps $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a test header-checks valgrind-test
 
 debug:
 	echo $($(DEBUG_VAR))
@@ -119,11 +120,21 @@ $(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a \
 
 test: .tests-pass
 
+ifneq ("@VALGRIND@", "")
+valgrind-test: .tests-pass
+	$(VALGRIND) --leak-check=full --error-exitcode=2 -- $(BIN_DIR)/tests
+else
+valgrind-test:
+	@echo "Not running valgrind-test as no valgrind binary found during configure"
+endif
+
 else
 
 test:
 	@echo "Not running tests as no gmock/gtest specified during configure"
 	@echo "To configure, specify with --with-gmock=PATH_TO_GMOCK"
+test-valgrind: test
+
 endif
 
 clean:
