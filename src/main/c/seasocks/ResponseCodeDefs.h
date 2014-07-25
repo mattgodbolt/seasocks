@@ -26,6 +26,8 @@
 // Not a normal header file - no header guards on purpose.
 // Do not directly include! Use ResponseCode.h instead
 
+#ifdef SEASOCKS_DEFINE_RESPONSECODE  // workaround for header check
+
 SEASOCKS_DEFINE_RESPONSECODE(100, Continue, "Continue")
 SEASOCKS_DEFINE_RESPONSECODE(101, WebSocketProtocolHandshake, "WebSocket Protocol Handshake")
 SEASOCKS_DEFINE_RESPONSECODE(102, Processing, "Processing")
@@ -62,3 +64,5 @@ SEASOCKS_DEFINE_RESPONSECODE(405, MethodNotAllowed, "Method Not Allowed")
 
 SEASOCKS_DEFINE_RESPONSECODE(500, InternalServerError, "Internal Server Error")
 SEASOCKS_DEFINE_RESPONSECODE(501, NotImplemented, "Not Implemented")
+
+#endif

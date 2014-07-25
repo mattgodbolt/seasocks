@@ -21,23 +21,25 @@ VERSION_STRING:=SeaSocks/$(or $(VERSION),unversioned) ($(shell git describe --al
 
 CXXFLAGS += -fPIC -Wall -Werror '-DSEASOCKS_VERSION_STRING="$(VERSION_STRING)"' -I$(C_SRC)
 
-.PHONY: all clean run test clobber
+.PHONY: all clean run test spotless header-checks
 
 OBJ_DIR=obj
 BIN_DIR=bin
 
 CPP_SRCS=$(shell find $(C_SRC) -name '*.cpp')
+H_SRCS=$(shell find $(C_SRC) -name '*.h')
 TEST_SRCS=$(shell find $(TEST_SRC) -name '*.cpp')
 APPS_CPP_SRCS=$(shell find $(APPS_SRC) -name '*.cpp')
 TARGETS=$(patsubst $(APPS_SRC)/%.cpp,$(BIN_DIR)/%,$(APPS_CPP_SRCS))
 
 apps: $(TARGETS)
-all: apps $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a test
+all: apps $(BIN_DIR)/libseasocks.so $(BIN_DIR)/libseasocks.a test header-checks
 
 debug:
 	echo $($(DEBUG_VAR))
 
 OBJS=$(patsubst $(C_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRCS))
+HCS=$(patsubst $(C_SRC)/%.h,$(OBJ_DIR)/%.hc,$(H_SRCS))
 TEST_OBJS=$(patsubst $(TEST_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 APPS_OBJS=$(patsubst $(APPS_SRC)/%.cpp,$(OBJ_DIR)/%.o,$(APPS_CPP_SRCS))
 ALL_OBJS=$(OBJS) $(APPS_OBJS) $(TEST_OBJS)
@@ -52,6 +54,12 @@ $(APPS_OBJS) : $(OBJ_DIR)/%.o : $(APPS_SRC)/%.cpp
 $(OBJS) : $(OBJ_DIR)/%.o : $(C_SRC)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+
+$(HCS) : $(OBJ_DIR)/%.hc : $(C_SRC)/%.h
+	@mkdir -p $(dir $@)
+	@echo "Checking header file is self-contained: $<"
+	@$(CXX) -fsyntax-only $(CXXFLAGS) -o /dev/null -c -w $<
+	@touch $@
 
 $(TEST_OBJS) : $(OBJ_DIR)/%.o : $(TEST_SRC)/%.cpp
 	@mkdir -p $(dir $@)
@@ -74,6 +82,8 @@ EMBEDDED_CONTENT:=$(shell find src/main/web -type f)
 $(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) src/main/c/internal/Embedded.h
 	@mkdir -p $(dir $@)
 	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CXX) $(CXXFLAGS) -x c++ -c -o "$@" -
+
+header-checks: $(HCS)
 
 run: $(BIN_DIR)/ws_test
 	$(BIN_DIR)/ws_test
