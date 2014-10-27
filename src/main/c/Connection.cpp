@@ -194,6 +194,16 @@ public:
     }
 };
 
+bool hasConnectionType(const std::string &connection, const std::string &type) {
+    for (auto conType : seasocks::split(connection, ',')) {
+        while (!conType.empty() && isspace(conType[0]))
+            conType = conType.substr(1);
+        if (seasocks::caseInsensitiveSame(conType, type))
+            return true;
+    }
+    return false;
+}
+
 }  // namespace
 
 namespace seasocks {
@@ -754,7 +764,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     }
 
     if (headers.count("Connection") && headers.count("Upgrade")
-            && caseInsensitiveSame(headers["Connection"], "Upgrade")
+            && hasConnectionType(headers["Connection"], "Upgrade")
             && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
         LS_INFO(_logger, "Websocket request for " << requestUri << "'");
         if (verb != Request::Verb::Get) {

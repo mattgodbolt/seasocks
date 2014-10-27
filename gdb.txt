@@ -1,0 +1,109 @@
+Reading symbols from bin/tests...done.
+Breakpoint 1 at 0x42c3eb: file src/test/c/ConnectionTests.cpp, line 87.
+Starting program: /home/mgodbolt/dev/seasocks/bin/tests 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 1, ConnectionTests_shouldAcceptMultipleConnectionTypes_Test::TestBody (this=<optimized out>) at src/test/c/ConnectionTests.cpp:87
+87	    connection.handleNewData();
+seasocks::Connection::handleNewData (this=0x7fffffffcf90) at src/main/c/Connection.cpp:396
+396	void Connection::handleNewData() {
+397	    switch (_state) {
+417	}
+399	        handleHeaders();
+seasocks::Connection::handleHeaders (this=0x7fffffffcf90) at src/main/c/Connection.cpp:419
+419	void Connection::handleHeaders() {
+420	    if (_inBuf.size() < 4) {
+size (this=<optimized out>, this=<optimized out>) at /mnt/data/fighome/runtime/gcc/4.9.0-2/include/c++/4.9.0/bits/stl_vector.h:655
+655	      { return size_type(this->_M_impl._M_finish - this->_M_impl._M_start); }
+seasocks::Connection::handleHeaders (this=0x7fffffffcf90) at src/main/c/Connection.cpp:420
+420	    if (_inBuf.size() < 4) {
+419	void Connection::handleHeaders() {
+423	    for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
+419	void Connection::handleHeaders() {
+423	    for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+424	        if (_inBuf[i] == '\r' &&
+425	            _inBuf[i+1] == '\n' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+426	            _inBuf[i+2] == '\r' &&
+421	        return;
+422	    }
+423	    for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
+424	        if (_inBuf[i] == '\r' &&
+425	            _inBuf[i+1] == '\n' &&
+426	            _inBuf[i+2] == '\r' &&
+427	            _inBuf[i+3] == '\n') {
+428	            if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
+429	                closeInternal();
+430	                return;
+Function "processHeaders" not defined.
+Make breakpoint pending on future shared library load? (y or [n]) Breakpoint 2 at 0x45739c: file src/main/c/Connection.cpp, line 766.
+Continuing.
+
+Breakpoint 2, seasocks::Connection::processHeaders (this=0x7fffffffcf90, first=<optimized out>, last=0x6e440c "\r\n") at src/main/c/Connection.cpp:766
+766	    if (headers.count("Connection") && headers.count("Upgrade")
+768	            && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
+766	    if (headers.count("Connection") && headers.count("Upgrade")
+768	            && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
+766	    if (headers.count("Connection") && headers.count("Upgrade")
+766	    if (headers.count("Connection") && headers.count("Upgrade")
+781	    _request.reset(new PageRequest(_address, requestUri, verb, std::move(headers)));
+783	    const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
+Breakpoint 3 at 0x45795e: file src/main/c/Connection.cpp, line 198.
+The program being debugged has been started already.
+Start it from the beginning? (y or n) [Inferior 11543 exited]
+Starting program: /home/mgodbolt/dev/seasocks/bin/tests 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 1, ConnectionTests_shouldAcceptMultipleConnectionTypes_Test::TestBody (this=<optimized out>) at src/test/c/ConnectionTests.cpp:87
+87	    connection.handleNewData();
+Continuing.
+
+Breakpoint 2, seasocks::Connection::processHeaders (this=0x7fffffffcf90, first=<optimized out>, last=0x6e440c "\r\n") at src/main/c/Connection.cpp:766
+766	    if (headers.count("Connection") && headers.count("Upgrade")
+Continuing.
+[Inferior 1 (process 11554) exited with code 01]
+[Inferior 11554 exited]
+Starting program: /home/mgodbolt/dev/seasocks/bin/tests 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 1, ConnectionTests_shouldAcceptMultipleConnectionTypes_Test::TestBody (this=<optimized out>) at src/test/c/ConnectionTests.cpp:87
+87	    connection.handleNewData();
+Continuing.
+
+Breakpoint 2, seasocks::Connection::processHeaders (this=0x7fffffffcf90, first=<optimized out>, last=0x6e440c "\r\n") at src/main/c/Connection.cpp:766
+766	    if (headers.count("Connection") && headers.count("Upgrade")
+$1 = std::unordered_map with 1 elements = {
+  ["Connection"] = "keep-alive, Upgrade\n\rUpgrade: websocket"
+}
+A debugging session is active.
+
+	Inferior 1 [process 11556] will be killed.
+
+Quit anyway? (y or n) [Inferior 11556 exited]
+Reading symbols from bin/tests...done.

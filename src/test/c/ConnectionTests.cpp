@@ -75,3 +75,15 @@ TEST(ConnectionTests, shouldBreakHixieMessagesApartInSameBuffer) {
     connection.handleHixieWebSocket();
     SUCCEED();
 }
+
+TEST(ConnectionTests, shouldAcceptMultipleConnectionTypes) {
+    sockaddr_in addr = { AF_INET, 0x1234, { 0x01020304 } };
+    std::shared_ptr<Logger> logger(new IgnoringLogger);
+    testing::NiceMock<MockServerImpl> mockServer;
+    Connection connection(logger, mockServer, -1, addr);
+    const uint8_t message[] = "GET /ws-test HTTP/1.1\r\nConnection: keep-alive, Upgrade\r\nUpgrade: websocket\r\n\r\n";
+    connection.getInputBuffer().assign(&message[0], &message[sizeof(message)]);
+    EXPECT_CALL(mockServer, getWebSocketHandler(testing::StrEq("/ws-test")))
+        .WillOnce(testing::Return(std::shared_ptr<WebSocket::Handler>()));
+    connection.handleNewData();
+}

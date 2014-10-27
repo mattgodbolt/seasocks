@@ -90,6 +90,7 @@ public:
     void setHandler(std::shared_ptr<WebSocket::Handler> handler) {
         _webSocketHandler = handler;
     }
+    void handleNewData();
 
 private:
     void finalise();
@@ -98,7 +99,6 @@ private:
     void closeWhenEmpty();
     void closeInternal();
 
-    void handleNewData();
     void handleHeaders();
     void handleWebSocketKey3();
     void handleWebSocketTextMessage(const char* message);
