@@ -33,8 +33,8 @@
 
 namespace seasocks {
 
-class PageRequest : public seasocks::Request {
-    std::shared_ptr<seasocks::Credentials> _credentials;
+class PageRequest : public Request {
+    std::shared_ptr<Credentials> _credentials;
     const sockaddr_in _remoteAddress;
     const std::string _requestUri;
     const Verb _verb;
@@ -53,7 +53,7 @@ public:
         return _verb;
     }
 
-    virtual std::shared_ptr<seasocks::Credentials> credentials() const {
+    virtual std::shared_ptr<Credentials> credentials() const {
         return _credentials;
     }
 

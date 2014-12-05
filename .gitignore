@@ -11,4 +11,5 @@
 /obj
 /tags
 /.gmock
-.gdb_history gdb.txt
+.gdb_history
+gdb.txt

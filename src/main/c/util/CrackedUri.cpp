@@ -81,10 +81,10 @@ CrackedUri::CrackedUri(const std::string& uri) {
         remainder = uri.substr(endOfPath + 1);
     }
 
-    _path = seasocks::split(path, '/');
+    _path = split(path, '/');
     std::transform(_path.begin(), _path.end(), _path.begin(), unescape);
 
-    auto splitRemainder = seasocks::split(remainder, '&');
+    auto splitRemainder = split(remainder, '&');
     for (auto iter = splitRemainder.cbegin(); iter != splitRemainder.cend(); ++iter) {
         if (iter->empty()) continue;
         auto split = seasocks::split(*iter, '=');

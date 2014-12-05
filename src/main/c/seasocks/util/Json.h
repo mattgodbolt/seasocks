@@ -195,11 +195,11 @@ JsonnedString makeArrayFromContainer(const T &list) {
         jsonToStream(str, s);
     };
     str << ']';
-    return seasocks::JsonnedString(str);
+    return JsonnedString(str);
 }
 
 template<typename T>
-seasocks::JsonnedString makeArray(const std::initializer_list<T> &list) {
+JsonnedString makeArray(const std::initializer_list<T> &list) {
     std::stringstream str;
     str << '[';
     bool first = true;
@@ -211,7 +211,7 @@ seasocks::JsonnedString makeArray(const std::initializer_list<T> &list) {
         jsonToStream(str, s);
     };
     str << ']';
-    return seasocks::JsonnedString(str);
+    return JsonnedString(str);
 }
 
 template<typename ... Args>
