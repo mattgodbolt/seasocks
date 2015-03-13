@@ -99,6 +99,11 @@ public:
     };
     PollResult poll(int millisToBlock);
 
+    // Returns a file descriptor that can be polled for changes (e.g. by
+    // placing it in an epoll set. The poll() method above only need be called
+    // when this file descriptor is readable.
+    int fd() const { return _epollFd; }
+
     // Terminate any loop() or poll(). May be called from any thread.
     void terminate();
 

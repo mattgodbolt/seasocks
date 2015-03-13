@@ -29,7 +29,8 @@
 // suspicious means of sending raw JavaScript commands to be executed on other
 // clients.
 
-// Same as ws_test, but uses the poll() method.
+// Same as ws_test, but uses the poll() method and a separate epoll set to
+// demonstrate how Seasocks can be used with another polling system.
 
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
@@ -43,6 +44,9 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/epoll.h>
 
 using namespace seasocks;
 using namespace std;
@@ -114,10 +118,53 @@ int main(int argc, const char* argv[]) {
         cerr << "couldn't start listening" << endl;
         return 1;
     }
+    int myEpoll = epoll_create(10);
+    epoll_event wakeSeasocks = { EPOLLIN|EPOLLOUT|EPOLLERR, { &server } };
+    epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
+
+    // Also poll stdin
+    epoll_event wakeStdin = { EPOLLIN, { nullptr } };
+    epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
+    auto prevFlags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
+
+    cout << "Will echo anything typed in stdin: " << flush;
     while (true) {
-        auto result = server.poll(100);
-        if (result == Server::PollResult::Terminated) return 0;
-        if (result == Server::PollResult::Error) return 1;
+        constexpr auto maxEvents = 2;
+        epoll_event events[maxEvents];
+        auto res = epoll_wait(myEpoll, events, maxEvents, -1);
+        if (res < 0) {
+            cerr << "epoll returned an error" << endl;
+            return 1;
+        }
+        for (auto i = 0; i < res; ++i) {
+            if (events[i].data.ptr == &server) {
+                auto seasocksResult = server.poll(0);
+                if (seasocksResult == Server::PollResult::Terminated) return 0;
+                if (seasocksResult == Server::PollResult::Error) return 1;
+            } else if (events[i].data.ptr == nullptr) {
+                // Echo stdin to stdout to show we can read from that too.
+                for (;;) {
+                    char buf[1024];
+                    auto numRead = ::read(STDIN_FILENO, buf, sizeof(buf));
+                    if (numRead < 0) {
+                        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+                            cerr << "Error reading stdin" << endl;
+                            return 1;
+                        }
+                        break;
+                    } else if (numRead > 0) {
+                        auto written = write(STDOUT_FILENO, buf, numRead);
+                        if (written != numRead) {
+                            cerr << "Truncated write" << endl;
+                        }
+                    } else if (numRead == 0) {
+                        cerr << "EOF on stdin" << endl;
+                        return 0;
+                    }
+                }
+            }
+        }
     }
     return 0;
 }
