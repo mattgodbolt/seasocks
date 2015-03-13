@@ -1,26 +1,26 @@
 // Copyright (c) 2013, Matt Godbolt
 // All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without 
+//
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
-// 
-// Redistributions of source code must retain the above copyright notice, this 
+//
+// Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
-// Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation 
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "internal/LogStream.h"
@@ -128,6 +128,7 @@ void Server::shutdown() {
     // Stop listening to any further incoming connections.
     if (_listenSock != -1) {
         close(_listenSock);
+        _listenSock = -1;
     }
     // Disconnect and close any current connections.
     while (!_connections.empty()) {
@@ -267,12 +268,12 @@ Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t
     return KeepOpen;
 }
 
-void Server::checkAndDispatchEpoll() {
+void Server::checkAndDispatchEpoll(int epollMillis) {
     const int maxEvents = 256;
     epoll_event events[maxEvents];
 
     std::list<Connection*> toBeDeleted;
-    int numEvents = epoll_wait(_epollFd, events, maxEvents, EpollTimeoutMillis);
+    int numEvents = epoll_wait(_epollFd, events, maxEvents, epollMillis);
     if (numEvents == -1) {
         if (errno != EINTR) {
             LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
@@ -342,19 +343,47 @@ bool Server::serve(const char* staticPath, int port) {
 }
 
 bool Server::loop() {
+    if (_listenSock == -1) {
+        LS_ERROR(_logger, "Server not initialised");
+        return false;
+    }
+
     // Stash away "the" server thread id.
     _threadId = gettid();
 
     while (!_terminate) {
         // Always process events first to catch start up events.
         processEventQueue();
-        checkAndDispatchEpoll();
+        checkAndDispatchEpoll(EpollTimeoutMillis);
     }
     // Reasonable effort to ensure anything enqueued during terminate has a chance to run.
     processEventQueue();
     LS_INFO(_logger, "Server terminating");
     shutdown();
     return _expectedTerminate;
+}
+
+Server::PollResult Server::poll(int millis) {
+    // Grab the thread ID on the first poll.
+    if (_threadId == 0) _threadId = gettid();
+    if (_threadId != gettid()) {
+        LS_ERROR(_logger, "poll() called from the wrong thread");
+        return PollResult::Error;
+    }
+    if (_listenSock == -1) {
+        LS_ERROR(_logger, "Server not initialised");
+        return PollResult::Error;
+    }
+    processEventQueue();
+    checkAndDispatchEpoll(millis);
+    if (!_terminate) return PollResult::Continue;
+
+    // Reasonable effort to ensure anything enqueued during terminate has a chance to run.
+    processEventQueue();
+    LS_INFO(_logger, "Server terminating");
+    shutdown();
+
+    return _expectedTerminate ? PollResult::Terminated : PollResult::Error;
 }
 
 void Server::processEventQueue() {
