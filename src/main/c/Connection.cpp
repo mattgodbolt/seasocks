@@ -310,7 +310,8 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         size_t endOfBuffer = _outBuf.size();
         size_t newBufferSize = endOfBuffer + bytesToBuffer;
         if (newBufferSize >= MaxBufferSize) {
-            LS_WARNING(_logger, "Closing connection: buffer size too large (" << newBufferSize << " > " << MaxBufferSize);
+            LS_WARNING(_logger, "Closing connection: buffer size too large (" 
+                    << newBufferSize << " >= " << MaxBufferSize << ")");
             closeInternal();
             return false;
         }
