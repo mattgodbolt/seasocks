@@ -45,9 +45,9 @@ class PathHandler : public CrackedUriPageHandler {
     std::vector<CrackedUriPageHandler::Ptr> _handlers;
 
 public:
-    PathHandler(const std::string &path) : _path(path) {}
+    PathHandler(const std::string &path) : _path(path),_handlers() {}
     template<typename... Args>
-    PathHandler(const std::string &path, Args&&... args) : _path(path) {
+    PathHandler(const std::string &path, Args&&... args) : _path(path),_handlers() {
         addMany(std::forward<Args>(args)...);
     }
 

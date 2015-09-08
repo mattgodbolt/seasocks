@@ -66,11 +66,11 @@ public:
         /**
          * Called on the seasocks thread with upon receipt of a full text WebSocket message.
          */
-        virtual void onData(WebSocket* connection, const char* data) {}
+        virtual void onData(WebSocket*, const char*) {}
         /**
          * Called on the seasocks thread with upon receipt of a full binary WebSocket message.
          */
-        virtual void onData(WebSocket* connection, const uint8_t* data, size_t length) {}
+        virtual void onData(WebSocket*, const uint8_t*, size_t) {}
         /**
          * Called on the seasocks thread when the socket has been
          */

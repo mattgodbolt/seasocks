@@ -53,7 +53,7 @@ struct Credentials {
      */
     std::map<std::string, std::string> attributes;
 
-    Credentials(): authenticated(false) {}
+    Credentials(): authenticated(false),username(),groups(),attributes() {}
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Credentials& credentials) {
