@@ -852,11 +852,11 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
     bufferLine("Last-Modified: " + now());
     bufferLine("Pragma: no-cache");
 
-    if(headers.find("Cache-Control") == headers.end()) {
+    if (headers.find("Cache-Control") == headers.end()) {
         bufferLine("Cache-Control: no-store");
     }
 
-    if(headers.find("Expires") == headers.end()) {
+    if (headers.find("Expires") == headers.end()) {
         bufferLine("Expires: " + now());
     }
 
