@@ -839,6 +839,8 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
         return sendError(response->responseCode(), response->payload());
     }
 
+    auto headers = response->getAdditionalHeaders();
+
     bufferResponseAndCommonHeaders(response->responseCode());
     bufferLine("Content-Length: " + toString(response->payloadSize()));
     bufferLine("Content-Type: " + response->contentType());
@@ -848,13 +850,20 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
         bufferLine("Connection: close");
     }
     bufferLine("Last-Modified: " + now());
-    bufferLine("Cache-Control: no-store");
     bufferLine("Pragma: no-cache");
-    bufferLine("Expires: " + now());
-    auto headers = response->getAdditionalHeaders();
+
+    if (headers.find("Cache-Control") == headers.end()) {
+        bufferLine("Cache-Control: no-store");
+    }
+
+    if (headers.find("Expires") == headers.end()) {
+        bufferLine("Expires: " + now());
+    }
+
     for (auto it = headers.begin(); it != headers.end(); ++it) {
         bufferLine(it->first + ": " + it->second);
     }
+
     bufferLine("");
 
     if (!write(response->payload(), response->payloadSize(), true)) {
