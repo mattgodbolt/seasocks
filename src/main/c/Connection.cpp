@@ -854,8 +854,6 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
 
     if(headers.find("Cache-Control") == headers.end()) {
         bufferLine("Cache-Control: no-store");
-    }else {
-        std::cout << "FOUND";
     }
 
     if(headers.find("Expires") == headers.end()) {
