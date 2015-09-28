@@ -785,6 +785,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (verb == Request::Verb::Get && embedded) {
         // MRG: one day, this could be a request handler.
         return sendData(getContentType(requestUri), embedded->data, embedded->length);
+    } else if (verb == Request::Verb::Head && embedded) {
+        return sendHeader(getContentType(requestUri), embedded->length);
     }
 
     if (_request->contentLength() > MaxBufferSize) {
@@ -1034,6 +1036,14 @@ bool Connection::sendStaticData() {
         }
     }
     return true;
+}
+
+bool Connection::sendHeader(const std::string& type, size_t size) {
+    bufferResponseAndCommonHeaders(ResponseCode::Ok);
+    bufferLine("Content-Type: " + type);
+    bufferLine("Content-Length: " + toString(size));
+    bufferLine("Connection: keep-alive");
+    return bufferLine("");
 }
 
 bool Connection::sendData(const std::string& type, const char* start, size_t size) {
