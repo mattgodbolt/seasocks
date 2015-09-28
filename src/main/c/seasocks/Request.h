@@ -45,6 +45,7 @@ public:
         Put,
         Post,
         Delete,
+        Head,
     };
 
     virtual Verb verb() const = 0;
