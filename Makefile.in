@@ -1,5 +1,6 @@
 default: all
 
+PYTHON=@PYTHON@
 AR=ar
 ARFLAGS=cru
 CXX=@CXX@
@@ -82,7 +83,7 @@ $(BIN_DIR)/libseasocks.a: $(OBJS) $(GEN_OBJS)
 EMBEDDED_CONTENT:=$(shell find src/main/web -type f)
 $(OBJ_DIR)/embedded.o: scripts/gen_embedded.py $(EMBEDDED_CONTENT) src/main/c/internal/Embedded.h
 	@mkdir -p $(dir $@)
-	scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CXX) $(CXXFLAGS) -x c++ -c -o "$@" -
+	$(PYTHON) scripts/gen_embedded.py $(EMBEDDED_CONTENT) | $(CXX) $(CXXFLAGS) -x c++ -c -o "$@" -
 
 header-checks: $(HCS)
 
