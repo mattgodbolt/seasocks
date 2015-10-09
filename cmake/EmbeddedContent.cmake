@@ -1,7 +1,7 @@
 
 
 set(SCRIPT "${CMAKE_SOURCE_DIR}/scripts/gen_embedded.py")
-set(PYTHON "python2") ## TODO Find correct Python
+set(PYTHON "python2")
 
 
 file(GLOB EMBEDDED_FILES "src/main/web/*")
@@ -15,4 +15,4 @@ add_custom_command(OUTPUT Embedded.cpp
                         COMMENT "Generate embedded content"
                         )
 
-add_custom_target(embedded ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Embedded.cpp)
+add_Library(embedded Embedded.cpp)

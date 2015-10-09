@@ -1,6 +1,5 @@
 
-add_library(seasocks ${CMAKE_BINARY_DIR}/Embedded.cpp
-                        HybiAccept.cpp
+add_library(seasocks HybiAccept.cpp
                         StringUtil.cpp
                         Server.cpp
                         internal/Base64.cpp
@@ -20,4 +19,5 @@ add_library(seasocks ${CMAKE_BINARY_DIR}/Embedded.cpp
                         seasocks/Request.cpp
                         )
 
-add_dependencies(seasocks embedded)
+target_link_libraries(seasocks embedded)                    
+
