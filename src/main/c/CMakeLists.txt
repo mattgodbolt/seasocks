@@ -1,3 +1,4 @@
+aux_source_directory(${CMAKE_BINARY_DIR} GENERATED_SRC)
 
 add_library(seasocks HybiAccept.cpp
                         StringUtil.cpp
@@ -17,6 +18,8 @@ add_library(seasocks HybiAccept.cpp
                         seasocks/ResponseCode.cpp
                         seasocks/ResponseBuilder.cpp
                         seasocks/Request.cpp
+
+                        ${GENERATED_SRC}
                         )
 
 target_link_libraries(seasocks embedded)                    

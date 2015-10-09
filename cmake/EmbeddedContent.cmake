@@ -13,4 +13,3 @@ add_custom_command(OUTPUT Embedded.cpp
                         )
 
 add_Library(embedded Embedded.cpp)
-
