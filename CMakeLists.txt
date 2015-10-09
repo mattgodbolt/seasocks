@@ -8,8 +8,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(EmbeddedContent)
 
 
+configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 
 add_definitions(-std=c++11)
-include_directories("src/main/c")
+include_directories("src/main/c"
+                    ${CMAKE_BINARY_DIR}
+                    )
 
 add_subdirectory("src/main/c")
