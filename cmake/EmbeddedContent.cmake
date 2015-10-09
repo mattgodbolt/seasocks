@@ -5,8 +5,6 @@ set(PYTHON "python2")
 
 
 file(GLOB EMBEDDED_FILES "src/main/web/*")
-list(APPEND EMBEDDED_FILES "${CMAKE_SOURCE_DIR}/src/main/c/internal/Embedded.h")
-
 
 
 add_custom_command(OUTPUT Embedded.cpp
@@ -14,4 +12,4 @@ add_custom_command(OUTPUT Embedded.cpp
                         COMMENT "Generate embedded content"
                         )
 
-add_Library(embedded Embedded.cpp)
+add_Library(embedded STATIC Embedded.cpp)
