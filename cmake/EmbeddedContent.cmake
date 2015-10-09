@@ -12,4 +12,5 @@ add_custom_command(OUTPUT Embedded.cpp
                         COMMENT "Generate embedded content"
                         )
 
-add_Library(embedded STATIC Embedded.cpp)
+add_Library(embedded Embedded.cpp)
+
