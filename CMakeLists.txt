@@ -10,7 +10,8 @@ include(CompilerCheck)
 
 configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 
-add_definitions(-std=c++11)
+add_definitions(-Wall -std=c++11)
+
 include_directories("src/main/c"
                     ${CMAKE_BINARY_DIR}
                     )
