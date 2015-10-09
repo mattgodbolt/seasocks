@@ -6,7 +6,7 @@ project(Seasocks VERSION 1.1.6)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(EmbeddedContent)
-
+include(CompilerCheck)
 
 configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 
