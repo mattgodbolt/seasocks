@@ -1,5 +1,4 @@
 
-
 set(SCRIPT "${CMAKE_SOURCE_DIR}/scripts/gen_embedded.py")
 set(PYTHON "python2")
 
@@ -12,4 +11,4 @@ add_custom_command(OUTPUT Embedded.cpp
                         COMMENT "Generate embedded content"
                         )
 
-add_Library(embedded Embedded.cpp)
+add_library(embedded OBJECT Embedded.cpp)
