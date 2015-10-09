@@ -6,7 +6,6 @@ install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
   - wget "https://googlemock.googlecode.com/files/gmock-1.7.0.zip"
   - unzip gmock-1.7.0.zip
-  - sudo apt-get install valgrind
 script:
   - autoconf
   - ./configure --with-gmock=gmock-1.7.0
@@ -19,3 +18,4 @@ addons:
         packages:
             - gcc-4.7
             - g++-4.7
+            - valgrind
