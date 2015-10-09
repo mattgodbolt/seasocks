@@ -11,7 +11,6 @@ list(APPEND EMBEDDED_FILES "${CMAKE_SOURCE_DIR}/src/main/c/internal/Embedded.h")
 
 add_custom_command(OUTPUT Embedded.cpp
                         COMMAND ${PYTHON} ${SCRIPT} ${EMBEDDED_FILES} $<ANGLE-R> Embedded.cpp
-                        BYPRODUCTS Embedded.cpp
                         COMMENT "Generate embedded content"
                         )
 
