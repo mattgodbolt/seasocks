@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8.11)
 
-project(Seasocks VERSION 1.1.6)
+project(Seasocks)
+set(PROJECT_VERSION 1.1.6)
 
 message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 

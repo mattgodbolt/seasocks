@@ -8,7 +8,7 @@ file(GLOB EMBEDDED_FILES "src/main/web/*")
 
 add_custom_command(OUTPUT Embedded.cpp
                         COMMAND ${PYTHON} ${SCRIPT} ${EMBEDDED_FILES} $<ANGLE-R> Embedded.cpp
-                        COMMENT "Generate embedded content"
+                        COMMENT "Generating embedded content"
                         )
 
 add_library(embedded OBJECT Embedded.cpp)
