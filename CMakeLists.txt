@@ -9,6 +9,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(EmbeddedContent)
 include(CompilerCheck)
 
+include(GNUInstallDirs)
+
 configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 
 add_definitions(-Wall -std=c++11 -DSEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\")

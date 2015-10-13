@@ -20,3 +20,16 @@ add_library(seasocks HybiAccept.cpp
 
                         $<TARGET_OBJECTS:embedded>
                         )
+
+
+
+install(TARGETS seasocks
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                )
+install(DIRECTORY seasocks
+                    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+                    FILES_MATCHING PATTERN "*.h"
+                    )
+
