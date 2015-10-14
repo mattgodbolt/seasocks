@@ -21,3 +21,4 @@ include_directories("src/main/c"
                     )
 
 add_subdirectory("src/main/c")
+add_subdirectory("src/app/c")
