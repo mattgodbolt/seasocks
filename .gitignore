@@ -13,3 +13,4 @@
 /.gmock
 .gdb_history
 gdb.txt
+build/*
