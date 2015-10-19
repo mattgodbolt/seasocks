@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Debug/temp/TestUnorderedMap.cpp">
+      <sourceFolder url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Debug/temp/TestUnorderedMap.cpp" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/MinSizeRel/temp/TestUnorderedMap.cpp">
+      <sourceFolder url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/MinSizeRel/temp/TestUnorderedMap.cpp" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/RelWithDebInfo/temp/TestUnorderedMap.cpp">
+      <sourceFolder url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/RelWithDebInfo/temp/TestUnorderedMap.cpp" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Release/temp/TestUnorderedMap.cpp">
+      <sourceFolder url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Release/temp/TestUnorderedMap.cpp" isTestSource="false" />
+    </content>
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/cmake/CompilerCheck.cmake" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/cmake/Config.h.in" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/cmake/EmbeddedContent.cmake" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ph_test.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/serve.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_echo.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test_poll.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/Connection.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/HybiAccept.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/HybiPacketDecoder.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/Logger.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/PageRequest.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/Response.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/Server.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/StringUtil.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/internal/Base64.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/internal/Base64.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/md5/md5.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/md5/md5.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/sha1/sha1.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/sha1/sha1.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/CrackedUri.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/Json.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/PathHandler.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/RootPageHandler.cpp" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="Header Search Paths">
+        <CLASSES>
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Debug" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/MinSizeRel" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/RelWithDebInfo" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Release" />
+          <root url="file://$MODULE_DIR$/src/main/c" />
+          <root url="file:///usr/include" />
+          <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include" />
+          <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed" />
+          <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include/objc" />
+          <root url="file:///usr/local/include" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Debug" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/MinSizeRel" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/RelWithDebInfo" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Release" />
+          <root url="file://$MODULE_DIR$/src/main/c" />
+          <root url="file:///usr/include" />
+          <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include" />
+          <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed" />
+          <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include/objc" />
+          <root url="file:///usr/local/include" />
+        </SOURCES>
+        <excluded>
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Debug/temp/TestUnorderedMap.cpp" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/MinSizeRel/temp/TestUnorderedMap.cpp" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/RelWithDebInfo/temp/TestUnorderedMap.cpp" />
+          <root url="file://$USER_HOME$/.clion11/system/cmake/generated/e279a164/e279a164/Release/temp/TestUnorderedMap.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/Connection.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/Response.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/Server.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/seasocks/Request.h" />
+          <root url="file://$MODULE_DIR$/src/main/c/Logger.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/HybiAccept.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/src/main/c/sha1/sha1.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/util/RootPageHandler.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/internal/Base64.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/seasocks/Request.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/sha1/sha1.h" />
+          <root url="file://$MODULE_DIR$/src/main/c/internal/Base64.h" />
+          <root url="file://$MODULE_DIR$/src/main/c/PageRequest.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/util/Json.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/util/CrackedUri.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/StringUtil.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/util/PathHandler.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/HybiPacketDecoder.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.h" />
+          <root url="file://$MODULE_DIR$/src/main/c/md5/md5.h" />
+          <root url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.cpp" />
+          <root url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.h" />
+          <root url="file://$MODULE_DIR$/src/main/c/md5/md5.cpp" />
+        </excluded>
+      </library>
+    </orderEntry>
+  </component>
+</module>
