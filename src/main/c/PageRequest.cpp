@@ -40,7 +40,7 @@ PageRequest::PageRequest(
             _requestUri(requestUri),
             _verb(verb),
             _headers(std::move(headers)),
-            _contentLength(getIntHeader("Content-Length")) {
+            _contentLength(getUintHeader("Content-Length")) {
 }
 
 bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
@@ -54,9 +54,12 @@ bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
     return true;
 }
 
-int PageRequest::getIntHeader(const std::string& name) const {
+size_t PageRequest::getUintHeader(const std::string &name) const {
     auto iter = _headers.find(name);
-    return iter == _headers.end() ? 0 : atoi(iter->second.c_str());
+    if (iter == _headers.end()) return 0u;
+    auto val = atoi(iter->second.c_str());
+    if (val < 0) return 0u;
+    return static_cast<size_t>(val);
 }
 
 }  // namespace seasocks

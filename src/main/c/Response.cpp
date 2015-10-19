@@ -28,36 +28,48 @@
 #include "seasocks/Response.h"
 
 using namespace seasocks;
+using namespace std;
 
 namespace seasocks {
 
-std::shared_ptr<Response> Response::unhandled() {
-    static std::shared_ptr<Response> unhandled;
+shared_ptr<Response> Response::unhandled() {
+    static shared_ptr<Response> unhandled;
     return unhandled;
 }
 
-std::shared_ptr<Response> Response::notFound() {
-    static std::shared_ptr<Response> notFound(new ConcreteResponse(ResponseCode::NotFound, "Not found", "text/plain", Response::Headers(), false));
+shared_ptr<Response> Response::notFound() {
+    static shared_ptr<Response> notFound(
+            new ConcreteResponse(ResponseCode::NotFound,
+                                 "Not found", "text/plain",
+                                 Response::Headers(), false));
     return notFound;
 }
 
-std::shared_ptr<Response> Response::error(ResponseCode code, const std::string& reason) {
-    return std::shared_ptr<Response>(new ConcreteResponse(code, reason, "text/plain", Response::Headers(), false));
+shared_ptr<Response> Response::error(ResponseCode code, const string& reason) {
+    return shared_ptr<Response>(
+            new ConcreteResponse(code, reason, "text/plain",
+                                 Response::Headers(), false));
 }
 
-std::shared_ptr<Response> Response::textResponse(const std::string& response) {
-    return std::shared_ptr<Response>(
-            new ConcreteResponse(ResponseCode::Ok, response, "text/plain", Response::Headers(), true));
+shared_ptr<Response> Response::textResponse(const string& response) {
+    return shared_ptr<Response>(
+            new ConcreteResponse(ResponseCode::Ok,
+                                 response, "text/plain",
+                                 Response::Headers(), true));
 }
 
-std::shared_ptr<Response> Response::jsonResponse(const std::string& response) {
-    return std::shared_ptr<Response>(
-            new ConcreteResponse(ResponseCode::Ok, response, "application/json", Response::Headers(), true));
+shared_ptr<Response> Response::jsonResponse(const string& response) {
+    return shared_ptr<Response>(
+            new ConcreteResponse(ResponseCode::Ok, response,
+                                 "application/json",
+                                 Response::Headers(), true));
 }
 
-std::shared_ptr<Response> Response::htmlResponse(const std::string& response) {
-    return std::shared_ptr<Response>(
-            new ConcreteResponse(ResponseCode::Ok, response, "text/html", Response::Headers(), true));
+shared_ptr<Response> Response::htmlResponse(const string& response) {
+    return shared_ptr<Response>(
+            new ConcreteResponse(ResponseCode::Ok, response,
+                                 "text/html",
+                                 Response::Headers(), true));
 }
 
 }

@@ -78,8 +78,8 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
 
 const int EpollTimeoutMillis = 500;  // Twice a second is ample.
 const int DefaultLameConnectionTimeoutSeconds = 10;
-int gettid() {
-    return syscall(SYS_gettid);
+pid_t gettid() {
+    return static_cast<pid_t>(syscall(SYS_gettid));
 }
 
 }
@@ -198,6 +198,11 @@ bool Server::startListening(uint32_t hostAddr, int port) {
         return false;
     }
 
+    auto port16 = static_cast<uint16_t>(port);
+    if (port != port16) {
+        LS_ERROR(_logger, "Invalid port: " << port);
+        return false;
+    }
     _listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (_listenSock == -1) {
         LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
@@ -208,7 +213,7 @@ bool Server::startListening(uint32_t hostAddr, int port) {
     }
     sockaddr_in sock;
     memset(&sock, 0, sizeof(sock));
-    sock.sin_port = htons(port);
+    sock.sin_port = htons(port16);
     sock.sin_addr.s_addr = htonl(hostAddr);
     sock.sin_family = AF_INET;
     if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {

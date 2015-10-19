@@ -1,5 +1,4 @@
 *.swp
-/.idea
 /.fig
 /.tests-pass
 /.tests-pass-valgrind

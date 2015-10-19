@@ -84,7 +84,7 @@ public:
 
     bool consumeContent(std::vector<uint8_t>& buffer);
 
-    int getIntHeader(const std::string& name) const;
+    size_t getUintHeader(const std::string &name) const;
 };
 
 }  // namespace seasocks

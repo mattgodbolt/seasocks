@@ -48,7 +48,7 @@ void testSingleString(
     std::vector<uint8_t> decoded;
     CHECK(decoder.decodeNextMessage(decoded) == expectedState);
     CHECK(std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()) == expectedPayload);
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::NoMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::NoMessage);
     CHECK(decoder.numBytesDecoded() == (size ? size : v.size()));
 }
 
@@ -58,27 +58,27 @@ void testLongString(size_t size, std::vector<uint8_t> v) {
     }
     HybiPacketDecoder decoder(ignore, v);
     std::vector<uint8_t> decoded;
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::TextMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::TextMessage);
     REQUIRE(decoded.size() == size);
     for (size_t i = 0; i < size; ++i) {
         REQUIRE(decoded[i] == 'A');
     }
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::NoMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::NoMessage);
     CHECK(decoder.numBytesDecoded() == v.size());
 }
 
 TEST_CASE("textExamples", "[HybiTests]") {
     // CF. http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-10 #4.7
-    testSingleString(HybiPacketDecoder::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
-    testSingleString(HybiPacketDecoder::TextMessage, "Hello", {0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58});
-    testSingleString(HybiPacketDecoder::Ping, "Hello", {0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+    testSingleString(HybiPacketDecoder::MessageState::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+    testSingleString(HybiPacketDecoder::MessageState::TextMessage, "Hello", {0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58});
+    testSingleString(HybiPacketDecoder::MessageState::Ping, "Hello", {0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
 }
 
 TEST_CASE("withPartialMessageFollowing", "[HybiTests]") {
-    testSingleString(HybiPacketDecoder::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81}, 7);
-    testSingleString(HybiPacketDecoder::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05}, 7);
-    testSingleString(HybiPacketDecoder::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05, 0x48}, 7);
-    testSingleString(HybiPacketDecoder::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c}, 7);
+    testSingleString(HybiPacketDecoder::MessageState::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81}, 7);
+    testSingleString(HybiPacketDecoder::MessageState::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05}, 7);
+    testSingleString(HybiPacketDecoder::MessageState::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05, 0x48}, 7);
+    testSingleString(HybiPacketDecoder::MessageState::TextMessage, "Hello", {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c}, 7);
 }
 
 TEST_CASE("binaryMessage", "[HybiTests]") {
@@ -86,9 +86,9 @@ TEST_CASE("binaryMessage", "[HybiTests]") {
     std::vector<uint8_t> expected_body { 0x00, 0x01, 0x02 };
     HybiPacketDecoder decoder(ignore, packet);
     std::vector<uint8_t> decoded;
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::BinaryMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::BinaryMessage);
     CHECK(decoded == expected_body);
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::NoMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::NoMessage);
     CHECK(decoder.numBytesDecoded() == packet.size());
 }
 
@@ -98,11 +98,11 @@ TEST_CASE("withTwoMessages", "[HybiTests]") {
         0x81, 0x07, 0x47, 0x6f, 0x6f, 0x64, 0x62, 0x79, 0x65};
     HybiPacketDecoder decoder(ignore, data);
     std::vector<uint8_t> decoded;
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::TextMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::TextMessage);
     CHECK(std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()) == "Hello");
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::TextMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::TextMessage);
     CHECK(std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()) == "Goodbye");
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::NoMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::NoMessage);
     CHECK(decoder.numBytesDecoded() == data.size());
 }
 
@@ -113,11 +113,11 @@ TEST_CASE("withTwoMessagesOneBeingMaskedd", "[HybiTests]") {
     };
     HybiPacketDecoder decoder(ignore, data);
     std::vector<uint8_t> decoded;
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::TextMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::TextMessage);
     CHECK(std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()) == "Hello");
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::TextMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::TextMessage);
     CHECK(std::string(reinterpret_cast<const char*>(&decoded[0]), decoded.size()) == "Hello");
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::NoMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::NoMessage);
     CHECK(decoder.numBytesDecoded() == data.size());
 }
 
@@ -129,7 +129,7 @@ TEST_CASE("regressionBug", "[HybiTests]") {
     std::vector<uint8_t> expected_body { 0x80, 0x81, 0x82, 0x83, 0x84 };
     HybiPacketDecoder decoder(ignore, data);
     std::vector<uint8_t> decoded;
-    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::BinaryMessage);
+    CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::BinaryMessage);
     CHECK(decoded == expected_body);
     CHECK(decoder.numBytesDecoded() == data.size());
 }

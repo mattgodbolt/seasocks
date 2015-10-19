@@ -32,7 +32,7 @@
 
 namespace seasocks {
 
-static const std::string magicString("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+namespace { const char *magicString = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"; }
 
 std::string getAcceptKey(const std::string& challenge) {
     auto fullString = challenge + magicString;

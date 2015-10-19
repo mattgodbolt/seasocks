@@ -270,12 +270,12 @@ void Connection::finalise() {
     _fd = -1;
 }
 
-int Connection::safeSend(const void* data, size_t size) {
+ssize_t Connection::safeSend(const void* data, size_t size) {
     if (_fd == -1 || _hadSendError || _shutdown) {
         // Ignore further writes to the socket, it's already closed or has been shutdown
         return -1;
     }
-    int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
+    auto sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
     if (sendResult == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // Treat this as if zero bytes were written.
@@ -294,7 +294,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         return false;
     }
     if (size) {
-        int bytesSent = 0;
+        ssize_t bytesSent = 0;
         if (_outBuf.empty() && flushIt) {
             // Attempt fast path, send directly.
             bytesSent = safeSend(data, size);
@@ -341,7 +341,7 @@ void Connection::handleDataReadyForRead() {
     }
     size_t curSize = _inBuf.size();
     _inBuf.resize(curSize + ReadWriteBufferSize);
-    int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
+    auto result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
     if (result == -1) {
         LS_WARNING(_logger, "Unable to read from socket : " << getLastError());
         return;
@@ -367,7 +367,7 @@ bool Connection::flush() {
     if (_outBuf.empty()) {
         return true;
     }
-    int numSent = safeSend(&_outBuf[0], _outBuf.size());
+    auto numSent = safeSend(&_outBuf[0], _outBuf.size());
     if (numSent == -1) {
         return false;
     }
@@ -520,7 +520,8 @@ void Connection::send(const char* webSocketResponse) {
         write(&effeff, 1, true);
         return;
     }
-    sendHybi(HybiPacketDecoder::OPCODE_TEXT, reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
+    sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Text),
+             reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
 }
 
 void Connection::send(const uint8_t* data, size_t length) {
@@ -535,10 +536,11 @@ void Connection::send(const uint8_t* data, size_t length) {
         LS_ERROR(_logger, "Hixie does not support binary");
         return;
     }
-    sendHybi(HybiPacketDecoder::OPCODE_BINARY, data, length);
+    sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Binary),
+             data, length);
 }
 
-void Connection::sendHybi(int opcode, const uint8_t* webSocketResponse, size_t messageLength) {
+void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size_t messageLength) {
     uint8_t firstByte = 0x80 | opcode;
     if (!write(&firstByte, 1, false)) return;
     if (messageLength < 126) {
@@ -612,23 +614,24 @@ void Connection::handleHybiWebSocket() {
             closeInternal();
             LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
             return;
-        case HybiPacketDecoder::Error:
+        case HybiPacketDecoder::MessageState::Error:
             closeInternal();
             return;
-        case HybiPacketDecoder::TextMessage:
+        case HybiPacketDecoder::MessageState::TextMessage:
             decodedMessage.push_back(0);  // avoids a copy
             handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
             break;
-        case HybiPacketDecoder::BinaryMessage:
+        case HybiPacketDecoder::MessageState::BinaryMessage:
             handleWebSocketBinaryMessage(decodedMessage);
             break;
-        case HybiPacketDecoder::Ping:
-            sendHybi(HybiPacketDecoder::OPCODE_PONG, &decodedMessage[0], decodedMessage.size());
+        case HybiPacketDecoder::MessageState::Ping:
+            sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
+                     &decodedMessage[0], decodedMessage.size());
             break;
-        case HybiPacketDecoder::NoMessage:
+        case HybiPacketDecoder::MessageState::NoMessage:
             done = true;
             break;
-        case HybiPacketDecoder::Close:
+        case HybiPacketDecoder::MessageState::Close:
             LS_DEBUG(_logger, "Received WebSocket close");
             closeInternal();
             return;

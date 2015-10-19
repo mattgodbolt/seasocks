@@ -121,7 +121,8 @@ private:
     bool sendBadRequest(const std::string& reason);
     bool sendISE(const std::string& error);
 
-    void sendHybi(int opcode, const uint8_t* webSocketResponse, size_t messageLength);
+    void sendHybi(uint8_t opcode, const uint8_t* webSocketResponse,
+                  size_t messageLength);
 
     bool sendResponse(std::shared_ptr<Response> response);
 
@@ -139,7 +140,7 @@ private:
     bool parseRanges(const std::string& range, std::list<Range>& ranges) const;
     bool sendStaticData();
 
-    int safeSend(const void* data, size_t size);
+    ssize_t safeSend(const void* data, size_t size);
 
     void bufferResponseAndCommonHeaders(ResponseCode code);
 
