@@ -8,8 +8,6 @@ General list of things todo
 * Double check it's ok to remove hixie, and do so.  Currently no way of testing it anyway
   (with reference to http://en.wikipedia.org/wiki/WebSocket#Browser_support it's been dead
   since before Chrome 14)
-* copyright update
-* clion
 
 Further out things
 ------------------
@@ -19,4 +17,5 @@ Further out things
 
 CMake stuff
 -----------
-* header file self-contained
+* Would be nice to resurrect the check that each external header file doesn't contain references
+  to anything outside of the exported headers.
