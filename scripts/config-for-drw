@@ -2,7 +2,18 @@
 
 set -e
 
-autoconf 
-
+pushd /tmp
 GCC_HOME=$(fig -m gcc/4.9.2-1 -g GCC_HOME)
-LDFLAGS="-Wl,--rpath,${GCC_HOME}/lib64" CXX=${GCC_HOME}/bin/g++ ./configure
+popd
+export CC=${GCC_HOME}/bin/gcc
+export CXX=${GCC_HOME}/bin/g++
+GCC_MULTIARCH=$(gcc -print-multiarch 2>/dev/null)
+if [[ "$GCC_MULTIARCH" != "" ]]; then
+    export LIBRARY_PATH=/usr/lib/$GCC_MULTIARCH
+    export C_INCLUDE_PATH=/usr/include/$GCC_MULTIARCH
+    export CPLUS_INCLUDE_PATH=/usr/include/$GCC_MULTIARCH
+fi
+export LDFLAGS="-Wl,--rpath,${GCC_HOME}/lib64"
+mkdir -p build
+cd build
+cmake ..
