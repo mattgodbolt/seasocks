@@ -100,7 +100,7 @@ private:
     }
 };
 
-int main(int argc, const char* argv[]) {
+int main(int /*argc*/, const char* /*argv*/[]) {
     shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
 
     Server server(logger);

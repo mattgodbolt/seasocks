@@ -38,7 +38,7 @@ namespace seasocks {
 
 ///////////////////////////////////
 
-inline void jsonToStream(std::ostream& str) {}
+inline void jsonToStream(std::ostream& /*str*/) {}
 
 void jsonToStream(std::ostream& str, const char* t);
 
@@ -105,7 +105,7 @@ void jsonToStream(std::ostream& str, const T& t, Args&&... args) {
 
 ///////////////////////////////////
 
-inline void jsonKeyPairToStream(std::ostream& str) {}
+inline void jsonKeyPairToStream(std::ostream& /*str*/) {}
 
 template<typename T>
 void jsonKeyPairToStream(std::ostream& str, const char* key, const T& value) {

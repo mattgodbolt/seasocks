@@ -45,6 +45,8 @@ void Logger::debug(const char* message, ...) {
 #ifdef LOG_DEBUG_INFO
     PRINT_TO_MESSAGEBUF();
     log(DEBUG, messageBuf);
+#else
+    (void)message;
 #endif
 }
 

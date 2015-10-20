@@ -69,13 +69,13 @@ struct Object {
     // Clang is pernickity about this. We don't want use this function
     // but it's here to catch errors where we accidentally use it instead of the
     // jsonToStream.
-    friend std::ostream &operator << (std::ostream &o, const Object &ob) {
+    friend std::ostream &operator << (std::ostream &o, const Object &) {
         return o << "Not this one";
     }
 };
 
 struct Object2 {
-    friend std::ostream &operator << (std::ostream &o, const Object2 &ob) {
+    friend std::ostream &operator << (std::ostream &o, const Object2 &) {
         return o << "This is object 2";
     }
 };

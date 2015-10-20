@@ -41,7 +41,7 @@ using namespace seasocks;
 
 class EchoHandler: public WebSocket::Handler {
 public:
-    virtual void onConnect(WebSocket* connection) {
+    virtual void onConnect(WebSocket* /*connection*/) {
     }
 
     virtual void onData(WebSocket* connection, const uint8_t* data, size_t length) {
@@ -52,11 +52,11 @@ public:
     connection->send(data); // text
     }
 
-    virtual void onDisconnect(WebSocket* connection) {
+    virtual void onDisconnect(WebSocket* /*connection*/) {
     }
 };
 
-int main(int argc, const char* argv[]) {
+int main(int /*argc*/, const char* /*argv*/[]) {
     std::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
 
     Server server(logger);

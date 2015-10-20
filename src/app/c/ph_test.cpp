@@ -57,7 +57,7 @@ public:
     }
 };
 
-int main(int argc, const char* argv[]) {
+int main(int /*argc*/, const char* /*argv*/[]) {
     std::shared_ptr<Logger> logger(new PrintfLogger(Logger::INFO));
 
     Server server(logger);

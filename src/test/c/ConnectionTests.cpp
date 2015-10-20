@@ -64,7 +64,7 @@ public:
 };
 
 TEST_CASE("Connection tests", "[ConnectionTests]") {
-    sockaddr_in addr = { AF_INET, 0x1234, { 0x01020304 } };
+    sockaddr_in addr = { AF_INET, 0x1234, { 0x01020304 }, 0 };
     std::shared_ptr<Logger> logger(new IgnoringLogger);
     MockServerImpl mockServer;
     Connection connection(logger, mockServer, -1, addr);
