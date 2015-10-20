@@ -1,6 +1,6 @@
 /*
  *  Catch v1.2.1
- *  Generated: 2015-06-30 18:23:27.961086
+ *  Generated: 2015-06-30 18:23:27.961086 - modified for Seasocks
  *  ----------------------------------------------------------
  *  This file has been merged from multiple headers. Please don't edit it directly
  *  Copyright (c) 2012 Two Blue Cubes Ltd. All rights reserved.
@@ -41,6 +41,7 @@
 #elif defined __GNUC__
 #    pragma GCC diagnostic ignored "-Wvariadic-macros"
 #    pragma GCC diagnostic ignored "-Wunused-variable"
+#    pragma GCC diagnostic ignored "-Wparentheses" // seasocks patch
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wpadded"
 #endif
