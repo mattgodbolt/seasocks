@@ -25,50 +25,49 @@
 
 #include "seasocks/util/Html.h"
 
-#include <gmock/gmock.h>
+#include "catch.hpp"
 
 using namespace seasocks;
 using namespace seasocks::html;
 
-TEST(HtmlTests, shouldRenderASimpleDocument) {
+TEST_CASE("shouldRenderASimpleDocument", "[HtmlTests]") {
     auto document = html::html(head(title("Hello")), body(h1("A header"), "This is a document"));
-    EXPECT_EQ("<html><head><title>Hello</title></head><body><h1>A header</h1>This is a document</body></html>", document.str());
+    CHECK(document.str() == "<html><head><title>Hello</title></head><body><h1>A header</h1>This is a document</body></html>");
 }
 
-TEST(HtmlTests, shouldAllowAppending) {
+TEST_CASE("shouldAllowAppending", "[HtmlTests]") {
     auto list = ul();
     list << li("Element 1") << li("Element 2");
-    EXPECT_EQ("<ul><li>Element 1</li><li>Element 2</li></ul>", list.str());
+    CHECK(list.str() == "<ul><li>Element 1</li><li>Element 2</li></ul>");
 }
 
-TEST(HtmlTests, shouldAllowCommaSeparation) {
+TEST_CASE("shouldAllowCommaSeparation", "[HtmlTests]") {
     auto list = ul(li("Element 1"), li("Element 2"));
-    EXPECT_EQ("<ul><li>Element 1</li><li>Element 2</li></ul>", list.str());
+    CHECK(list.str() == "<ul><li>Element 1</li><li>Element 2</li></ul>");
 }
 
-TEST(HtmlTests, shouldHandleAttributes) {
+TEST_CASE("shouldHandleAttributes", "[HtmlTests]") {
     auto elem = span("Some text").clazz("class");
-    EXPECT_EQ("<span class=\"class\">Some text</span>", elem.str());
+    CHECK(elem.str() == "<span class=\"class\">Some text</span>");
 }
 
-TEST(HtmlTests, shouldAppendLikeAStreamFromEmpty) {
+TEST_CASE("shouldAppendLikeAStreamFromEmpty", "[HtmlTests]") {
     auto elem = empty() << "Text " << 1 << ' ' << 10.23;
-    EXPECT_EQ("Text 1 10.23", elem.str());
+    CHECK(elem.str() == "Text 1 10.23");
 }
 
-TEST(HtmlTests, shouldNotNeedExtraMarkupForTextNodes) {
+TEST_CASE("shouldNotNeedExtraMarkupForTextNodes", "[HtmlTests]") {
     auto elem = text("This ") << text("is") << text(" a test") << ".";
-    EXPECT_EQ("This is a test.", elem.str());
+    CHECK(elem.str() == "This is a test.");
 }
 
-TEST(HtmlTests, shouldWorkWithAnchors) {
+TEST_CASE("shouldWorkWithAnchors", "[HtmlTests]") {
     auto elem = a("http://google.com/?q=badgers", div(span("foo")));
-    EXPECT_EQ("<a href=\"http://google.com/?q=badgers\"><div><span>foo</span></div></a>", elem.str());
+    CHECK(elem.str() == "<a href=\"http://google.com/?q=badgers\"><div><span>foo</span></div></a>");
 }
 
-TEST(HtmlTests, shouldAddAll) {
+TEST_CASE("shouldAddAll", "[HtmlTests]") {
     std::vector<std::string> strings = { "Hi", "Moo", "Foo" };
     auto list = ul().addAll(strings, [](const std::string& s) { return li(s); });
-    EXPECT_EQ("<ul><li>Hi</li><li>Moo</li><li>Foo</li></ul>", list.str());
-
+    CHECK(list.str() == "<ul><li>Hi</li><li>Moo</li><li>Foo</li></ul>");
 }

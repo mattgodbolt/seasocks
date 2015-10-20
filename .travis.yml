@@ -8,10 +8,8 @@ env:
   - TOOL=cmake
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
-  - wget "https://googlemock.googlecode.com/files/gmock-1.7.0.zip"
-  - unzip gmock-1.7.0.zip
 script:
-  - if [ "$TOOL" = "autoconf" ]; then autoconf && ./configure --with-gmock=gmock-1.7.0 && make && make test; fi
+  - if [ "$TOOL" = "autoconf" ]; then autoconf && ./configure && make && make test; fi
   - if [ "$TOOL" = "cmake" ]; then mkdir build && cd build && cmake .. && make; fi
 addons:
     apt:

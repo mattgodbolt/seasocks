@@ -10,8 +10,6 @@
 /config.status
 /configure
 /obj
-/tags
-/.gmock
 .gdb_history
 gdb.txt
 build/*

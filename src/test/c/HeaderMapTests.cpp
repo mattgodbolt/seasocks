@@ -2,7 +2,7 @@
 
 #include "internal/Config.h"
 
-#include <gmock/gmock.h>
+#include "catch.hpp"
 
 using namespace seasocks;
 
@@ -16,34 +16,34 @@ void emplace(HeaderMap &map, const char *header, const char *value) {
 #endif
 }
 
-TEST(HeaderMapTests, shouldConstruct) {
+TEST_CASE("shouldConstruct", "[HeaderMapTests]") {
     HeaderMap map;
-    EXPECT_TRUE(map.empty());
+    CHECK(map.empty());
 }
 
-TEST(HeaderMapTests, shouldStoreAndRetrieve) {
+TEST_CASE("shouldStoreAndRetrieve", "[HeaderMapTests]") {
     HeaderMap map;
     emplace(map, "Foo", "Bar");
-    EXPECT_EQ(1, map.size());
-    EXPECT_EQ("Bar", map.at("Foo"));
+    CHECK(map.size() == 1);
+    CHECK(map.at("Foo") == "Bar");
     emplace(map, "Baz", "Moo");
-    EXPECT_EQ(2, map.size());
-    EXPECT_EQ("Bar", map.at("Foo"));
-    EXPECT_EQ("Moo", map.at("Baz"));
+    CHECK(map.size() == 2);
+    CHECK(map.at("Foo") == "Bar");
+    CHECK(map.at("Baz") == "Moo");
 }
 
-TEST(HeaderMapTests, shouldBeCaseInsensitive) {
+TEST_CASE("shouldBeCaseInsensitive", "[HeaderMapTests]") {
     HeaderMap map;
     emplace(map, "Foo", "Bar");
-    EXPECT_EQ("Bar", map.at("FOO"));
-    EXPECT_EQ("Bar", map.at("foO"));
+    CHECK(map.at("FOO") == "Bar");
+    CHECK(map.at("foO") == "Bar");
 }
 
-TEST(HeaderMapTests, shouldPreserveOriginalCase) {
+TEST_CASE("shouldPreserveOriginalCase", "[HeaderMapTests]") {
     HeaderMap map;
     emplace(map, "Foo", "Bar");
     auto it = map.find("Foo");
-    EXPECT_EQ("Foo", it->first);
+    CHECK(it->first == "Foo");
 }
 
 }

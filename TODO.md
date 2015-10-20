@@ -8,9 +8,17 @@ General list of things todo
 * Double check it's ok to remove hixie, and do so.  Currently no way of testing it anyway
   (with reference to http://en.wikipedia.org/wiki/WebSocket#Browser_support it's been dead
   since before Chrome 14)
+* copyright update
+* clion
 
 Further out things
 ------------------
 * Generalise the request/response so that persistent connections can be phrased
   as them.
 * Benchmark and add benchmarks to the tests.
+
+CMake stuff
+-----------
+* valgrind
+* header file self-contained
+* c++11 support

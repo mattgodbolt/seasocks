@@ -27,7 +27,7 @@
 #include "seasocks/Connection.h"
 #include "seasocks/IgnoringLogger.h"
 
-#include <gmock/gmock.h>
+#include "catch.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -36,7 +36,7 @@
 
 using namespace seasocks;
 
-class TestHandler: public WebSocket::Handler {
+class TestHandler : public WebSocket::Handler {
 public:
     int _stage;
     TestHandler() :
@@ -44,18 +44,18 @@ public:
     }
     ~TestHandler() {
         if (_stage != 2) {
-            ADD_FAILURE() << "Invalid state";
+            FAIL("Invalid state");
         }
     }
     virtual void onConnect(WebSocket*) {
     }
     virtual void onData(WebSocket*, const char* data) {
         if (_stage == 0) {
-            ASSERT_STREQ(data, "a");
+            CHECK(strcmp(data, "a") == 0);
         } else if (_stage == 1) {
-            ASSERT_STREQ(data, "b");
+            CHECK(strcmp(data, "b") == 0);
         } else {
-            FAIL() << "unexpected state";
+            FAIL("unexpected state");
         }
         ++_stage;
     }
@@ -63,27 +63,23 @@ public:
     }
 };
 
-TEST(ConnectionTests, shouldBreakHixieMessagesApartInSameBuffer) {
+TEST_CASE("Connection tests", "[ConnectionTests]") {
     sockaddr_in addr = { AF_INET, 0x1234, { 0x01020304 } };
     std::shared_ptr<Logger> logger(new IgnoringLogger);
-    testing::NiceMock<MockServerImpl> mockServer;
+    MockServerImpl mockServer;
     Connection connection(logger, mockServer, -1, addr);
-    connection.setHandler(
-            std::shared_ptr<WebSocket::Handler>(new TestHandler));
-    uint8_t foo[] = { 0x00, 'a', 0xff, 0x00, 'b', 0xff };
-    connection.getInputBuffer().assign(&foo[0], &foo[sizeof(foo)]);
-    connection.handleHixieWebSocket();
-    SUCCEED();
-}
 
-TEST(ConnectionTests, shouldAcceptMultipleConnectionTypes) {
-    sockaddr_in addr = { AF_INET, 0x1234, { 0x01020304 } };
-    std::shared_ptr<Logger> logger(new IgnoringLogger);
-    testing::NiceMock<MockServerImpl> mockServer;
-    Connection connection(logger, mockServer, -1, addr);
-    const uint8_t message[] = "GET /ws-test HTTP/1.1\r\nConnection: keep-alive, Upgrade\r\nUpgrade: websocket\r\n\r\n";
-    connection.getInputBuffer().assign(&message[0], &message[sizeof(message)]);
-    EXPECT_CALL(mockServer, getWebSocketHandler(testing::StrEq("/ws-test")))
-        .WillOnce(testing::Return(std::shared_ptr<WebSocket::Handler>()));
-    connection.handleNewData();
+    SECTION("should break hixie messages apart in same buffer") {
+        connection.setHandler(
+                std::shared_ptr<WebSocket::Handler>(new TestHandler));
+        uint8_t foo[] = { 0x00, 'a', 0xff, 0x00, 'b', 0xff };
+        connection.getInputBuffer().assign(&foo[0], &foo[sizeof(foo)]);
+        connection.handleHixieWebSocket();
+    }
+    SECTION("shouldAcceptMultipleConnectionTypes") {
+        const uint8_t message[] = "GET /ws-test HTTP/1.1\r\nConnection: keep-alive, Upgrade\r\nUpgrade: websocket\r\n\r\n";
+        connection.getInputBuffer().assign(&message[0], &message[sizeof(message)]);
+        mockServer.handlers["/ws-test"] = std::shared_ptr<WebSocket::Handler>();
+        connection.handleNewData();
+    }
 }

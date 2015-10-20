@@ -27,7 +27,7 @@
 
 #include "seasocks/ServerImpl.h"
 
-#include <gmock/gmock.h>
+#include <unordered_map>
 
 namespace seasocks {
 
@@ -35,15 +35,22 @@ class MockServerImpl : public ServerImpl {
 public:
     virtual ~MockServerImpl() {}
 
-    MOCK_METHOD1(remove, void(Connection* connection));
-    MOCK_METHOD1(subscribeToWriteEvents, bool(Connection* connection));
-    MOCK_METHOD1(unsubscribeFromWriteEvents, bool(Connection* connection));
-    MOCK_CONST_METHOD0(getStaticPath, const std::string&());
-    MOCK_CONST_METHOD1(getWebSocketHandler, std::shared_ptr<WebSocket::Handler>(const char *));
-    MOCK_CONST_METHOD1(isCrossOriginAllowed, bool(const std::string&));
-    MOCK_METHOD1(handle, std::shared_ptr<Response>(const Request &));
-    MOCK_CONST_METHOD0(getStatsDocument, std::string());
-    MOCK_CONST_METHOD0(checkThread, void());
+    std::string staticPath;
+    std::unordered_map<std::string, std::shared_ptr<WebSocket::Handler>> handlers;
+
+    void remove(Connection* /*connection*/) override {}
+    bool subscribeToWriteEvents(Connection* /*connection*/) override {return false;};
+    bool unsubscribeFromWriteEvents(Connection* /*connection*/) override {return false;}
+    const std::string& getStaticPath() const override { return staticPath; }
+    std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char *endpoint) const override {
+        auto it = handlers.find(endpoint);
+        if (it == handlers.end()) return std::shared_ptr<WebSocket::Handler>();
+        return it->second;
+    }
+    bool isCrossOriginAllowed(const std::string &/*endpoint*/) const override { return false; }
+    std::shared_ptr<Response> handle(const Request &/*request*/) override { return std::shared_ptr<Response>(); }
+    std::string getStatsDocument() const override { return ""; }
+    void checkThread() const override { }
 };
 
 }

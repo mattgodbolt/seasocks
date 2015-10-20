@@ -25,123 +25,122 @@
 
 #include "seasocks/util/CrackedUri.h"
 
-#include <gmock/gmock.h>
+#include "catch.hpp"
 
-using namespace testing;
 using namespace seasocks;
 using namespace std;
 
 namespace {
 
-TEST(CrackedUriTests, shouldHandleRoot) {
+TEST_CASE("shouldHandleRoot", "[CrackedUriTests]") {
     CrackedUri uri("/");
-    EXPECT_EQ(vector<string>(), uri.path());
-    EXPECT_TRUE(uri.queryParams().empty());
+    CHECK(uri.path() == vector<string>());
+    CHECK(uri.queryParams().empty());
 }
 
-TEST(CrackedUriTests, shouldHandleTopLevel) {
+TEST_CASE("shouldHandleTopLevel", "[CrackedUriTests]") {
     CrackedUri uri("/monkey");
     vector<string> expected = { "monkey" };
-    EXPECT_EQ(expected, uri.path());
-    EXPECT_TRUE(uri.queryParams().empty());
+    CHECK(uri.path() == expected);
+    CHECK(uri.queryParams().empty());
 }
 
-TEST(CrackedUriTests, shouldHandleSimplePaths) {
+TEST_CASE("shouldHandleSimplePaths", "[CrackedUriTests]") {
     CrackedUri uri("/foo/bar/baz/bungo");
     vector<string> expected = { "foo", "bar", "baz", "bungo" };
-    EXPECT_EQ(expected, uri.path());
-    EXPECT_TRUE(uri.queryParams().empty());
+    CHECK(uri.path() == expected);
+    CHECK(uri.queryParams().empty());
 }
 
-TEST(CrackedUriTests, shouldTreatTrailingSlashAsNewPage) {
+TEST_CASE("shouldTreatTrailingSlashAsNewPage", "[CrackedUriTests]") {
     CrackedUri uri("/ooh/a/directory/");
     vector<string> expected = { "ooh", "a", "directory", "" };
-    EXPECT_EQ(expected, uri.path());
-    EXPECT_TRUE(uri.queryParams().empty());
+    CHECK(uri.path() == expected);
+    CHECK(uri.queryParams().empty());
 }
 
-TEST(CrackedUriTests, shouldHandleRootWithQuery) {
+TEST_CASE("shouldHandleRootWithQuery", "[CrackedUriTests]") {
     CrackedUri uri("/?a=spotch");
-    EXPECT_EQ(vector<string>(), uri.path());
-    ASSERT_FALSE(uri.queryParams().empty());
-    EXPECT_TRUE(uri.hasParam("a"));
-    EXPECT_EQ("spotch", uri.queryParam("a"));
+    CHECK(uri.path() == vector<string>());
+    REQUIRE_FALSE(uri.queryParams().empty());
+    CHECK(uri.hasParam("a"));
+    CHECK(uri.queryParam("a") == "spotch");
 }
 
-TEST(CrackedUriTests, shouldHonorDefaults) {
+TEST_CASE("shouldHonorDefaults", "[CrackedUriTests]") {
     CrackedUri uri("/?a=spotch");
-    EXPECT_EQ("monkey", uri.queryParam("notThere", "monkey"));
+    CHECK(uri.queryParam("notThere", "monkey") == "monkey");
 }
 
-TEST(CrackedUriTests, shouldHandleEmptyParams) {
+TEST_CASE("shouldHandleEmptyParams", "[CrackedUriTests]") {
     CrackedUri uri("/?a&b&c");
-    EXPECT_EQ("", uri.queryParam("a", "notEmptyDefault"));
-    EXPECT_EQ("", uri.queryParam("b", "notEmptyDefault"));
-    EXPECT_EQ("", uri.queryParam("c", "notEmptyDefault"));
+    CHECK(uri.queryParam("a", "notEmptyDefault") == "");
+    CHECK(uri.queryParam("b", "notEmptyDefault") == "");
+    CHECK(uri.queryParam("c", "notEmptyDefault") == "");
 }
 
-TEST(CrackedUriTests, shouldHandleDuplicateParams) {
+TEST_CASE("shouldHandleDuplicateParams", "[CrackedUriTests]") {
     CrackedUri uri("/?a=a&q=10&q=5&z=yibble&q=100&q=blam");
     vector<string> expected = { "10", "5", "100", "blam" };
     sort(expected.begin(), expected.end());
     auto params = uri.allQueryParams("q");
     sort(params.begin(), params.end());
-    EXPECT_EQ(expected, params);
+    CHECK(params == expected);
 }
 
 
-TEST(CrackedUriTests, shouldHandlePathWithQuery) {
+TEST_CASE("shouldHandlePathWithQuery", "[CrackedUriTests]") {
     CrackedUri uri("/badger/badger/badger/mushroom?q=snake");
     vector<string> expected = { "badger", "badger", "badger", "mushroom" };
-    EXPECT_EQ(expected, uri.path());
-    ASSERT_FALSE(uri.queryParams().empty());
-    EXPECT_TRUE(uri.hasParam("q"));
-    EXPECT_EQ("snake", uri.queryParam("q"));
+    CHECK(uri.path() == expected);
+    REQUIRE_FALSE(uri.queryParams().empty());
+    CHECK(uri.hasParam("q"));
+    CHECK(uri.queryParam("q") == "snake");
 }
 
-TEST(CrackedUriTests, shouldUnescapePaths) {
+TEST_CASE("shouldUnescapePaths", "[CrackedUriTests]") {
     CrackedUri uri("/foo+bar/baz%2f/%40%4F");
     vector<string> expected = { "foo bar", "baz/", "@O" };
-    EXPECT_EQ(expected, uri.path());
+    CHECK(uri.path() == expected);
 }
 
-TEST(CrackedUriTests, shouldUnescapeQueries) {
+TEST_CASE("shouldUnescapeQueries", "[CrackedUriTests]") {
     CrackedUri uri("/?q=a+b&t=%20%20&p=%41");
-    EXPECT_EQ("a b", uri.queryParam("q"));
-    EXPECT_EQ("  ", uri.queryParam("t"));
-    EXPECT_EQ("A", uri.queryParam("p"));
+    CHECK(uri.queryParam("q") == "a b");
+    CHECK(uri.queryParam("t") == "  ");
+    CHECK(uri.queryParam("p") == "A");
 }
 
 
-TEST(CrackedUriTests, shouldThrowOnRubbish) {
-    EXPECT_THROW(CrackedUri(""), exception);
-    EXPECT_THROW(CrackedUri("rubbish"), exception);
-    EXPECT_THROW(CrackedUri("../../.."), exception);
-    EXPECT_THROW(CrackedUri("/?a===b"), exception);
-    EXPECT_THROW(CrackedUri("/%"), exception);
-    EXPECT_THROW(CrackedUri("/%a"), exception);
-    EXPECT_THROW(CrackedUri("/%qq"), exception);
+TEST_CASE("shouldThrowOnRubbish", "[CrackedUriTests]") {
+    CHECK_THROWS(CrackedUri(""));
+    CHECK_THROWS(CrackedUri("rubbish"));
+    CHECK_THROWS(CrackedUri("../../.."));
+    CHECK_THROWS(CrackedUri("/?a===b"));
+    CHECK_THROWS(CrackedUri("/%"));
+    CHECK_THROWS(CrackedUri("/%a"));
+    CHECK_THROWS(CrackedUri("/%qq"));
 }
 
-TEST(CrackedUriTests, shouldShift) {
+TEST_CASE("shouldShift", "[CrackedUriTests]") {
     CrackedUri uri("/a/b/c.html");
     vector<string> expected1 = {"a", "b", "c.html"};
-    EXPECT_EQ(expected1, uri.path());
+    CHECK(uri.path() == expected1);
 
     uri = uri.shift();
     vector<string> expected2 = {"b", "c.html"};
-    EXPECT_EQ(expected2, uri.path());
+    CHECK(uri.path() == expected2);
 
     uri = uri.shift();
     vector<string> expected3 = {"c.html"};
-    EXPECT_EQ(expected3, uri.path());
+    CHECK(uri.path() == expected3);
 
     uri = uri.shift();
     vector<string> expected4 = {""};
-    EXPECT_EQ(expected4, uri.path());
+    CHECK(uri.path() == expected4);
 
     uri = uri.shift();
-    EXPECT_EQ(expected4, uri.path());
+    CHECK(uri.path() == expected4);
 }
 
 }

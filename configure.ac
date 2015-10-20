@@ -4,23 +4,6 @@ AC_PREREQ(2.63)
 AC_INIT([SeaSocks], [0.1], [matt@godbolt.org], [], [https://github.com/mattgodbolt/seasocks])
 AC_CONFIG_SRCDIR([src/main/c/seasocks/Server.h])
 
-AC_ARG_WITH([gmock],
-            [AS_HELP_STRING([--with-gmock],
-                            [Build tests too, with supplied gmock directory.  SeaSocks will
-                             build gmock and its embedded gtest automatically])],
-                             [],
-                             [AC_MSG_WARN([dnl
-Building without tests enabled. Use --with-gmock=PATH_TO_GMOCK])])
-
-AS_IF([test "x${with_gmock}" != "xno" -a "x${with_gmock}" != "x"],
-      [
-       AS_IF([test -e "${with_gmock}/include/gmock/gmock.h"],
-             [GMOCK_DIR="${with_gmock}"],
-             [AC_MSG_ERROR([dnl
-              Unable to locate gmock source at '${with_gmock}'.])])
-       ])
-AC_SUBST(GMOCK_DIR)
-
 dnl Basic setup
 AC_LANG(C++)
 AC_PROG_CC

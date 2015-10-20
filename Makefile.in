@@ -90,28 +90,7 @@ header-checks: $(HCS)
 run: $(BIN_DIR)/ws_test
 	$(BIN_DIR)/ws_test
 
-ifneq ("@GMOCK_DIR@", "")
-GMOCK_DIR = @GMOCK_DIR@
-GTEST_DIR = $(GMOCK_DIR)/gtest
-CXXFLAGS += -isystem $(GTEST_DIR)/include -isystem $(GMOCK_DIR)/include
-GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
-				$(GTEST_DIR)/include/gtest/internal/*.h
-GMOCK_HEADERS = $(GMOCK_DIR)/include/gmock/*.h \
-				$(GMOCK_DIR)/include/gmock/internal/*.h \
-				$(GTEST_HEADERS)
-GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
-GMOCK_SRCS_ = $(GMOCK_DIR)/src/*.cc $(GMOCK_HEADERS)
-
-$(OBJ_DIR)/gtest-all.o : $(GTEST_SRCS_)
-	$(CXX) $(CXXFLAGS) -I$(GTEST_DIR) -I$(GMOCK_DIR) $(CXXFLAGS) \
-		-c $(GTEST_DIR)/src/gtest-all.cc -o $@
-
-$(OBJ_DIR)/gmock-all.o : $(GMOCK_SRCS_)
-	$(CXX) $(CXXFLAGS) -I$(GTEST_DIR) -I$(GMOCK_DIR) $(CXXFLAGS) \
-		-c $(GMOCK_DIR)/src/gmock-all.cc -o $@
-
-$(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a \
-	$(OBJ_DIR)/gmock-all.o $(OBJ_DIR)/gtest-all.o
+$(BIN_DIR)/tests: $(TEST_OBJS) $(BIN_DIR)/libseasocks.a
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) -I $(TEST_SRC) -o $@ $^ 
 
 .tests-pass: $(BIN_DIR)/tests
@@ -127,15 +106,6 @@ valgrind-test: .tests-pass
 else
 valgrind-test:
 	@echo "Not running valgrind-test as no valgrind binary found during configure"
-endif
-
-else
-
-test:
-	@echo "Not running tests as no gmock/gtest specified during configure"
-	@echo "To configure, specify with --with-gmock=PATH_TO_GMOCK"
-test-valgrind: test
-
 endif
 
 clean:
