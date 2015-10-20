@@ -19,6 +19,5 @@ Further out things
 
 CMake stuff
 -----------
-* valgrind
 * header file self-contained
 * c++11 support

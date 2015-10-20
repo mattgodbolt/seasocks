@@ -7,6 +7,7 @@ message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(CTest)
 include(EmbeddedContent)
 include(CompilerCheck)
 include(GNUInstallDirs)
@@ -24,6 +25,6 @@ add_subdirectory("src/app/c")
 
 find_package(Threads)
 
+find_program(MEMORYCHECK_COMMAND valgrind)
 enable_testing()
 add_subdirectory("src/test/c")
-
