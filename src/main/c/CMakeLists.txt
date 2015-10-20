@@ -1,4 +1,3 @@
-
 add_library(seasocks HybiAccept.cpp
                         StringUtil.cpp
                         Server.cpp

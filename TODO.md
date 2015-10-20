@@ -20,4 +20,3 @@ Further out things
 CMake stuff
 -----------
 * header file self-contained
-* c++11 support
