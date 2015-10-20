@@ -4,5 +4,5 @@ set -e
 
 autoconf 
 
-GCC_HOME=$(fig -m gcc/4.9.0-2 -g GCC_HOME)
+GCC_HOME=$(fig -m gcc/4.9.2-1 -g GCC_HOME)
 LDFLAGS="-Wl,--rpath,${GCC_HOME}/lib64" CXX=${GCC_HOME}/bin/g++ ./configure
