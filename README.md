@@ -14,8 +14,8 @@ Features
 Stuff it doesn't do
 -------------------
 It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
-It provides only very limited support for custom content generation (e.g. Servlets).
-It has been optimized for WebSocket based control.
+It provides only limited support for custom content generation (e.g. Servlets).
+It has been designed for WebSocket based control.
 
 Getting started
 ---------------

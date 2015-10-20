@@ -1,14 +1,5 @@
 *.swp
-/.fig
-/.tests-pass
-/.tests-pass-valgrind
-/Makefile
-/autom4te.cache
-/bin
-/config.log
-/config.status
-/configure
-/obj
+*~
 .gdb_history
+/build
 gdb.txt
-build/*
