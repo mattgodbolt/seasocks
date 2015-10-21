@@ -3,12 +3,15 @@ language: cpp
 compiler:
   - gcc
   - clang
+env:
+  - BUILD_TYPE=Debug
+  - BUILD_TYPE=Release
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
 script:
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
   - make
   - ctest -D ExperimentalBuild
   - ctest -D ExperimentalMemCheck
