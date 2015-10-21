@@ -287,7 +287,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
     }
     if (numEvents == maxEvents) {
         static time_t lastWarnTime = 0;
-        time_t now = time(NULL);
+        time_t now = time(nullptr);
         if (now - lastWarnTime >= 60) {
             LS_WARNING(_logger, "Full event queue; may start starving connections. "
                     "Will warn at most once a minute");
@@ -397,7 +397,7 @@ void Server::processEventQueue() {
         if (!runnable) break;
         runnable->run();
     }
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     if (now >= _nextDeadConnectionCheck) {
         std::list<Connection*> toRemove;
         for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
@@ -438,7 +438,7 @@ void Server::handleAccept() {
         ::close(fd);
         return;
     }
-    _connections.insert(std::make_pair(newConnection, time(NULL)));
+    _connections.insert(std::make_pair(newConnection, time(nullptr)));
 }
 
 void Server::remove(Connection* connection) {

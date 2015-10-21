@@ -70,7 +70,7 @@ public:
     }
 
     virtual const uint8_t* content() const {
-        return _contentLength > 0 ? &_content[0] : NULL;
+        return _contentLength > 0 ? &_content[0] : nullptr;
     }
 
     virtual bool hasHeader(const std::string& name) const {

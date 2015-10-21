@@ -73,7 +73,7 @@ uint32_t parseWebSocketKey(const std::string& key) {
     return numSpaces > 0 ? keyNumber / numSpaces : 0;
 }
 
-char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
+char* extractLine(uint8_t*& first, uint8_t* last, char** colon = nullptr) {
     for (uint8_t* ptr = first; ptr < last - 1; ++ptr) {
         if (ptr[0] == '\r' && ptr[1] == '\n') {
             ptr[0] = 0;
@@ -81,11 +81,11 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
             first = ptr + 2;
             return reinterpret_cast<char*> (result);
         }
-        if (colon && ptr[0] == ':' && *colon == NULL) {
+        if (colon && ptr[0] == ':' && *colon == nullptr) {
             *colon = reinterpret_cast<char*> (ptr);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 std::string webtime(time_t time) {
@@ -98,7 +98,7 @@ std::string webtime(time_t time) {
 }
 
 std::string now() {
-    return webtime(time(NULL));
+    return webtime(time(nullptr));
 }
 
 class RaiiFd {
@@ -720,7 +720,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     // Be careful about lifetimes though and multiple requests coming in, should
     // we ever support HTTP pipelining and/or long-lived requests.
     char* requestLine = extractLine(first, last);
-    assert(requestLine != NULL);
+    assert(requestLine != nullptr);
 
     LS_ACCESS(_logger, "Request: " << requestLine);
 
@@ -733,12 +733,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         return sendBadRequest("Malformed request line");
     }
     const char* requestUri = shift(requestLine);
-    if (requestUri == NULL) {
+    if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
     }
 
     const char* httpVersion = shift(requestLine);
-    if (httpVersion == NULL) {
+    if (httpVersion == nullptr) {
         return sendBadRequest("Malformed request line");
     }
     if (strcmp(httpVersion, "HTTP/1.1") != 0) {
@@ -750,10 +750,10 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
     HeaderMap headers(31);
     while (first < last) {
-        char* colonPos = NULL;
+        char* colonPos = nullptr;
         char* headerLine = extractLine(first, last, &colonPos);
-        assert(headerLine != NULL);
-        if (colonPos == NULL) {
+        assert(headerLine != nullptr);
+        if (colonPos == nullptr) {
             return sendBadRequest("Malformed header");
         }
         *colonPos = 0;

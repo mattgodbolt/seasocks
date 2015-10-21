@@ -71,7 +71,7 @@ public:
     virtual const std::string& getRequestUri() const override;
     virtual Request::Verb verb() const override { return Request::WebSocket; }
     virtual size_t contentLength() const override { return 0; }
-    virtual const uint8_t* content() const override { return NULL; }
+    virtual const uint8_t* content() const override { return nullptr; }
     virtual bool hasHeader(const std::string&) const override;
     virtual std::string getHeader(const std::string&) const override;
 

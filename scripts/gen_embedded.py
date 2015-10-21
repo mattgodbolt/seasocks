@@ -30,7 +30,7 @@ print """
 const EmbeddedContent* findEmbeddedContent(const std::string& name) {
 	auto found = embedded.find(name);
 	if (found == embedded.end()) {
-		return NULL;
+		return nullptr;
 	}
 	return &found->second;
 }
