@@ -46,13 +46,13 @@ char* skipNonWhitespace(char* str) {
 }
 
 char* shift(char*& str) {
-    if (str == NULL) {
-        return NULL;
+    if (str == nullptr) {
+        return nullptr;
     }
     char* startOfWord = skipWhitespace(str);
     if (*startOfWord == 0) {
         str = startOfWord;
-        return NULL;
+        return nullptr;
     }
     char* endOfWord = skipNonWhitespace(startOfWord);
     if (*endOfWord != 0) {
