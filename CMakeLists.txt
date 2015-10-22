@@ -5,6 +5,10 @@ set(PROJECT_VERSION 1.1.6)
 
 message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 
+option(UNITTESTS "Build unittests." ON)
+message(STATUS "Unittests: ${UNITTESTS}")
+
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(CTest)
@@ -26,6 +30,9 @@ add_subdirectory("src/app/c")
 
 find_package(Threads)
 
-find_program(MEMORYCHECK_COMMAND valgrind)
-enable_testing()
-add_subdirectory("src/test/c")
+if( UNITTESTS )
+    find_program(MEMORYCHECK_COMMAND valgrind)
+    enable_testing()
+    add_subdirectory("src/test/c")
+endif()
+
