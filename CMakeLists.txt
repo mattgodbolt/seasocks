@@ -15,7 +15,9 @@ include(GNUInstallDirs)
 
 configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 
-add_definitions(-Wall -Werror -Wextra -DSEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\")
+add_definitions(-Wall -Werror -Wextra -pedantic
+                -DSEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\"
+                )
 
 include_directories("src/main/c"
                     ${CMAKE_BINARY_DIR}
