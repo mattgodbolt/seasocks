@@ -27,6 +27,7 @@
 #include "internal/LogStream.h"
 
 #include <arpa/inet.h>
+#include <string.h>
 
 namespace seasocks {
 
@@ -58,18 +59,24 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
     auto ptr = _messageStart + 2;
     if (payloadLength == 126) {
         if (_buffer.size() < 4) { return MessageState::NoMessage; }
-        payloadLength = htons(*reinterpret_cast<const uint16_t*>(&_buffer[ptr]));
+        uint16_t raw_length;
+        memcpy(&raw_length, &_buffer[ptr], sizeof(raw_length));
+        payloadLength = htons(raw_length);
         ptr += 2;
     } else if (payloadLength == 127) {
         if (_buffer.size() < 10) { return MessageState::NoMessage; }
-        payloadLength = __bswap_64(*reinterpret_cast<const uint64_t*>(&_buffer[ptr]));
+        uint64_t raw_length;
+        memcpy(&raw_length, &_buffer[ptr], sizeof(raw_length));
+        payloadLength = __bswap_64(raw_length);
         ptr += 8;
     }
     uint32_t mask = 0;
     if (maskBit) {
         // MASK is set.
         if (_buffer.size() < ptr + 4) { return MessageState::NoMessage; }
-        mask = htonl(*reinterpret_cast<const uint32_t*>(&_buffer[ptr]));
+        uint32_t raw_length;
+        memcpy(&raw_length, &_buffer[ptr], sizeof(raw_length));
+        mask = htonl(raw_length);
         ptr += 4;
     }
     auto bytesLeftInBuffer = _buffer.size() - ptr;
