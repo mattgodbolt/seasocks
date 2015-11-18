@@ -19,22 +19,22 @@ include(GNUInstallDirs)
 
 configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 
-add_definitions(-Wall -Werror -Wextra -pedantic
-                -DSEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\"
-                )
+add_definitions(-Wall -Werror -Wextra -pedantic -ggdb3 -fPIC
+        -DSEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\"
+        )
 
 include_directories("src/main/c"
-                    ${CMAKE_BINARY_DIR}
-                    )
+        ${CMAKE_BINARY_DIR}
+        )
 
 add_subdirectory("src/main/c")
 add_subdirectory("src/app/c")
 
 find_package(Threads)
 
-if( UNITTESTS )
+if (UNITTESTS)
     find_program(MEMORYCHECK_COMMAND valgrind)
     enable_testing()
     add_subdirectory("src/test/c")
-endif()
+endif ()
 
