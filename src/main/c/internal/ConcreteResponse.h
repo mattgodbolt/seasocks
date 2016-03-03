@@ -25,11 +25,11 @@
 
 #pragma once
 
-#include "seasocks/Response.h"
+#include "seasocks/SynchronousResponse.h"
 
 namespace seasocks {
 
-class ConcreteResponse : public Response {
+class ConcreteResponse : public SynchronousResponse {
     ResponseCode _responseCode;
     const std::string _payload;
     const std::string _contentType;

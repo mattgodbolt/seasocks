@@ -88,19 +88,6 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = nullptr) {
     return nullptr;
 }
 
-std::string webtime(time_t time) {
-    struct tm tm;
-    gmtime_r(&time, &tm);
-    char buf[1024];
-    // Wed, 20 Apr 2011 17:31:28 GMT
-    strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
-    return buf;
-}
-
-std::string now() {
-    return webtime(time(nullptr));
-}
-
 class RaiiFd {
     int _fd;
 public:
@@ -833,51 +820,68 @@ bool Connection::handlePageRequest() {
 }
 
 bool Connection::sendResponse(std::shared_ptr<Response> response) {
-    const auto requestUri = _request->getRequestUri();
     if (response == Response::unhandled()) {
         return sendStaticData();
     }
+    /*
     if (response->responseCode() == ResponseCode::NotFound) {
         // TODO: better here; we use this purely to serve our own embedded content.
         return send404();
     } else if (!isOk(response->responseCode())) {
         return sendError(response->responseCode(), response->payload());
     }
+*/
+    assert(_response.get() == nullptr);
+    _state = AWAITING_RESPONSE_BEGIN;
+    _response = response;
+    _response->handle(*this);
+    return true;
+}
 
-    auto headers = response->getAdditionalHeaders();
-
-    bufferResponseAndCommonHeaders(response->responseCode());
-    bufferLine("Content-Length: " + toString(response->payloadSize()));
-    bufferLine("Content-Type: " + response->contentType());
-    if (response->keepConnectionAlive()) {
-        bufferLine("Connection: keep-alive");
-    } else {
-        bufferLine("Connection: close");
+void Connection::begin(ResponseCode responseCode) {
+    _server.checkThread();
+    if (_state != AWAITING_RESPONSE_BEGIN) {
+        LS_ERROR(_logger, "begin() called when in wrong state");
+        return;
     }
-    bufferLine("Last-Modified: " + now());
-    bufferLine("Pragma: no-cache");
+    _state = SENDING_RESPONSE_HEADERS;
+    bufferResponseAndCommonHeaders(responseCode);
+}
 
-    if (headers.find("Cache-Control") == headers.end()) {
-        bufferLine("Cache-Control: no-store");
+void Connection::header(const std::string &header, const std::string &value) {
+    _server.checkThread();
+    if (_state != SENDING_RESPONSE_HEADERS) {
+        LS_ERROR(_logger, "header() called when in wrong state");
+        return;
     }
-
-    if (headers.find("Expires") == headers.end()) {
-        bufferLine("Expires: " + now());
+    bufferLine(header + ": " + value);
+}
+void Connection::payload(const void *data, size_t size) {
+    _server.checkThread();
+    if (_state == SENDING_RESPONSE_HEADERS) {
+        bufferLine("");
+        _state = SENDING_RESPONSE_BODY;
+    } else if (_state != SENDING_RESPONSE_BODY) {
+        LS_ERROR(_logger, "payload() called when in wrong state");
+        return;
     }
+    write(data, size, true);
+}
 
-    for (auto it = headers.begin(); it != headers.end(); ++it) {
-        bufferLine(it->first + ": " + it->second);
+void Connection::finish(bool keepConnectionOpen) {
+    _server.checkThread();
+    if (_state == SENDING_RESPONSE_HEADERS) {
+        bufferLine("");
+    } else if (_state != SENDING_RESPONSE_BODY) {
+        LS_ERROR(_logger, "finish() called when in wrong state");
+        return;
     }
-
-    bufferLine("");
-
-    if (!write(response->payload(), response->payloadSize(), true)) {
-        return false;
-    }
-    if (!response->keepConnectionAlive()) {
+    if (!keepConnectionOpen) {
         closeWhenEmpty();
     }
-    return true;
+
+    _state = READING_HEADERS;
+    _response.reset();
 }
 
 bool Connection::handleHybiHandshake(

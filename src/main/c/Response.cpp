@@ -41,35 +41,35 @@ shared_ptr<Response> Response::notFound() {
     static shared_ptr<Response> notFound(
             new ConcreteResponse(ResponseCode::NotFound,
                                  "Not found", "text/plain",
-                                 Response::Headers(), false));
+                                 SynchronousResponse::Headers(), false));
     return notFound;
 }
 
 shared_ptr<Response> Response::error(ResponseCode code, const string& reason) {
     return shared_ptr<Response>(
             new ConcreteResponse(code, reason, "text/plain",
-                                 Response::Headers(), false));
+                                 SynchronousResponse::Headers(), false));
 }
 
 shared_ptr<Response> Response::textResponse(const string& response) {
     return shared_ptr<Response>(
             new ConcreteResponse(ResponseCode::Ok,
                                  response, "text/plain",
-                                 Response::Headers(), true));
+                                 SynchronousResponse::Headers(), true));
 }
 
 shared_ptr<Response> Response::jsonResponse(const string& response) {
     return shared_ptr<Response>(
             new ConcreteResponse(ResponseCode::Ok, response,
                                  "application/json",
-                                 Response::Headers(), true));
+                                 SynchronousResponse::Headers(), true));
 }
 
 shared_ptr<Response> Response::htmlResponse(const string& response) {
     return shared_ptr<Response>(
             new ConcreteResponse(ResponseCode::Ok, response,
                                  "text/html",
-                                 Response::Headers(), true));
+                                 SynchronousResponse::Headers(), true));
 }
 
 }

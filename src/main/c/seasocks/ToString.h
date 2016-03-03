@@ -30,6 +30,7 @@
 
 namespace seasocks {
 
+// TODO: can this be deprecated in favour of std::to_string now?
 template<typename T>
 std::string toString(const T& obj) {
     std::stringstream str;

@@ -53,16 +53,20 @@ add_library(seasocks
         internal/Version.h
         internal/PageRequest.h
         internal/ConcreteResponse.h
+        seasocks/ResponseWriter.h
+        seasocks/SynchronousResponse.cpp
+        seasocks/SynchronousResponse.h
 
         $<TARGET_OBJECTS:embedded>
         )
 
 install(TARGETS seasocks
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                )
 install(DIRECTORY seasocks
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        FILES_MATCHING PATTERN "*.h"
-        )
+                    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+                    FILES_MATCHING PATTERN "*.h"
+                    )
+

@@ -26,6 +26,7 @@
 #pragma once
 
 #include "seasocks/ResponseCode.h"
+#include "seasocks/ResponseWriter.h"
 #include "seasocks/WebSocket.h"
 
 #include <netinet/in.h>
@@ -45,7 +46,7 @@ class ServerImpl;
 class PageRequest;
 class Response;
 
-class Connection : public WebSocket {
+class Connection : public WebSocket, private ResponseWriter {
 public:
     Connection(
             std::shared_ptr<Logger> logger,
@@ -130,6 +131,12 @@ private:
     bool sendData(const std::string& type, const char* start, size_t size);
     bool sendHeader(const std::string& type, size_t size);
 
+    // From ResponseWriter.
+    void begin(ResponseCode responseCode) override;
+    void header(const std::string &header, const std::string &value) override;
+    void payload(const void* data, size_t size) override;
+    void finish(bool keepConnectionOpen) override;
+
     struct Range {
         long start;
         long end;
@@ -161,6 +168,7 @@ private:
     std::shared_ptr<WebSocket::Handler> _webSocketHandler;
     bool _shutdownByUser;
     std::unique_ptr<PageRequest> _request;
+    std::shared_ptr<Response> _response;
 
     enum State {
         INVALID,
@@ -169,6 +177,9 @@ private:
         HANDLING_HIXIE_WEBSOCKET,
         HANDLING_HYBI_WEBSOCKET,
         BUFFERING_POST_DATA,
+        AWAITING_RESPONSE_BEGIN,
+        SENDING_RESPONSE_HEADERS,
+        SENDING_RESPONSE_BODY
     };
     State _state;
 

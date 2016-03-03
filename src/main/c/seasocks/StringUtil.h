@@ -27,6 +27,7 @@
 
 #include <netinet/in.h>
 
+#include <ctime>
 #include <string>
 #include <vector>
 
@@ -44,5 +45,9 @@ std::vector<std::string> split(const std::string& input, char splitChar);
 void replace(std::string& string, const std::string& find, const std::string& replace);
 
 bool caseInsensitiveSame(const std::string &lhs, const std::string &rhs);
+
+std::string webtime(time_t time);
+
+std::string now();
 
 }  // namespace seasocks
