@@ -26,7 +26,6 @@
 #pragma once
 
 #include "seasocks/ResponseCode.h"
-#include "seasocks/ResponseWriter.h"
 #include "seasocks/WebSocket.h"
 
 #include <netinet/in.h>
@@ -45,8 +44,9 @@ class Logger;
 class ServerImpl;
 class PageRequest;
 class Response;
+class ResponseWriter;
 
-class Connection : public WebSocket, private ResponseWriter {
+class Connection : public WebSocket {
 public:
     Connection(
             std::shared_ptr<Logger> logger,
@@ -132,12 +132,13 @@ private:
     bool sendData(const std::string& type, const char* start, size_t size);
     bool sendHeader(const std::string& type, size_t size);
 
-    // From ResponseWriter.
-    void begin(ResponseCode responseCode) override;
-    void header(const std::string &header, const std::string &value) override;
-    void payload(const void* data, size_t size) override;
-    void finish(bool keepConnectionOpen) override;
-    void error(ResponseCode responseCode, const std::string &payload) override;
+    // Delegated from ResponseWriter.
+    struct Writer;
+    void begin(ResponseCode responseCode);
+    void header(const std::string &header, const std::string &value);
+    void payload(const void* data, size_t size);
+    void finish(bool keepConnectionOpen);
+    void error(ResponseCode responseCode, const std::string &payload);
 
     struct Range {
         long start;
@@ -171,6 +172,7 @@ private:
     bool _shutdownByUser;
     std::unique_ptr<PageRequest> _request;
     std::shared_ptr<Response> _response;
+    std::shared_ptr<Writer> _writer;
 
     enum State {
         INVALID,

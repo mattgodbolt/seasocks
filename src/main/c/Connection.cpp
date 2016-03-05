@@ -41,6 +41,7 @@
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/ToString.h"
+#include "seasocks/ResponseWriter.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -195,6 +196,29 @@ bool hasConnectionType(const std::string &connection, const std::string &type) {
 
 namespace seasocks {
 
+struct Connection::Writer : ResponseWriter {
+    Connection *connection_;
+    Writer(Connection &connection) : connection_(&connection) {}
+
+    void detach() { connection_ = nullptr; }
+
+    void begin(ResponseCode responseCode) override {
+        if (connection_) connection_->begin(responseCode);
+    }
+    void header(const std::string &header, const std::string &value) override {
+        if (connection_) connection_->header(header, value);
+    }
+    void payload(const void *data, size_t size) override {
+        if (connection_) connection_->payload(data, size);
+    }
+    void finish(bool keepConnectionOpen) override {
+        if (connection_) connection_->finish(keepConnectionOpen);
+    }
+    void error(ResponseCode responseCode, const std::string &payload) override {
+        if (connection_) connection_->error(responseCode, payload);
+    }
+};
+
 Connection::Connection(
         std::shared_ptr<Logger> logger,
         ServerImpl& server,
@@ -211,6 +235,7 @@ Connection::Connection(
       _bytesSent(0),
       _bytesReceived(0),
       _shutdownByUser(false),
+      _writer(std::make_shared<Writer>(*this)),
       _state(READING_HEADERS) {
 }
 
@@ -247,6 +272,9 @@ void Connection::closeInternal() {
 void Connection::finalise() {
     if (_response) {
         _response->cancel();
+        _response.reset();
+        _writer->detach();
+        _writer.reset();
     }
     if (_webSocketHandler) {
         _webSocketHandler->onDisconnect(this);
@@ -834,7 +862,7 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
     assert(_response.get() == nullptr);
     _state = AWAITING_RESPONSE_BEGIN;
     _response = response;
-    _response->handle(*this);
+    _response->handle(_writer);
     return true;
 }
 

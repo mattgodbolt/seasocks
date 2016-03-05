@@ -49,22 +49,21 @@ using namespace std;
 // The AsyncResponse does some long-lived "work" (in this case a big sleep...)
 // before responding to the ResponseWriter. It uses a new thread to perform this
 // "work". As responses can be canceled before the work is complete, we must
-// ensure we can handle cancelations coming from the main thread while the work
-// is running. Additionally we must ensure the AsyncResponse object lives longer
-// than both the request that's being handled and the "work" thread, even if the
-// request terminates earlier because it's canceled (e.g. the user closes the
-// web browser tab). To achieve this, the thread keeps a copy of the shared_ptr
-// to the AsyncResponse. This requires enable_shared_from_this.
+// ensure the AsyncResponse object lives longer than both the request that's
+// being handled and the "work" thread, even if the request terminates earlier
+// because it has been canceled (e.g. the user closes the web browser tab). To
+// achieve this, the thread keeps a copy of the shared_ptr to the AsyncResponse.
+// This requires enable_shared_from_this.
 struct AsyncResponse : Response, Server::Runnable, enable_shared_from_this<AsyncResponse> {
     Server &_server;
     mutex _mutex;
-    ResponseWriter *_writer;
+    shared_ptr<ResponseWriter> _writer;
     string _response;
-    AsyncResponse(Server &server) : _server(server), _writer(nullptr) {}
+    AsyncResponse(Server &server) : _server(server) {}
 
-    // From Response
-    virtual void handle(ResponseWriter &writer) override {
-        _writer = &writer;
+    // From Response:
+    virtual void handle(shared_ptr<ResponseWriter> writer) override {
+        _writer = writer;
         auto &server = _server;
         auto responder = shared_from_this(); // pass another copy of the shared_ptr to us into the thread
         thread t([&server, responder] () mutable {
@@ -73,11 +72,10 @@ struct AsyncResponse : Response, Server::Runnable, enable_shared_from_this<Async
         });
         t.detach();
     }
-    // On cancelation we must prevent any writes to the _writer; it is no longer
-    // valid.
     virtual void cancel() override {
-        lock_guard<decltype(_mutex)> lock(_mutex);
-        _writer = nullptr;
+        // If we could cancel the thread, we would do so here. There's no need
+        // to invalidate the _writer; any writes to it after this will be
+        // silently dropped.
     }
 
     // setResponse is called from the long-running thread.
@@ -85,20 +83,16 @@ struct AsyncResponse : Response, Server::Runnable, enable_shared_from_this<Async
         lock_guard<decltype(_mutex)> lock(_mutex);
         _response = response;
         _server.execute(shared_from_this()); // run our response
-        // NB we could avoid running on the server if we've been canceled by
-        // now, but we would still need the check in run() anyway; so we don't
-        // bother here.
     }
+
     // From Server::Runnable - this code runs back on the Seasocks thread once
-    // we're done. Note we may have been canceled by now.
+    // we're done.
     virtual void run() override {
         lock_guard<decltype(_mutex)> lock(_mutex);
-        if (!_writer) return;  // we were canceled before we got to run
         _writer->begin(ResponseCode::Ok);
         _writer->payload(_response.data(), _response.length());
         _writer->finish(false);
     }
-
 };
 
 struct DataHandler : CrackedUriPageHandler {

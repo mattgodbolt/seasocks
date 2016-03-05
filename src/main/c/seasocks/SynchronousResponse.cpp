@@ -29,38 +29,38 @@
 
 using namespace seasocks;
 
-void SynchronousResponse::handle(ResponseWriter &writer) {
+void SynchronousResponse::handle(std::shared_ptr<ResponseWriter> writer) {
     auto rc = responseCode();
     if (!isOk(rc)) {
-        writer.error(rc, std::string(payload(), payloadSize()));
+        error(rc, std::string(payload(), payloadSize()));
         return;
     }
 
-    writer.begin(responseCode());
+    writer->begin(responseCode());
 
-    writer.header("Content-Length", toString(payloadSize()));
-    writer.header("Content-Type", contentType());
-    writer.header("Connection", keepConnectionAlive() ? "keep-alive" : "close");
-    writer.header("Last-Modified", now());
-    writer.header("Pragma", "no-cache");
+    writer->header("Content-Length", toString(payloadSize()));
+    writer->header("Content-Type", contentType());
+    writer->header("Connection", keepConnectionAlive() ? "keep-alive" : "close");
+    writer->header("Last-Modified", now());
+    writer->header("Pragma", "no-cache");
 
     auto headers = getAdditionalHeaders();
 
     if (headers.find("Cache-Control") == headers.end()) {
-        writer.header("Cache-Control", "no-store");
+        writer->header("Cache-Control", "no-store");
     }
 
     if (headers.find("Expires") == headers.end()) {
-        writer.header("Expires", now());
+        writer->header("Expires", now());
     }
 
     for (auto it = headers.begin(); it != headers.end(); ++it) {
-        writer.header(it->first, it->second);
+        writer->header(it->first, it->second);
     }
 
-    writer.payload(payload(), payloadSize());
+    writer->payload(payload(), payloadSize());
 
-    writer.finish(keepConnectionAlive());
+    writer->finish(keepConnectionAlive());
 }
 
 void SynchronousResponse::cancel() {
