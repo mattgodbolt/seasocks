@@ -392,27 +392,32 @@ Server::PollResult Server::poll(int millis) {
 }
 
 void Server::processEventQueue() {
-    for (;;) {
-        std::shared_ptr<Runnable> runnable = popNextRunnable();
-        if (!runnable) break;
-        runnable->run();
-    }
+    runExecutables();
     time_t now = time(nullptr);
-    if (now >= _nextDeadConnectionCheck) {
-        std::list<Connection*> toRemove;
-        for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
-            time_t numSecondsSinceConnection = now - it->second;
-            auto connection = it->first;
-            if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
-                LS_INFO(_logger, formatAddress(connection->getRemoteAddress())
-                        << " : Killing lame connection - no bytes received after " << numSecondsSinceConnection << "s");
-                toRemove.push_back(connection);
-            }
-        }
-        for (auto it = toRemove.begin(); it != toRemove.end(); ++it) {
-            delete *it;
+    if (now < _nextDeadConnectionCheck) return;
+    std::list<Connection*> toRemove;
+    for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
+        time_t numSecondsSinceConnection = now - it->second;
+        auto connection = it->first;
+        if (connection->bytesReceived() == 0
+            && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
+            LS_INFO(_logger, formatAddress(connection->getRemoteAddress())
+                    << " : Killing lame connection - no bytes received after "
+                             << numSecondsSinceConnection << "s");
+            toRemove.push_back(connection);
         }
     }
+    for (auto it = toRemove.begin(); it != toRemove.end(); ++it) {
+        delete *it;
+    }
+}
+
+void Server::runExecutables() {
+    decltype(_pendingExecutables) copy;
+    std::unique_lock<decltype(_pendingExecutableMutex)> lock(_pendingExecutableMutex);
+    copy.swap(_pendingExecutables);
+    lock.unlock();
+    for (auto &&ex : copy) ex();
 }
 
 void Server::handleAccept() {
@@ -496,8 +501,12 @@ std::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endp
 }
 
 void Server::execute(std::shared_ptr<Runnable> runnable) {
-    std::unique_lock<decltype(_pendingRunnableMutex)> lock(_pendingRunnableMutex);
-    _pendingRunnables.push_back(runnable);
+    execute([runnable]{ runnable->run(); });
+}
+
+void Server::execute(std::function<void()> toExecute) {
+    std::unique_lock<decltype(_pendingExecutableMutex)> lock(_pendingExecutableMutex);
+    _pendingExecutables.emplace_back(std::move(toExecute));
     lock.unlock();
 
     uint64_t one = 1;
@@ -506,16 +515,6 @@ void Server::execute(std::shared_ptr<Runnable> runnable) {
             LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
         }
     }
-}
-
-std::shared_ptr<Server::Runnable> Server::popNextRunnable() {
-    std::lock_guard<decltype(_pendingRunnableMutex)> lock(_pendingRunnableMutex);
-    std::shared_ptr<Runnable> runnable;
-    if (!_pendingRunnables.empty()) {
-        runnable = _pendingRunnables.front();
-        _pendingRunnables.pop_front();
-    }
-    return runnable;
 }
 
 std::string Server::getStatsDocument() const {
