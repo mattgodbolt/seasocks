@@ -23,7 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE.
 
-// A simple test designed to show how one might use asynchronous responses.
+// An example to show how one might use asynchronous responses.
 
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
@@ -46,62 +46,64 @@
 using namespace seasocks;
 using namespace std;
 
-struct AsyncResponse : Response {
+// The AsyncResponse does some long-lived "work" (in this case a big sleep...)
+// before responding to the ResponseWriter. It uses a new thread to perform this
+// "work". As responses can be canceled before the work is complete, we must
+// ensure we can handle cancelations coming from the main thread while the work
+// is running. Additionally we must ensure the AsyncResponse object lives longer
+// than both the request that's being handled and the "work" thread, even if the
+// request terminates earlier because it's canceled (e.g. the user closes the
+// web browser tab). To achieve this, the thread keeps a copy of the shared_ptr
+// to the AsyncResponse. This requires enable_shared_from_this.
+struct AsyncResponse : Response, Server::Runnable, enable_shared_from_this<AsyncResponse> {
     Server &_server;
+    mutex _mutex;
+    ResponseWriter *_writer;
     string _response;
-    AsyncResponse(Server &server) : _server(server) {}
+    AsyncResponse(Server &server) : _server(server), _writer(nullptr) {}
 
-    struct RespondOnServerThread : Server::Runnable {
-        mutex _mutex;
-        ResponseWriter *_writer;
-        string _response;
-        RespondOnServerThread(ResponseWriter &writer)
-        : _writer(&writer) {}
-        void setResponse(string response) {
-            lock_guard<decltype(_mutex)> lock(_mutex);
-            _response = response;
-        }
-        void cancel() {
-            lock_guard<decltype(_mutex)> lock(_mutex);
-            _writer = nullptr;
-        }
-        virtual void run() override {
-            lock_guard<decltype(_mutex)> lock(_mutex);  // TODO: lock unnnecesaary? seems like it can't happen any more
-            if (_writer) {
-                _writer->begin(ResponseCode::Ok);
-                _writer->payload(_response.data(), _response.length());
-                _writer->finish(false);
-            }
-        }
-    };
-    shared_ptr<RespondOnServerThread> _responder;
-
+    // From Response
     virtual void handle(ResponseWriter &writer) override {
-        assert(_responder.get() == nullptr);
-        // Construct the shared_ptr to responder here. We'll give it to the
-        // lambda in the thread so it remains live until the later of the db
-        // request being complete, and this response is complete. If while the
-        // request is still going, we get a cancelation, we'll tell the response
-        // it's canceled.
-        _responder = make_shared<RespondOnServerThread>(writer);
+        _writer = &writer;
         auto &server = _server;
-        auto responder = _responder;
+        auto responder = shared_from_this(); // pass another copy of the shared_ptr to us into the thread
         thread t([&server, responder] () mutable {
             usleep(5000000); // A long database query...
             responder->setResponse("some kind of response");
-            server.execute(responder); // run our response
         });
         t.detach();
     }
+    // On cancelation we must prevent any writes to the _writer; it is no longer
+    // valid.
     virtual void cancel() override {
-        _responder->cancel();
+        lock_guard<decltype(_mutex)> lock(_mutex);
+        _writer = nullptr;
     }
+
+    // setResponse is called from the long-running thread.
+    void setResponse(string response) {
+        lock_guard<decltype(_mutex)> lock(_mutex);
+        _response = response;
+        _server.execute(shared_from_this()); // run our response
+        // NB we could avoid running on the server if we've been canceled by
+        // now, but we would still need the check in run() anyway; so we don't
+        // bother here.
+    }
+    // From Server::Runnable - this code runs back on the Seasocks thread once
+    // we're done. Note we may have been canceled by now.
+    virtual void run() override {
+        lock_guard<decltype(_mutex)> lock(_mutex);
+        if (!_writer) return;  // we were canceled before we got to run
+        _writer->begin(ResponseCode::Ok);
+        _writer->payload(_response.data(), _response.length());
+        _writer->finish(false);
+    }
+
 };
 
-struct MyHandler : CrackedUriPageHandler {
+struct DataHandler : CrackedUriPageHandler {
     virtual std::shared_ptr<Response> handle(
             const CrackedUri &/*uri*/, const Request &request) override {
-        // TODO: the response can be the runnable here too if we kick off the lambda here
         return make_shared<AsyncResponse>(request.server());
     }
 };
@@ -111,10 +113,10 @@ int main(int /*argc*/, const char* /*argv*/[]) {
 
     Server server(logger);
     auto root = make_shared<RootPageHandler>();
-    auto pathHandler = make_shared<PathHandler>("data", make_shared<MyHandler>());
+    auto pathHandler = make_shared<PathHandler>("data", make_shared<DataHandler>());
     root->add(pathHandler);
     server.addPageHandler(root);
 
-    server.serve("src/ws_test_web", 9090);
+    server.serve("src/async_test_web", 9090);
     return 0;
 }

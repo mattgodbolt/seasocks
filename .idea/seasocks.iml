@@ -103,13 +103,27 @@
           <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include" />
           <root url="file:///usr/include" />
           <root url="file:///usr/local/include" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Release" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Debug" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/RelWithDebInfo" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/MinSizeRel" />
         </CLASSES>
         <SOURCES>
           <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed" />
           <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include" />
           <root url="file:///usr/include" />
           <root url="file:///usr/local/include" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Release" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Debug" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/RelWithDebInfo" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/MinSizeRel" />
         </SOURCES>
+        <excluded>
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Release/Embedded.cpp" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Debug/Embedded.cpp" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/RelWithDebInfo/Embedded.cpp" />
+          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/MinSizeRel/Embedded.cpp" />
+        </excluded>
       </library>
     </orderEntry>
   </component>
