@@ -35,10 +35,24 @@ class ResponseWriter {
 public:
     virtual ~ResponseWriter() {}
 
+    // Begins a request with the given code. If you want to generate a "normal"
+    // seasocks error, see 'error' below. After beginning, it is expected you
+    // will call 'header' zero or more times, then 'payload' zero or more times,
+    // then 'finish' exactly once.
     virtual void begin(ResponseCode responseCode) = 0;
+    // Add a header. Must be called after 'begin' and before 'payload'. May be
+    // called as many times as needed.
     virtual void header(const std::string &header, const std::string &value) = 0;
+    // Add some payload data. Must be called after 'begin' and any 'header' calls.
+    // May be called multiple times.
     virtual void payload(const void* data, size_t size) = 0;
+    // Finish a response.
     virtual void finish(bool keepConnectionOpen) = 0;
+    // Send an error back to the user. No calls to 'header' or 'payload'
+    // or 'finish' should be executed. If you wish to serve your own error document
+    // then use the normal 'begin'/'header'/'payload'/'finish' process but with
+    // an error code. This routine is to get Seasocks to generate its own error.
+    virtual void error(ResponseCode responseCode, const std::string &payload) = 0;
 };
 
 }

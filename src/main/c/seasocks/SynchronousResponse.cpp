@@ -30,6 +30,12 @@
 using namespace seasocks;
 
 void SynchronousResponse::handle(ResponseWriter &writer) {
+    auto rc = responseCode();
+    if (!isOk(rc)) {
+        writer.error(rc, std::string(payload(), payloadSize()));
+        return;
+    }
+
     writer.begin(responseCode());
 
     writer.header("Content-Length", toString(payloadSize()));

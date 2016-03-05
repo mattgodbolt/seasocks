@@ -38,7 +38,7 @@ class ResponseWriter;
 class Response {
 public:
     virtual ~Response() {}
-    virtual void handle(ResponseWriter &writer) = 0;
+    virtual void handle(ResponseWriter &writer) = 0; // TODO: consider passing a shared_ptr here to make life easier on async implementors?
     virtual void cancel() = 0;
 
     static std::shared_ptr<Response> unhandled();

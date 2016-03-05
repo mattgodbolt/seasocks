@@ -137,6 +137,7 @@ private:
     void header(const std::string &header, const std::string &value) override;
     void payload(const void* data, size_t size) override;
     void finish(bool keepConnectionOpen) override;
+    void error(ResponseCode responseCode, const std::string &payload) override;
 
     struct Range {
         long start;

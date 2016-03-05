@@ -831,19 +831,28 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
     if (response == Response::unhandled()) {
         return sendStaticData();
     }
-    /*
-    if (response->responseCode() == ResponseCode::NotFound) {
-        // TODO: better here; we use this purely to serve our own embedded content.
-        return send404();
-    } else if (!isOk(response->responseCode())) {
-        return sendError(response->responseCode(), response->payload());
-    }
-*/
     assert(_response.get() == nullptr);
     _state = AWAITING_RESPONSE_BEGIN;
     _response = response;
     _response->handle(*this);
     return true;
+}
+
+void Connection::error(ResponseCode responseCode, const std::string &payload) {
+    _server.checkThread();
+    if (_state != AWAITING_RESPONSE_BEGIN) {
+        LS_ERROR(_logger, "error() called when in wrong state");
+        return;
+    }
+    if (isOk(responseCode)) {
+        LS_ERROR(_logger, "error() called with a non-error code");
+    }
+    if (responseCode == ResponseCode::NotFound) {
+        // TODO: better here; we use this purely to serve our own embedded content.
+        send404();
+    } else {
+        sendError(responseCode, payload);
+    }
 }
 
 void Connection::begin(ResponseCode responseCode) {
