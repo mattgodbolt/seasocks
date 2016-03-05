@@ -39,27 +39,27 @@ public:
     ConcreteResponse(ResponseCode responseCode, const std::string& payload, const std::string& contentType, const Headers& headers, bool keepAlive) :
         _responseCode(responseCode), _payload(payload), _contentType(contentType), _headers(headers), _keepAlive(keepAlive) {}
 
-    virtual ResponseCode responseCode() const {
+    virtual ResponseCode responseCode() const override {
         return _responseCode;
     }
 
-    virtual const char* payload() const {
+    virtual const char* payload() const override {
         return _payload.c_str();
     }
 
-    virtual size_t payloadSize() const {
+    virtual size_t payloadSize() const override {
         return _payload.size();
     }
 
-    virtual bool keepConnectionAlive() const {
+    virtual bool keepConnectionAlive() const override {
         return _keepAlive;
     }
 
-    virtual std::string contentType() const {
+    virtual std::string contentType() const override {
         return _contentType;
     }
 
-    virtual Headers getAdditionalHeaders() const {
+    virtual Headers getAdditionalHeaders() const override {
         return _headers;
     }
 };
