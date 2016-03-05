@@ -15,10 +15,11 @@
     </content>
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/Response.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/WebSocket.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/PrintfLogger.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ServerImpl.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ToString.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Credentials.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/util/PathHandler.h" isTestSource="false" />
@@ -29,32 +30,34 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/util/CrackedUri.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/util/Html.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/SynchronousResponse.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/WebSocket.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Logger.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/PrintfLogger.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Response.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Server.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/PageHandler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Connection.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCodeDefs.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/StringUtil.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseWriter.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/IgnoringLogger.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/SynchronousResponse.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Response.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/PathHandler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/RootPageHandler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/Json.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/CrackedUri.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/Logger.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/Server.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/HybiPacketDecoder.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/StringUtil.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/sha1/sha1.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/sha1/sha1.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/Connection.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/md5/md5.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/md5/md5.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/Connection.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/HybiAccept.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/PageRequest.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/internal/ConcreteResponse.h" isTestSource="false" />
@@ -75,6 +78,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test_poll.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/async_test.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/ConnectionTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/HeaderMapTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/CrackedUriTests.cpp" isTestSource="false" />
@@ -99,27 +103,13 @@
           <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include" />
           <root url="file:///usr/include" />
           <root url="file:///usr/local/include" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Release" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Debug" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/RelWithDebInfo" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/MinSizeRel" />
         </CLASSES>
         <SOURCES>
           <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed" />
           <root url="file:///usr/lib/gcc/x86_64-linux-gnu/4.8/include" />
           <root url="file:///usr/include" />
           <root url="file:///usr/local/include" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Release" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Debug" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/RelWithDebInfo" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/MinSizeRel" />
         </SOURCES>
-        <excluded>
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Release/Embedded.cpp" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/Debug/Embedded.cpp" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/RelWithDebInfo/Embedded.cpp" />
-          <root url="file://$USER_HOME$/.CLion15/system/cmake/generated/seasocks-e279a164/e279a164/MinSizeRel/Embedded.cpp" />
-        </excluded>
       </library>
     </orderEntry>
   </component>
