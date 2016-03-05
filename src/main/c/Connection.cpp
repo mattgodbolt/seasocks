@@ -245,6 +245,9 @@ void Connection::closeInternal() {
 
 
 void Connection::finalise() {
+    if (_response) {
+        _response->cancel();
+    }
     if (_webSocketHandler) {
         _webSocketHandler->onDisconnect(this);
         _webSocketHandler.reset();
@@ -397,6 +400,10 @@ void Connection::handleNewData() {
         break;
     case BUFFERING_POST_DATA:
         handleBufferingPostData();
+        break;
+    case AWAITING_RESPONSE_BEGIN:
+    case SENDING_RESPONSE_BODY:
+    case SENDING_RESPONSE_HEADERS:
         break;
     default:
         assert(false);
@@ -769,7 +776,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         verb = Request::Verb::WebSocket;
     }
 
-    _request.reset(new PageRequest(_address, requestUri, verb, std::move(headers)));
+    _request.reset(new PageRequest(_address, requestUri, _server.server(),
+                                   verb, std::move(headers)));
 
     const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
     if (verb == Request::Verb::Get && embedded) {
@@ -1096,6 +1104,10 @@ std::string Connection::getHeader(const std::string& header) const {
 const std::string& Connection::getRequestUri() const {
     static const std::string empty;
     return _request ? _request->getRequestUri() : empty;
+}
+
+Server &Connection::server() const {
+    return _server.server();
 }
 
 }  // seasocks

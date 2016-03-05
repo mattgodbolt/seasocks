@@ -75,6 +75,7 @@ public:
     virtual const uint8_t* content() const override { return nullptr; }
     virtual bool hasHeader(const std::string&) const override;
     virtual std::string getHeader(const std::string&) const override;
+    virtual Server &server() const override;
 
     void setLinger();
 

@@ -57,3 +57,5 @@ void SynchronousResponse::handle(ResponseWriter &writer) {
     writer.finish(keepConnectionAlive());
 }
 
+void SynchronousResponse::cancel() {
+}

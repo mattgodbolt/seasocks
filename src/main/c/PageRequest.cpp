@@ -33,11 +33,13 @@ namespace seasocks {
 PageRequest::PageRequest(
         const sockaddr_in& remoteAddress,
         const std::string& requestUri,
+        Server &server,
         Verb verb,
         HeaderMap&& headers) :
             _credentials(std::shared_ptr<Credentials>(new Credentials())),
             _remoteAddress(remoteAddress),
             _requestUri(requestUri),
+            _server(server),
             _verb(verb),
             _headers(std::move(headers)),
             _contentLength(getUintHeader("Content-Length")) {

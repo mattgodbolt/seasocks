@@ -27,10 +27,10 @@ include_directories("src/main/c"
         ${CMAKE_BINARY_DIR}
         )
 
+find_package(Threads)
+
 add_subdirectory("src/main/c")
 add_subdirectory("src/app/c")
-
-find_package(Threads)
 
 if (UNITTESTS)
     find_program(MEMORYCHECK_COMMAND valgrind)

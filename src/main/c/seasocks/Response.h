@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2016, Matt Godbolt
+// Copyright (c) 2013-2015, Matt Godbolt
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without 
@@ -39,6 +39,7 @@ class Response {
 public:
     virtual ~Response() {}
     virtual void handle(ResponseWriter &writer) = 0;
+    virtual void cancel() = 0;
 
     static std::shared_ptr<Response> unhandled();
 

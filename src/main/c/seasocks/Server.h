@@ -126,6 +126,7 @@ private:
     virtual std::shared_ptr<Response> handle(const Request &request) override;
     virtual std::string getStatsDocument() const override;
     virtual void checkThread() const override;
+    virtual Server &server() override { return *this; }
 
     bool makeNonBlocking(int fd) const;
     bool configureSocket(int fd) const;

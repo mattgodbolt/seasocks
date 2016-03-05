@@ -34,6 +34,8 @@
 
 namespace seasocks {
 
+class Server;
+
 class Request {
 public:
     virtual ~Request() {}
@@ -47,6 +49,8 @@ public:
         Delete,
         Head,
     };
+
+    virtual Server &server() const = 0;
 
     virtual Verb verb() const = 0;
 
