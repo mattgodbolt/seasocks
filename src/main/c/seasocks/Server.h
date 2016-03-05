@@ -32,6 +32,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -114,6 +115,8 @@ public:
     };
     // Execute a task on the SeaSocks thread.
     void execute(std::shared_ptr<Runnable> runnable);
+    using Executable = std::function<void()>;
+    void execute(Executable toExecute);
 
 private:
     // From ServerImpl
@@ -130,8 +133,8 @@ private:
     bool makeNonBlocking(int fd) const;
     bool configureSocket(int fd) const;
     void handleAccept();
-    std::shared_ptr<Runnable> popNextRunnable();
     void processEventQueue();
+    void runExecutables();
 
     void shutdown();
 
@@ -159,8 +162,8 @@ private:
 
     std::list<std::shared_ptr<PageHandler>> _pageHandlers;
 
-    std::mutex _pendingRunnableMutex;
-    std::list<std::shared_ptr<Runnable>> _pendingRunnables;
+    std::mutex _pendingExecutableMutex;
+    std::list<Executable> _pendingExecutables;
 
     pid_t _threadId;
 

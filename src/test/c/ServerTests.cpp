@@ -33,14 +33,6 @@
 
 using namespace seasocks;
 
-namespace {
-struct FunctionRunnable : Server::Runnable {
-    std::function<void()> func;
-    template<typename T>
-    FunctionRunnable(T &&t) : func(std::forward<T>(t)) {}
-    void run() override { func(); }
-};
-}
 
 TEST_CASE("Server tests", "[ServerTests]") {
     auto logger = std::make_shared<IgnoringLogger>();
@@ -51,11 +43,11 @@ TEST_CASE("Server tests", "[ServerTests]") {
     });
 
     std::atomic<int> test(0);
-    SECTION("should run work") {
-        server.execute(std::make_shared<FunctionRunnable>([&]{
+    SECTION("execute should work") {
+        server.execute([&]{
             CHECK(test == 0);
             test++;
-        }));
+        });
         for (int i = 0; i < 1000 * 1000 * 1000; ++i) {
             if (test) break;
         }
