@@ -27,6 +27,7 @@
 
 #include "seasocks/ServerImpl.h"
 
+#include <stdexcept>
 #include <unordered_map>
 
 namespace seasocks {
@@ -51,6 +52,7 @@ public:
     std::shared_ptr<Response> handle(const Request &/*request*/) override { return std::shared_ptr<Response>(); }
     std::string getStatsDocument() const override { return ""; }
     void checkThread() const override { }
+    Server &server() override { throw std::runtime_error("not supported"); };
 };
 
 }
