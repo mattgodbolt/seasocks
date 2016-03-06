@@ -44,7 +44,6 @@ class Logger;
 class ServerImpl;
 class PageRequest;
 class Response;
-class ResponseWriter;
 
 class Connection : public WebSocket {
 public:
