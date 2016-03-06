@@ -31,6 +31,10 @@
 
 namespace seasocks {
 
+// An interface to write a response to a Request. All methods must be called
+// from the Seasocks main thread. Safe in the presence of closed connections:
+// writes to connections that have closed are silently dropped. Responses that
+// wish to take note of cloed connections must use their cancel() callback.
 class ResponseWriter {
 public:
     virtual ~ResponseWriter() {}
