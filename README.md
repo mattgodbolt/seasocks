@@ -1,4 +1,4 @@
-SeaSocks - A tiny embeddable C++ HTTP and WebSocket server
+Seasocks - A tiny embeddable C++ HTTP and WebSocket server
 ==========================================================
 
 [![Build Status](https://travis-ci.org/mattgodbolt/seasocks.svg?branch=master)](https://travis-ci.org/mattgodbolt/seasocks)
@@ -19,6 +19,6 @@ It has been designed for WebSocket based control.
 
 Getting started
 ---------------
-Check out the [tutorial](https://github.com/mattgodbolt/seasocks/wiki/SeaSocks-quick-tutorial) on the wiki.
+Check out the [tutorial](https://github.com/mattgodbolt/seasocks/wiki/Seasocks-quick-tutorial) on the wiki.
 
 See [src/app/c/ws_test.cpp](https://github.com/mattgodbolt/seasocks/blob/master/src/app/c/ws_test.cpp) for an example.

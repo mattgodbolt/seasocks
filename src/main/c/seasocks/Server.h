@@ -113,7 +113,7 @@ public:
         virtual ~Runnable() {}
         virtual void run() = 0;
     };
-    // Execute a task on the SeaSocks thread.
+    // Execute a task on the Seasocks thread.
     void execute(std::shared_ptr<Runnable> runnable);
     using Executable = std::function<void()>;
     void execute(Executable toExecute);
