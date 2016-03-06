@@ -13,3 +13,7 @@ add_app(async_test)
 add_custom_command(TARGET ws_test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/src/ws_test_web $<TARGET_FILE_DIR:ws_test>/src/ws_test_web)
+
+add_custom_command(TARGET async_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/src/async_test_web $<TARGET_FILE_DIR:ws_test>/src/async_test_web)
