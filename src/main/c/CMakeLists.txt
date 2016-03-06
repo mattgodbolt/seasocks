@@ -16,12 +16,15 @@ add_library(seasocks
         Logger.cpp
         HybiAccept.cpp
         seasocks/ServerImpl.h
+        seasocks/SynchronousResponse.h
         seasocks/Server.h
+        seasocks/SynchronousResponse.cpp
         seasocks/ToString.h
         seasocks/ResponseBuilder.h
         seasocks/Request.h
         seasocks/IgnoringLogger.h
         seasocks/Credentials.h
+        seasocks/ResponseWriter.h
         seasocks/PrintfLogger.h
         seasocks/util/PathHandler.h
         seasocks/util/CrackedUri.h
@@ -53,20 +56,16 @@ add_library(seasocks
         internal/Version.h
         internal/PageRequest.h
         internal/ConcreteResponse.h
-        seasocks/ResponseWriter.h
-        seasocks/SynchronousResponse.cpp
-        seasocks/SynchronousResponse.h
 
         $<TARGET_OBJECTS:embedded>
         )
 
 install(TARGETS seasocks
-                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                )
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
 install(DIRECTORY seasocks
-                    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-                    FILES_MATCHING PATTERN "*.h"
-                    )
-
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING PATTERN "*.h"
+        )
