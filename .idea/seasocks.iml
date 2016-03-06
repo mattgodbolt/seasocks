@@ -15,9 +15,10 @@
     </content>
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/Response.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/PrintfLogger.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/WebSocket.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ServerImpl.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/PrintfLogger.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ToString.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseBuilder.h" isTestSource="false" />
@@ -31,9 +32,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/util/Html.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Request.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/SynchronousResponse.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/WebSocket.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Logger.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Response.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/IgnoringLogger.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Server.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/PageHandler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Connection.h" isTestSource="false" />
@@ -41,9 +41,10 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCodeDefs.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/StringUtil.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseWriter.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/IgnoringLogger.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/TransferEncoding.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/SynchronousResponse.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/ResponseCode.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/c/seasocks/Response.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/PathHandler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/RootPageHandler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/c/util/Json.cpp" isTestSource="false" />

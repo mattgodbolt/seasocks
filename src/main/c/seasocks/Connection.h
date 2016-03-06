@@ -27,6 +27,8 @@
 
 #include "seasocks/ResponseCode.h"
 #include "seasocks/WebSocket.h"
+#include "seasocks/ResponseWriter.h"
+#include "seasocks/TransferEncoding.h"
 
 #include <netinet/in.h>
 
@@ -133,9 +135,9 @@ private:
 
     // Delegated from ResponseWriter.
     struct Writer;
-    void begin(ResponseCode responseCode);
+    void begin(ResponseCode responseCode, TransferEncoding encoding);
     void header(const std::string &header, const std::string &value);
-    void payload(const void* data, size_t size);
+    void payload(const void *data, size_t size, bool flush);
     void finish(bool keepConnectionOpen);
     void error(ResponseCode responseCode, const std::string &payload);
 
@@ -171,6 +173,8 @@ private:
     bool _shutdownByUser;
     std::unique_ptr<PageRequest> _request;
     std::shared_ptr<Response> _response;
+    TransferEncoding _transferEncoding;
+    unsigned _chunk;
     std::shared_ptr<Writer> _writer;
 
     enum State {
@@ -188,6 +192,7 @@ private:
 
     Connection(Connection& other) = delete;
     Connection& operator =(Connection& other) = delete;
+    void writeChunkHeader(size_t size);
 };
 
 }  // namespace seasocks

@@ -58,7 +58,7 @@ add_library(seasocks
         internal/ConcreteResponse.h
 
         $<TARGET_OBJECTS:embedded>
-        )
+        seasocks/TransferEncoding.h)
 
 install(TARGETS seasocks
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

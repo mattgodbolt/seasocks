@@ -47,15 +47,15 @@ using namespace seasocks;
 using namespace std;
 
 // The AsyncResponse does some long-lived "work" (in this case a big sleep...)
-// before responding to the ResponseWriter. It uses a new thread to perform this
-// "work". As responses can be canceled before the work is complete, we must
-// ensure the ResponseWriter used to communicate the response is kept alive long
-// enough by holding its shared_ptr in the "work" thread. Seasocks will tell the
-// response it has been cancelled (if the connection associated with the request
-// is cloesd); but the ResponseWriter is safe in the presence of a closed
-// connection so for simplicity this example does nothing in the cancel() method.
-// It is assumed the lifetime of the Server object is long enough for all requests
-// to complete before it is destroyed.
+// before responding to the ResponseWriter, in chunks. It uses a new thread to
+// perform this "work". As responses can be canceled before the work is
+// complete, we must ensure the ResponseWriter used to communicate the response
+// is kept alive long enough by holding its shared_ptr in the "work" thread.
+// Seasocks will tell the response it has been cancelled (if the connection
+// associated with the request is cloesd); but the ResponseWriter is safe in the
+// presence of a closed connection so for simplicity this example does nothing
+// in the cancel() method. It is assumed the lifetime of the Server object is
+// long enough for all requests to complete before it is destroyed.
 struct AsyncResponse : Response {
     Server &_server;
     AsyncResponse(Server &server) : _server(server) {}
@@ -64,12 +64,25 @@ struct AsyncResponse : Response {
     virtual void handle(shared_ptr<ResponseWriter> writer) override {
         auto &server = _server;
         thread t([&server, writer] () mutable {
-            usleep(5000000); // A long database query...
-            string response = "some kind of response";
+            usleep(1000000); // A long database query...
+            string response = "some kind of response...beginning<br>";
             server.execute([response, writer]{
-                writer->begin(ResponseCode::Ok);
+                writer->begin(ResponseCode::Ok, TransferEncoding::Chunked);
+                writer->header("Content-type", "application/html");
                 writer->payload(response.data(), response.length());
-                writer->finish(false);
+            });
+            response = "more data...<br>";
+            for (auto i = 0; i < 5; ++i) {
+                usleep(1000000); // more data
+                server.execute([response, writer]{
+                    writer->payload(response.data(), response.length());
+                });
+            }
+            response = "Done!";
+            usleep(100000); // final data
+            server.execute([response, writer]{
+                writer->payload(response.data(), response.length());
+                writer->finish(true);
             });
         });
         t.detach();

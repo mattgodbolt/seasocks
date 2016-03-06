@@ -197,25 +197,29 @@ bool hasConnectionType(const std::string &connection, const std::string &type) {
 namespace seasocks {
 
 struct Connection::Writer : ResponseWriter {
-    Connection *connection_;
-    Writer(Connection &connection) : connection_(&connection) {}
+    Connection *_connection;
+    Writer(Connection &connection) : _connection(&connection) {}
 
-    void detach() { connection_ = nullptr; }
+    void detach() { _connection = nullptr; }
 
-    void begin(ResponseCode responseCode) override {
-        if (connection_) connection_->begin(responseCode);
+    void begin(ResponseCode responseCode, TransferEncoding encoding) override {
+        if (_connection) _connection->begin(responseCode, encoding);
     }
     void header(const std::string &header, const std::string &value) override {
-        if (connection_) connection_->header(header, value);
+        if (_connection) _connection->header(header, value);
     }
-    void payload(const void *data, size_t size) override {
-        if (connection_) connection_->payload(data, size);
+    void payload(const void *data, size_t size, bool flush) override {
+        if (_connection) _connection->payload(data, size, flush);
     }
     void finish(bool keepConnectionOpen) override {
-        if (connection_) connection_->finish(keepConnectionOpen);
+        if (_connection) _connection->finish(keepConnectionOpen);
     }
     void error(ResponseCode responseCode, const std::string &payload) override {
-        if (connection_) connection_->error(responseCode, payload);
+        if (_connection) _connection->error(responseCode, payload);
+    }
+
+    bool isActive() const override {
+        return _connection;
     }
 };
 
@@ -235,6 +239,7 @@ Connection::Connection(
       _bytesSent(0),
       _bytesReceived(0),
       _shutdownByUser(false),
+      _transferEncoding(TransferEncoding::Raw),
       _writer(std::make_shared<Writer>(*this)),
       _state(READING_HEADERS) {
 }
@@ -698,7 +703,8 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
         std::stringstream documentStr;
         documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
                 << "<body><h1>" << errorNumber << " - " << message << "</h1>"
-                << "<div>" << body << "</div><hr/><div><i>Powered by seasocks</i></div></body></html>";
+                << "<div>" << body << "</div><hr/><div><i>Powered by "
+                   "<a href=\"https://github.com/mattgodbolt/seasocks\">Seasocks</a></i></div></body></html>";
         document = documentStr.str();
     }
     bufferLine("Content-Length: " + toString(document.length()));
@@ -861,6 +867,8 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
     }
     assert(_response.get() == nullptr);
     _state = AWAITING_RESPONSE_BEGIN;
+    _transferEncoding = TransferEncoding::Raw;
+    _chunk = 0;
     _response = response;
     _response->handle(_writer);
     return true;
@@ -883,7 +891,7 @@ void Connection::error(ResponseCode responseCode, const std::string &payload) {
     }
 }
 
-void Connection::begin(ResponseCode responseCode) {
+void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
     _server.checkThread();
     if (_state != AWAITING_RESPONSE_BEGIN) {
         LS_ERROR(_logger, "begin() called when in wrong state");
@@ -891,6 +899,10 @@ void Connection::begin(ResponseCode responseCode) {
     }
     _state = SENDING_RESPONSE_HEADERS;
     bufferResponseAndCommonHeaders(responseCode);
+    _transferEncoding = encoding;
+    if (_transferEncoding == TransferEncoding::Chunked) {
+        bufferLine("Transfer-encoding: chunked");
+    }
 }
 
 void Connection::header(const std::string &header, const std::string &value) {
@@ -901,7 +913,7 @@ void Connection::header(const std::string &header, const std::string &value) {
     }
     bufferLine(header + ": " + value);
 }
-void Connection::payload(const void *data, size_t size) {
+void Connection::payload(const void *data, size_t size, bool flush) {
     _server.checkThread();
     if (_state == SENDING_RESPONSE_HEADERS) {
         bufferLine("");
@@ -910,7 +922,18 @@ void Connection::payload(const void *data, size_t size) {
         LS_ERROR(_logger, "payload() called when in wrong state");
         return;
     }
-    write(data, size, true);
+    if (size && _transferEncoding == TransferEncoding::Chunked) {
+        writeChunkHeader(size);
+    }
+    write(data, size, flush);
+}
+
+void Connection::writeChunkHeader(size_t size) {
+    char lengthBuffer[16];
+    auto len = snprintf(lengthBuffer, sizeof(lengthBuffer),
+                        _chunk ? "\r\n%lx\r\n" : "%lx\r\n", size);
+    _chunk++;
+    write(lengthBuffer, len, false);
 }
 
 void Connection::finish(bool keepConnectionOpen) {
@@ -921,6 +944,13 @@ void Connection::finish(bool keepConnectionOpen) {
         LS_ERROR(_logger, "finish() called when in wrong state");
         return;
     }
+    if (_transferEncoding == TransferEncoding::Chunked) {
+        writeChunkHeader(0);
+        write("\r\n", 2, false);
+    }
+
+    flush();
+
     if (!keepConnectionOpen) {
         closeWhenEmpty();
     }
