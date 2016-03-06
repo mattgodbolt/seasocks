@@ -49,26 +49,28 @@ using namespace std;
 // The AsyncResponse does some long-lived "work" (in this case a big sleep...)
 // before responding to the ResponseWriter. It uses a new thread to perform this
 // "work". As responses can be canceled before the work is complete, we must
-// ensure the AsyncResponse object lives longer than both the request that's
-// being handled and the "work" thread, even if the request terminates earlier
-// because it has been canceled (e.g. the user closes the web browser tab). To
-// achieve this, the thread keeps a copy of the shared_ptr to the AsyncResponse.
-// This requires enable_shared_from_this.
-struct AsyncResponse : Response, Server::Runnable, enable_shared_from_this<AsyncResponse> {
+// ensure the ResponseWriter used to communicate the response is kept alive long
+// enough by holding its shared_ptr in the "work" thread. Seasocks will tell the
+// response it has been cancelled (if the connection associated with the request
+// is cloesd); but the ResponseWriter is safe in the presence of a closed
+// connection so for simplicity this example does nothing in the cancel() method.
+// It is assumed the lifetime of the Server object is long enough for all requests
+// to complete before it is destroyed.
+struct AsyncResponse : Response {
     Server &_server;
-    mutex _mutex;
-    shared_ptr<ResponseWriter> _writer;
-    string _response;
     AsyncResponse(Server &server) : _server(server) {}
 
     // From Response:
     virtual void handle(shared_ptr<ResponseWriter> writer) override {
-        _writer = writer;
         auto &server = _server;
-        auto responder = shared_from_this(); // pass another copy of the shared_ptr to us into the thread
-        thread t([&server, responder] () mutable {
+        thread t([&server, writer] () mutable {
             usleep(5000000); // A long database query...
-            responder->setResponse("some kind of response");
+            string response = "some kind of response";
+            server.execute([response, writer]{
+                writer->begin(ResponseCode::Ok);
+                writer->payload(response.data(), response.length());
+                writer->finish(false);
+            });
         });
         t.detach();
     }
@@ -76,22 +78,6 @@ struct AsyncResponse : Response, Server::Runnable, enable_shared_from_this<Async
         // If we could cancel the thread, we would do so here. There's no need
         // to invalidate the _writer; any writes to it after this will be
         // silently dropped.
-    }
-
-    // setResponse is called from the long-running thread.
-    void setResponse(string response) {
-        lock_guard<decltype(_mutex)> lock(_mutex);
-        _response = response;
-        _server.execute(shared_from_this()); // run our response
-    }
-
-    // From Server::Runnable - this code runs back on the Seasocks thread once
-    // we're done.
-    virtual void run() override {
-        lock_guard<decltype(_mutex)> lock(_mutex);
-        _writer->begin(ResponseCode::Ok);
-        _writer->payload(_response.data(), _response.length());
-        _writer->finish(false);
     }
 };
 
