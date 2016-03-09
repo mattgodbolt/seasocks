@@ -930,8 +930,9 @@ void Connection::payload(const void *data, size_t size, bool flush) {
 
 void Connection::writeChunkHeader(size_t size) {
     char lengthBuffer[16];
+    // %z is a C99 feature, also a GNU extension.
     auto len = snprintf(lengthBuffer, sizeof(lengthBuffer),
-                        _chunk ? "\r\n%lx\r\n" : "%lx\r\n", size);
+                        _chunk ? "\r\n%zx\r\n" : "%zx\r\n", size);
     _chunk++;
     write(lengthBuffer, len, false);
 }
