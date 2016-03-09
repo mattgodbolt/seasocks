@@ -929,12 +929,12 @@ void Connection::payload(const void *data, size_t size, bool flush) {
 }
 
 void Connection::writeChunkHeader(size_t size) {
-    char lengthBuffer[16];
-    // %z is a C99 feature, also a GNU extension.
-    auto len = snprintf(lengthBuffer, sizeof(lengthBuffer),
-                        _chunk ? "\r\n%zx\r\n" : "%zx\r\n", size);
+    std::ostringstream lengthStr;
+    if (_chunk) lengthStr << "\r\n";
+    lengthStr << std::hex << size << "\r\n";
+    auto length = lengthStr.str();
     _chunk++;
-    write(lengthBuffer, len, false);
+    write(length.c_str(), length.size(), false);
 }
 
 void Connection::finish(bool keepConnectionOpen) {
