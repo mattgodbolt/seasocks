@@ -3,7 +3,7 @@
 set -e
 
 pushd /tmp
-GCC_HOME=$(fig -m gcc/4.9.2-1 -g GCC_HOME)
+GCC_HOME=$(fig -m gcc/5.2.0-1 -g GCC_HOME)
 popd
 export CC=${GCC_HOME}/bin/gcc
 export CXX=${GCC_HOME}/bin/g++
