@@ -30,6 +30,7 @@
 #include "catch.hpp"
 
 #include <thread>
+#include <unistd.h>
 
 using namespace seasocks;
 
@@ -52,6 +53,23 @@ TEST_CASE("Server tests", "[ServerTests]") {
             if (test) break;
         }
         CHECK(test == 1);
+    }
+
+    SECTION("many executes") {
+        std::atomic<bool> latch(false);
+        for (auto i = 0; i < 100; ++i) {
+            for (auto i = 0; i < 100; ++i) {
+                server.execute([&] { test++; });
+            }
+            usleep(10);
+        }
+        server.execute([&] { latch = true; });
+        for (int i = 0; i < 1000; ++i) {
+            usleep(1000);
+            if (latch) break;
+        }
+        CHECK(latch == 1);
+        CHECK(test == 10000);
     }
 
     server.terminate();
