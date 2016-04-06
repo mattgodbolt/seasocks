@@ -92,7 +92,7 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = nullptr) {
 class RaiiFd {
     int _fd;
 public:
-    RaiiFd(const char* filename) {
+    explicit RaiiFd(const char* filename) {
         _fd = ::open(filename, O_RDONLY);
     }
     RaiiFd(const RaiiFd&) = delete;
@@ -198,7 +198,7 @@ namespace seasocks {
 
 struct Connection::Writer : ResponseWriter {
     Connection *_connection;
-    Writer(Connection &connection) : _connection(&connection) {}
+    explicit Writer(Connection &connection) : _connection(&connection) {}
 
     void detach() { _connection = nullptr; }
 
@@ -240,6 +240,7 @@ Connection::Connection(
       _bytesReceived(0),
       _shutdownByUser(false),
       _transferEncoding(TransferEncoding::Raw),
+      _chunk(0u),
       _writer(std::make_shared<Writer>(*this)),
       _state(READING_HEADERS) {
 }

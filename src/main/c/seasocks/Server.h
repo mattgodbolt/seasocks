@@ -50,7 +50,7 @@ class Response;
 
 class Server : private ServerImpl {
 public:
-    Server(std::shared_ptr<Logger> logger);
+    explicit Server(std::shared_ptr<Logger> logger);
     virtual ~Server();
 
     void addPageHandler(std::shared_ptr<PageHandler> handler);

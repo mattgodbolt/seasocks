@@ -53,7 +53,7 @@ using namespace std;
 
 class MyHandler: public WebSocket::Handler {
 public:
-    MyHandler(Server* server) : _server(server), _currentValue(0) {
+    explicit MyHandler(Server* server) : _server(server), _currentValue(0) {
         setValue(1);
     }
 
