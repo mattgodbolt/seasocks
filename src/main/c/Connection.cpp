@@ -240,6 +240,7 @@ Connection::Connection(
       _bytesReceived(0),
       _shutdownByUser(false),
       _transferEncoding(TransferEncoding::Raw),
+      _chunk(0u),
       _writer(std::make_shared<Writer>(*this)),
       _state(READING_HEADERS) {
 }
