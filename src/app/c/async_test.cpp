@@ -58,7 +58,7 @@ using namespace std;
 // long enough for all requests to complete before it is destroyed.
 struct AsyncResponse : Response {
     Server &_server;
-    AsyncResponse(Server &server) : _server(server) {}
+    explicit AsyncResponse(Server &server) : _server(server) {}
 
     // From Response:
     virtual void handle(shared_ptr<ResponseWriter> writer) override {
