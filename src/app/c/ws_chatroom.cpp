@@ -44,7 +44,7 @@ struct Handler : WebSocket::Handler {
     set<WebSocket *> _cons;
 
     void onConnect(WebSocket *con) override {
-        _cons.emplace(con);
+        _cons.insert(con);
         send(con->credentials()->username + " has joined");
     }
     void onDisconnect(WebSocket *con) override {
