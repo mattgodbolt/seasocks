@@ -27,6 +27,7 @@
 
 #include "seasocks/Request.h"
 
+#include <string>
 #include <vector>
 
 namespace seasocks {
@@ -39,6 +40,12 @@ public:
      * thread externally.
      */
     virtual void send(const char* data) = 0;
+    /**
+     * Send the given text data. Must be called on the seasocks thread.
+     * See Server::execute for how to run work on the seasocks
+     * thread externally.
+     */
+    void send(const std::string& data) { send(data.c_str()); }
     /**
      * Send the given binary data. Must be called on the seasocks thread.
      * See Server::execute for how to run work on the seasocks

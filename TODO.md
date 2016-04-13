@@ -14,6 +14,7 @@ Further out things
 * Generalise the request/response so that persistent connections can be phrased
   as them.
 * Benchmark and add benchmarks to the tests.
+* Put cookie handling code into Request (e.g. from DRW's internal SSO implementation)
 
 CMake stuff
 -----------

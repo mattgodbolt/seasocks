@@ -5,6 +5,7 @@ endmacro()
 
 add_app(ph_test)
 add_app(serve)
+add_app(ws_chatroom)
 add_app(ws_echo)
 add_app(ws_test)
 add_app(ws_test_poll)
@@ -16,4 +17,8 @@ add_custom_command(TARGET ws_test POST_BUILD
 
 add_custom_command(TARGET async_test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/src/async_test_web $<TARGET_FILE_DIR:ws_test>/src/async_test_web)
+        ${CMAKE_SOURCE_DIR}/src/async_test_web $<TARGET_FILE_DIR:async_test>/src/async_test_web)
+
+add_custom_command(TARGET ws_chatroom POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/src/ws_chatroom $<TARGET_FILE_DIR:ws_chatroom>/src/ws_chatroom_web)

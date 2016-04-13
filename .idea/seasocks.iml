@@ -78,18 +78,19 @@
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_echo.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test_poll.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_chatroom.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/app/c/async_test.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/c/ws_test.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/ConnectionTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/HeaderMapTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/CrackedUriTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/ServerTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/HybiTests.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/c/HtmlTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/test_main.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/c/MockServerImpl.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/JsonTests.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/c/MockServerImpl.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/c/HtmlTests.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/c/catch.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cmake/CompilerCheck.cmake" isTestSource="false" />
