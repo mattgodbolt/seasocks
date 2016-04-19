@@ -30,10 +30,10 @@
 using namespace seasocks;
 
 TEST_CASE("insensitiveToLocale", "[toStringTests]") {
-    CHECK(toString("1234") == "1234");
+    CHECK(toString(1234) == "1234");
     auto prev = std::locale::global(std::locale("en_US.utf8"));
-    CHECK(toString("1234") == "1234"); // locale-dependent could have been 1,234
+    CHECK(toString(1234) == "1234"); // locale-dependent could have been 1,234
     std::locale::global(std::locale(""));
-    CHECK(toString("1234") == "1234"); // locale-dependent could have been 1,234
+    CHECK(toString(1234) == "1234"); // locale-dependent could have been 1,234
     std::locale::global(prev);
 }
