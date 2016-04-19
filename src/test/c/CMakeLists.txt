@@ -9,7 +9,8 @@ add_executable(AllTests test_main.cpp
         HybiTests.cpp
         JsonTests.cpp
         MockServerImpl.h
-        ServerTests.cpp)
+        ServerTests.cpp
+        ToStringTests.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 add_test(NAME ${TESTS} COMMAND ${TESTS})

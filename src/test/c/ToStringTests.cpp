@@ -23,20 +23,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#include "seasocks/ToString.h"
 
-#include <sstream>
-#include <string>
+#include "catch.hpp"
 
-namespace seasocks {
+using namespace seasocks;
 
-// TODO: can this be deprecated in favour of std::to_string now?
-template<typename T>
-std::string toString(const T& obj) {
-    std::stringstream str;
-//    str.imbue(std::locale("C"));
-    str << obj;
-    return str.str();
-}
-
+TEST_CASE("insensitiveToLocale", "[toStringTests]") {
+    CHECK(toString("1234") == "1234");
+    auto prev = std::locale::global(std::locale("en_US.utf8"));
+    CHECK(toString("1234") == "1234"); // locale-dependent could have been 1,234
+    std::locale::global(std::locale(""));
+    CHECK(toString("1234") == "1234"); // locale-dependent could have been 1,234
+    std::locale::global(prev);
 }
