@@ -34,7 +34,7 @@ namespace seasocks {
 template<typename T>
 std::string toString(const T& obj) {
     std::stringstream str;
-//    str.imbue(std::locale("C"));
+    str.imbue(std::locale("C"));
     str << obj;
     return str.str();
 }
