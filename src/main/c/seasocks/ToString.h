@@ -31,11 +31,7 @@
 
 namespace seasocks {
 
-template<typename T>
-constexpr bool isIntegralType = std::is_integral<typename std::decay<T>::type>::value;
-
-
-template<typename T, typename std::enable_if<!isIntegralType<T>, int>::type = 0>
+template<typename T, typename std::enable_if<!std::is_integral<typename std::decay<T>::type>::value, int>::type = 0>
 std::string toString(const T& obj) {
     std::stringstream str;
     str.imbue(std::locale("C"));
@@ -43,7 +39,7 @@ std::string toString(const T& obj) {
     return str.str();
 }
 
-template<typename T, typename std::enable_if<isIntegralType<T>, int>::type = 0>
+template<typename T, typename std::enable_if<std::is_integral<typename std::decay<T>::type>::value, int>::type = 0>
 inline std::string toString(T&& value) {
     return std::to_string(std::forward<T>(value));
 }
