@@ -29,11 +29,25 @@
 
 using namespace seasocks;
 
-TEST_CASE("insensitiveToLocale", "[toStringTests]") {
-    CHECK(toString(1234) == "1234");
-    auto prev = std::locale::global(std::locale("en_US.utf8"));
-    CHECK(toString(1234) == "1234"); // locale-dependent could have been 1,234
-    std::locale::global(std::locale(""));
-    CHECK(toString(1234) == "1234"); // locale-dependent could have been 1,234
-    std::locale::global(prev);
+TEST_CASE("withIntegralTypes", "[toStringTests]") {
+    CHECK(toString(static_cast<short>(1234)) == "1234");
+    CHECK(toString(static_cast<unsigned short>(1234)) == "1234");
+
+    CHECK(toString(static_cast<int>(1234)) == "1234");
+    CHECK(toString(static_cast<unsigned int>(1234)) == "1234");
+
+    CHECK(toString(static_cast<long>(1234)) == "1234");
+    CHECK(toString(static_cast<unsigned long>(1234)) == "1234");
+
+    CHECK(toString(static_cast<long long>(1234)) == "1234");
+    CHECK(toString(static_cast<unsigned long long>(1234)) == "1234");
+}
+
+TEST_CASE("withFloatTypes", "[toStringTests]") {
+    CHECK(toString(123.4) == "123.4");
+    CHECK(toString(123.4f) == "123.4");
+}
+
+TEST_CASE("withCharType" "[toStringTests]") {
+    CHECK(toString('c') == "c");
 }

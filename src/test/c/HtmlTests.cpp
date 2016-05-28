@@ -56,6 +56,11 @@ TEST_CASE("shouldAppendLikeAStreamFromEmpty", "[HtmlTests]") {
     CHECK(elem.str() == "Text 1 10.23");
 }
 
+TEST_CASE("shouldAppendLikeAStreamFromEmptyWithSingleInt", "[HtmlTests]") {
+    auto elem = empty() << 1;
+    CHECK(elem.str() == "1");
+}
+
 TEST_CASE("shouldNotNeedExtraMarkupForTextNodes", "[HtmlTests]") {
     auto elem = text("This ") << text("is") << text(" a test") << ".";
     CHECK(elem.str() == "This is a test.");
