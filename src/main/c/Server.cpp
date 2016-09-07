@@ -76,8 +76,8 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
     return o;
 }
 
-const int EpollTimeoutMillis = 500;  // Twice a second is ample.
-const int DefaultLameConnectionTimeoutSeconds = 10;
+constexpr int EpollTimeoutMillis = 500;  // Twice a second is ample.
+constexpr int DefaultLameConnectionTimeoutSeconds = 10;
 pid_t gettid() {
     return static_cast<pid_t>(syscall(SYS_gettid));
 }
@@ -274,7 +274,7 @@ Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t
 }
 
 void Server::checkAndDispatchEpoll(int epollMillis) {
-    const int maxEvents = 256;
+    constexpr int maxEvents = 256;
     epoll_event events[maxEvents];
 
     std::list<Connection*> toBeDeleted;
