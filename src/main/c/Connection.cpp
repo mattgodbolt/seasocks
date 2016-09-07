@@ -165,10 +165,10 @@ bool isCacheable(const std::string& path) {
     return false;
 }
 
-const size_t MaxBufferSize = 16 * 1024 * 1024;
-const size_t ReadWriteBufferSize = 16 * 1024;
-const size_t MaxWebsocketMessageSize = 16384;
-const size_t MaxHeadersSize = 64 * 1024;
+constexpr size_t MaxBufferSize = 16 * 1024 * 1024;
+constexpr size_t ReadWriteBufferSize = 16 * 1024;
+constexpr size_t MaxWebsocketMessageSize = 16384;
+constexpr size_t MaxHeadersSize = 64 * 1024;
 
 class PrefixWrapper : public seasocks::Logger {
     std::string _prefix;

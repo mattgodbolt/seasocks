@@ -32,7 +32,7 @@
 
 namespace seasocks {
 
-const int MAX_MESSAGE_LENGTH = 1024;
+constexpr int MAX_MESSAGE_LENGTH = 1024;
 
 #define PRINT_TO_MESSAGEBUF() \
     char messageBuf[MAX_MESSAGE_LENGTH]; \
