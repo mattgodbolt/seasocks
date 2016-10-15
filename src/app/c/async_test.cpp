@@ -52,7 +52,7 @@ using namespace std;
 // complete, we must ensure the ResponseWriter used to communicate the response
 // is kept alive long enough by holding its shared_ptr in the "work" thread.
 // Seasocks will tell the response it has been cancelled (if the connection
-// associated with the request is cloesd); but the ResponseWriter is safe in the
+// associated with the request is closed); but the ResponseWriter is safe in the
 // presence of a closed connection so for simplicity this example does nothing
 // in the cancel() method. It is assumed the lifetime of the Server object is
 // long enough for all requests to complete before it is destroyed.
