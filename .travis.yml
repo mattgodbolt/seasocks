@@ -1,27 +1,89 @@
-sudo: false
-language: cpp
-compiler:
-  - gcc
-  - clang
-env:
-  - BUILD_TYPE=Debug
-  - BUILD_TYPE=Release
-install:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
-script:
-  - mkdir build
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
-  - make
-  - ctest -D ExperimentalBuild
-  - ctest -D ExperimentalMemCheck
-addons:
-    apt:
-        sources:
+language: generic
+
+dist: trusty
+sudo: required
+
+matrix:
+    include:
+    - env: CXX=g++-6 CC=gcc-6
+      addons:
+        apt:
+          packages:
+            - g++-6
+            - valgrind
+          sources: &sources
             - ubuntu-toolchain-r-test
-            - kalakris-cmake
-        packages:
-            - gcc-4.7
+            - llvm-toolchain-precise
+            - llvm-toolchain-precise-3.8
+            - llvm-toolchain-precise-3.7
+            - llvm-toolchain-precise-3.6
+            - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main'
+              key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
+    - env: CXX=g++-5 CC=gcc-5
+      addons:
+        apt:
+          packages:
+            - g++-5
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-4.9 CC=gcc-4.9
+      addons:
+        apt:
+          packages:
+            - g++-4.9
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-4.8 CC=gcc-4.8
+      addons:
+        apt:
+          packages:
+            - g++-4.8
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-4.7 CC=gcc-4.7
+      addons:
+        apt:
+          packages:
             - g++-4.7
             - valgrind
-            - cmake
+          sources: *sources
+    - env: CXX=clang++-3.9 CC=clang-3.9
+      addons:
+        apt:
+          packages:
+            - clang-3.9
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.8 CC=clang-3.8
+      addons:
+        apt:
+          packages:
+            - clang-3.8
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.7 CC=clang-3.7
+      addons:
+        apt:
+          packages:
+            - clang-3.7
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.6 CC=clang-3.6
+      addons:
+        apt:
+          packages:
+            - clang-3.6
+            - libc++-dev
+            - valgrind
+          sources: *sources
+
+script:
+    - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
+    - mkdir build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
+    - make
+    - ctest -D ExperimentalBuild
+    - ctest -D ExperimentalMemCheck
