@@ -56,6 +56,7 @@ public:
         BinaryMessage,
         Error,
         Ping,
+        Pong,
         Close
     };
     MessageState decodeNextMessage(std::vector<uint8_t>& messageOut);

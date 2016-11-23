@@ -656,6 +656,10 @@ void Connection::handleHybiWebSocket() {
             sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
                      &decodedMessage[0], decodedMessage.size());
             break;
+        case HybiPacketDecoder::MessageState::Pong:
+            // Pongs can be sent unsolicited (MSIE and Edge do this)
+            // The spec says to ignore them.
+            break;
         case HybiPacketDecoder::MessageState::NoMessage:
             done = true;
             break;

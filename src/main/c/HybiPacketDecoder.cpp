@@ -100,6 +100,8 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
         return MessageState::BinaryMessage;
     case Opcode::Ping:
         return MessageState::Ping;
+    case Opcode::Pong:
+        return MessageState::Pong;
     case Opcode::Close:
         return MessageState::Close;
     }

@@ -143,3 +143,8 @@ TEST_CASE("longStringExamples", "[HybiTests]") {
 TEST_CASE("accept", "[HybiTests]") {
     CHECK(getAcceptKey("dGhlIHNhbXBsZSBub25jZQ==") == "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=");
 }
+
+TEST_CASE("pings and pongs", "[HybiTests]") {
+    testSingleString(HybiPacketDecoder::MessageState::Ping, "Hello", {0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+    testSingleString(HybiPacketDecoder::MessageState::Pong, "Hello", {0x8a, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+}
