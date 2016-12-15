@@ -40,6 +40,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
+#include <sys/un.h>
 
 #include <memory>
 #include <stdexcept>
@@ -233,6 +234,43 @@ bool Server::startListening(uint32_t hostAddr, int port) {
     char buf[1024];
     ::gethostname(buf, sizeof(buf));
     LS_INFO(_logger, "Listening on http://" << buf << ":" << port << "/");
+
+    return true;
+}
+
+bool Server::startListeningUnix(const char* socketPath) {
+    struct sockaddr_un sock;
+
+    _listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (_listenSock == -1) {
+        LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
+        return false;
+    }
+    if (!configureSocket(_listenSock)) {
+        return false;
+    }
+
+    memset(&sock, 0, sizeof(struct sockaddr_un));
+    sock.sun_family = AF_UNIX;
+    strncpy(sock.sun_path, socketPath, sizeof(sock.sun_path) - 1);
+
+    if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
+        LS_ERROR(_logger, "Unable to bind unix socket (" << socketPath << "): " << getLastError());
+        return false;
+    }
+
+    if (listen(_listenSock, 5) == -1) {
+        LS_ERROR(_logger, "Unable to listen on unix socket: " << getLastError());
+        return false;
+    }
+
+    epoll_event event = { EPOLLIN, { this } };
+    if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
+        LS_ERROR(_logger, "Unable to add unix listen socket to epoll: " << getLastError());
+        return false;
+    }
+
+    LS_INFO(_logger, "Listening on unix socket: http://unix:" << socketPath);
 
     return true;
 }

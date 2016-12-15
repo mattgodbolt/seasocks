@@ -82,6 +82,10 @@ public:
     // Returns true if all was ok.
     bool startListening(int port);
 
+    // Starts listening on a unix domain socket.
+    // Returns true if all was ok.
+    bool startListeningUnix(const char* socketPath);
+
     // Sets the path to server static content from.
     void setStaticPath(const char* staticPath);
 
