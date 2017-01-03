@@ -291,15 +291,15 @@ Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t
     if (events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP|EPOLLERR)) {
         LS_WARNING(_logger, "Got unhandled epoll event (" << EventBits(events) << ") on connection: "
                 << formatAddress(connection->getRemoteAddress()));
-        return Close;
+        return NewState::Close;
     } else if (events & EPOLLERR) {
         LS_INFO(_logger, "Error on socket (" << EventBits(events) << "): "
                 << formatAddress(connection->getRemoteAddress()));
-        return Close;
+        return NewState::Close;
     } else if (events & EPOLLHUP) {
         LS_DEBUG(_logger, "Graceful hang-up (" << EventBits(events) << ") of socket: "
                 << formatAddress(connection->getRemoteAddress()));
-        return Close;
+        return NewState::Close;
     } else {
         if (events & EPOLLOUT) {
             connection->handleDataReadyForWrite();
@@ -308,7 +308,7 @@ Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t
             connection->handleDataReadyForRead();
         }
     }
-    return KeepOpen;
+    return NewState::KeepOpen;
 }
 
 void Server::checkAndDispatchEpoll(int epollMillis) {
@@ -351,7 +351,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
             handlePipe();
         } else {
             auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
-            if (handleConnectionEvents(connection, events[i].events) == Close) {
+            if (handleConnectionEvents(connection, events[i].events) == NewState::Close) {
                 toBeDeleted.push_back(connection);
             }
         }

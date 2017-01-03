@@ -145,7 +145,7 @@ private:
 
     void checkAndDispatchEpoll(int epollMillis);
     void handlePipe();
-    enum NewState { KeepOpen, Close };
+    enum class NewState { KeepOpen, Close };
     NewState handleConnectionEvents(Connection* connection, uint32_t events);
 
     // Connections, mapped to initial connection time.
