@@ -62,7 +62,7 @@ int main(int argc, char* const argv[]) {
     }
 
     auto logger = std::make_shared<PrintfLogger>(
-            verbose ? Logger::DEBUG : Logger::ACCESS);
+            verbose ? Logger::Level::DEBUG : Logger::Level::ACCESS);
     Server server(logger);
     auto root = argv[optind];
     server.serve(root, port);

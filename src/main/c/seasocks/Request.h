@@ -40,7 +40,7 @@ class Request {
 public:
     virtual ~Request() {}
 
-    enum Verb {
+    enum class Verb {
         Invalid,
         WebSocket,
         Get,

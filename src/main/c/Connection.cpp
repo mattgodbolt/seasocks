@@ -242,7 +242,7 @@ Connection::Connection(
       _transferEncoding(TransferEncoding::Raw),
       _chunk(0u),
       _writer(std::make_shared<Writer>(*this)),
-      _state(READING_HEADERS) {
+      _state(State::READING_HEADERS) {
 }
 
 Connection::~Connection() {
@@ -334,7 +334,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         size_t endOfBuffer = _outBuf.size();
         size_t newBufferSize = endOfBuffer + bytesToBuffer;
         if (newBufferSize >= MaxBufferSize) {
-            LS_WARNING(_logger, "Closing connection: buffer size too large (" 
+            LS_WARNING(_logger, "Closing connection: buffer size too large ("
                     << newBufferSize << " >= " << MaxBufferSize << ")");
             closeInternal();
             return false;
@@ -420,24 +420,24 @@ bool Connection::closed() const {
 
 void Connection::handleNewData() {
     switch (_state) {
-    case READING_HEADERS:
+    case State::READING_HEADERS:
         handleHeaders();
         break;
-    case READING_WEBSOCKET_KEY3:
+        case State::READING_WEBSOCKET_KEY3:
         handleWebSocketKey3();
         break;
-    case HANDLING_HIXIE_WEBSOCKET:
+    case State::HANDLING_HIXIE_WEBSOCKET:
         handleHixieWebSocket();
         break;
-    case HANDLING_HYBI_WEBSOCKET:
+    case State::HANDLING_HYBI_WEBSOCKET:
         handleHybiWebSocket();
         break;
-    case BUFFERING_POST_DATA:
+    case State::BUFFERING_POST_DATA:
         handleBufferingPostData();
         break;
-    case AWAITING_RESPONSE_BEGIN:
-    case SENDING_RESPONSE_BODY:
-    case SENDING_RESPONSE_HEADERS:
+    case State::AWAITING_RESPONSE_BEGIN:
+    case State::SENDING_RESPONSE_BODY:
+    case State::SENDING_RESPONSE_HEADERS:
         break;
     default:
         assert(false);
@@ -515,7 +515,7 @@ void Connection::handleWebSocketKey3() {
 
     write(&digest, 16, true);
 
-    _state = HANDLING_HIXIE_WEBSOCKET;
+    _state = State::HANDLING_HIXIE_WEBSOCKET;
     _inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
     if (_webSocketHandler) {
         _webSocketHandler->onConnect(this);
@@ -524,7 +524,7 @@ void Connection::handleWebSocketKey3() {
 
 void Connection::handleBufferingPostData() {
     if (_request->consumeContent(_inBuf)) {
-        _state = READING_HEADERS;
+        _state = State::READING_HEADERS;
         if (!handlePageRequest()) {
             closeInternal();
         }
@@ -540,7 +540,7 @@ void Connection::send(const char* webSocketResponse) {
         return;
     }
     auto messageLength = strlen(webSocketResponse);
-    if (_state == HANDLING_HIXIE_WEBSOCKET) {
+    if (_state == State::HANDLING_HIXIE_WEBSOCKET) {
         uint8_t zero = 0;
         if (!write(&zero, 1, false)) return;
         if (!write(webSocketResponse, messageLength, false)) return;
@@ -560,7 +560,7 @@ void Connection::send(const uint8_t* data, size_t length) {
         }
         return;
     }
-    if (_state == HANDLING_HIXIE_WEBSOCKET) {
+    if (_state == State::HANDLING_HIXIE_WEBSOCKET) {
         LS_ERROR(_logger, "Hixie does not support binary");
         return;
     }
@@ -832,7 +832,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (_request->contentLength() == 0) {
         return handlePageRequest();
     }
-    _state = BUFFERING_POST_DATA;
+    _state = State::BUFFERING_POST_DATA;
     return true;
 }
 
@@ -857,7 +857,7 @@ bool Connection::handlePageRequest() {
         }
         if (webSocketVersion == 0) {
             // Hixie
-            _state = READING_WEBSOCKET_KEY3;
+            _state = State::READING_WEBSOCKET_KEY3;
             return true;
         }
         auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
@@ -871,7 +871,7 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
         return sendStaticData();
     }
     assert(_response.get() == nullptr);
-    _state = AWAITING_RESPONSE_BEGIN;
+    _state = State::AWAITING_RESPONSE_BEGIN;
     _transferEncoding = TransferEncoding::Raw;
     _chunk = 0;
     _response = response;
@@ -881,7 +881,7 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
 
 void Connection::error(ResponseCode responseCode, const std::string &payload) {
     _server.checkThread();
-    if (_state != AWAITING_RESPONSE_BEGIN) {
+    if (_state != State::AWAITING_RESPONSE_BEGIN) {
         LS_ERROR(_logger, "error() called when in wrong state");
         return;
     }
@@ -898,11 +898,11 @@ void Connection::error(ResponseCode responseCode, const std::string &payload) {
 
 void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
     _server.checkThread();
-    if (_state != AWAITING_RESPONSE_BEGIN) {
+    if (_state != State::AWAITING_RESPONSE_BEGIN) {
         LS_ERROR(_logger, "begin() called when in wrong state");
         return;
     }
-    _state = SENDING_RESPONSE_HEADERS;
+    _state = State::SENDING_RESPONSE_HEADERS;
     bufferResponseAndCommonHeaders(responseCode);
     _transferEncoding = encoding;
     if (_transferEncoding == TransferEncoding::Chunked) {
@@ -912,7 +912,7 @@ void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
 
 void Connection::header(const std::string &header, const std::string &value) {
     _server.checkThread();
-    if (_state != SENDING_RESPONSE_HEADERS) {
+    if (_state != State::SENDING_RESPONSE_HEADERS) {
         LS_ERROR(_logger, "header() called when in wrong state");
         return;
     }
@@ -920,10 +920,10 @@ void Connection::header(const std::string &header, const std::string &value) {
 }
 void Connection::payload(const void *data, size_t size, bool flush) {
     _server.checkThread();
-    if (_state == SENDING_RESPONSE_HEADERS) {
+    if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
-        _state = SENDING_RESPONSE_BODY;
-    } else if (_state != SENDING_RESPONSE_BODY) {
+        _state = State::SENDING_RESPONSE_BODY;
+    } else if (_state != State::SENDING_RESPONSE_BODY) {
         LS_ERROR(_logger, "payload() called when in wrong state");
         return;
     }
@@ -944,9 +944,9 @@ void Connection::writeChunkHeader(size_t size) {
 
 void Connection::finish(bool keepConnectionOpen) {
     _server.checkThread();
-    if (_state == SENDING_RESPONSE_HEADERS) {
+    if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
-    } else if (_state != SENDING_RESPONSE_BODY) {
+    } else if (_state != State::SENDING_RESPONSE_BODY) {
         LS_ERROR(_logger, "finish() called when in wrong state");
         return;
     }
@@ -961,7 +961,7 @@ void Connection::finish(bool keepConnectionOpen) {
         closeWhenEmpty();
     }
 
-    _state = READING_HEADERS;
+    _state = State::READING_HEADERS;
     _response.reset();
 }
 
@@ -985,7 +985,7 @@ bool Connection::handleHybiHandshake(
     if (_webSocketHandler) {
         _webSocketHandler->onConnect(this);
     }
-    _state = HANDLING_HYBI_WEBSOCKET;
+    _state = State::HANDLING_HYBI_WEBSOCKET;
     return true;
 }
 

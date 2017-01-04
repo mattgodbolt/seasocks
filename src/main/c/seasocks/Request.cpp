@@ -31,24 +31,24 @@ namespace seasocks {
 
 const char* Request::name(Verb v) {
     switch(v) {
-    case Invalid: return "Invalid";
-    case WebSocket: return "WebSocket";
-    case Get: return "Get";
-    case Put: return "Put";
-    case Post: return "Post";
-    case Delete: return "Delete";
-    case Head: return "Head";
+    case Verb::Invalid: return "Invalid";
+    case Verb::WebSocket: return "WebSocket";
+    case Verb::Get: return "Get";
+    case Verb::Put: return "Put";
+    case Verb::Post: return "Post";
+    case Verb::Delete: return "Delete";
+    case Verb::Head: return "Head";
     default: return "???";
     }
 }
 
 Request::Verb Request::verb(const char* verb) {
-    if (std::strcmp(verb, "GET") == 0) return Request::Get;
-    if (std::strcmp(verb, "PUT") == 0) return Request::Put;
-    if (std::strcmp(verb, "POST") == 0) return Request::Post;
-    if (std::strcmp(verb, "DELETE") == 0) return Request::Delete;
-    if (std::strcmp(verb, "HEAD") == 0) return Request::Head;
-    return Request::Invalid;
+    if (std::strcmp(verb, "GET") == 0) return Request::Verb::Get;
+    if (std::strcmp(verb, "PUT") == 0) return Request::Verb::Put;
+    if (std::strcmp(verb, "POST") == 0) return Request::Verb::Post;
+    if (std::strcmp(verb, "DELETE") == 0) return Request::Verb::Delete;
+    if (std::strcmp(verb, "HEAD") == 0) return Request::Verb::Head;
+    return Request::Verb::Invalid;
 }
 
 }  // namespace seasocks

@@ -71,7 +71,7 @@ public:
     virtual std::shared_ptr<Credentials> credentials() const override;
     virtual const sockaddr_in& getRemoteAddress() const override { return _address; }
     virtual const std::string& getRequestUri() const override;
-    virtual Request::Verb verb() const override { return Request::WebSocket; }
+    virtual Request::Verb verb() const override { return Request::Verb::WebSocket; }
     virtual size_t contentLength() const override { return 0; }
     virtual const uint8_t* content() const override { return nullptr; }
     virtual bool hasHeader(const std::string&) const override;
@@ -177,7 +177,7 @@ private:
     unsigned _chunk;
     std::shared_ptr<Writer> _writer;
 
-    enum State {
+    enum class State {
         INVALID,
         READING_HEADERS,
         READING_WEBSOCKET_KEY3,
