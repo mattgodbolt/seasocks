@@ -40,11 +40,11 @@ using namespace seasocks;
 class MyPageHandler: public PageHandler {
 public:
     virtual std::shared_ptr<Response> handle(const Request& request) {
-        if (request.verb() == Request::Post) {
+        if (request.verb() == Request::Verb::Post) {
             std::string content(request.content(), request.content() + request.contentLength());
             return Response::textResponse("Thanks for the post. You said: " + content);
         }
-        if (request.verb() != Request::Get) return Response::unhandled();
+        if (request.verb() != Request::Verb::Get) return Response::unhandled();
         std::ostringstream ostr;
         ostr << "<html><head><title>seasocks example</title></head>"
                 "<body>Hello, " << request.credentials()->attributes["fullName"] << "! You asked for " << request.getRequestUri()
