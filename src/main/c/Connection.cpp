@@ -693,7 +693,7 @@ void Connection::handleWebSocketBinaryMessage(const std::vector<uint8_t>& messag
 }
 
 bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
-    assert(_state != HANDLING_HIXIE_WEBSOCKET);
+    assert(_state != State::HANDLING_HIXIE_WEBSOCKET);
     auto errorNumber = static_cast<int>(errorCode);
     auto message = ::name(errorCode);
     bufferResponseAndCommonHeaders(errorCode);
