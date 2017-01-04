@@ -57,7 +57,7 @@ public:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
-    std::shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
+    std::shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::DEBUG));
 
     Server server(logger);
     std::shared_ptr<EchoHandler> handler(new EchoHandler());
