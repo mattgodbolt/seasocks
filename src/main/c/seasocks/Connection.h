@@ -177,7 +177,7 @@ private:
     unsigned _chunk;
     std::shared_ptr<Writer> _writer;
 
-    enum State {
+    enum class State {
         INVALID,
         READING_HEADERS,
         READING_WEBSOCKET_KEY3,
