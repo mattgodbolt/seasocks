@@ -11,6 +11,7 @@ message(STATUS "Unittests: ${UNITTESTS}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE FILEPATH INTERNAL) 
 include(CTest)
 include(EmbeddedContent)
 include(CompilerCheck)
@@ -33,7 +34,7 @@ add_subdirectory("src/main/c")
 add_subdirectory("src/app/c")
 
 if (UNITTESTS)
-    find_program(MEMORYCHECK_COMMAND valgrind)
+    find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
     enable_testing()
     add_subdirectory("src/test/c")
 endif ()
