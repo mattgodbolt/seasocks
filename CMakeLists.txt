@@ -13,6 +13,7 @@ message(STATUS "Unittests: ${UNITTESTS}")
 
 
 
+set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "") 
 include(CTest)
 include(CompilerCheck)
 include(GNUInstallDirs)
@@ -31,7 +32,7 @@ add_subdirectory("src/main/web")
 add_subdirectory("src/app/c")
 
 if (UNITTESTS)
-    find_program(MEMORYCHECK_COMMAND valgrind)
+    find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
     enable_testing()
     add_subdirectory("src/test/c")
 endif ()
