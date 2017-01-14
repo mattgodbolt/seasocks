@@ -3,6 +3,11 @@ language: generic
 dist: trusty
 sudo: required
 
+addons:
+    apt:
+        packages:
+            - cmake
+
 matrix:
     include:
     - env: CXX=g++-6 CC=gcc-6
@@ -83,6 +88,7 @@ matrix:
 script:
     - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
     - mkdir build && cd build
+    - cmake --version
     - cmake -DCMAKE_BUILD_TYPE=Release ..
     - make
     - ctest -D ExperimentalBuild
