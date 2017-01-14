@@ -11,7 +11,7 @@ message(STATUS "Unittests: ${UNITTESTS}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE FILEPATH INTERNAL) 
+set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "") 
 include(CTest)
 include(EmbeddedContent)
 include(CompilerCheck)
