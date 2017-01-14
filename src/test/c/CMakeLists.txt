@@ -12,12 +12,7 @@ add_executable(AllTests test_main.cpp
         ServerTests.cpp
         ToStringTests.cpp)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 add_test(NAME ${TESTS} COMMAND ${TESTS})
-target_include_directories(${TESTS} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
 target_link_libraries(${TESTS}
-        ${CMAKE_THREAD_LIBS_INIT}
         seasocks
 )
