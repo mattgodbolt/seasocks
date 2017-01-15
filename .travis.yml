@@ -107,6 +107,6 @@ before_script:
     - cmake --build build -- -j${JOBS}
 
 script:
-    - cd "${TRAVIS_BUILD_DIR}"
+    - cd build
     - ctest -D ExperimentalBuild -j${JOBS}
     - ctest -D ExperimentalMemCheck -j${JOBS}
