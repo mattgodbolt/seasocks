@@ -100,7 +100,7 @@ install:
         if ! brew ls --version cmake &>/dev/null; then brew install cmake; fi
       fi
 
-before_scripts:
+before_script:
     - cd "${TRAVIS_BUILD_DIR}"
     - cmake --version
     - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release 
