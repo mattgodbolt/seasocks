@@ -1,6 +1,25 @@
-file(GLOB_RECURSE SEASOCKS_SOURCE_FILES . *.cpp *.h)
+add_library(seasocks STATIC Connection.cpp
+                            HybiAccept.cpp
+                            HybiPacketDecoder.cpp
+                            Logger.cpp
+                            PageRequest.cpp
+                            Response.cpp
+                            Server.cpp
+                            StringUtil.cpp
+                            md5/md5.cpp
+                            internal/Base64.cpp
+                            seasocks/Request.cpp
+                            seasocks/ResponseCode.cpp
+                            seasocks/SynchronousResponse.cpp
+                            seasocks/ResponseBuilder.cpp
+                            sha1/sha1.cpp
+                            util/CrackedUri.cpp
+                            util/Json.cpp
+                            util/PathHandler.cpp
+                            util/RootPageHandler.cpp
+                            )
 
-add_library(seasocks STATIC ${SEASOCKS_SOURCE_FILES})
+
 target_compile_definitions(seasocks PRIVATE SEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\")
 target_include_directories(seasocks PUBLIC .)
 target_link_libraries(seasocks PRIVATE ${CMAKE_THREAD_LIBS_INIT} embedded)
@@ -9,7 +28,7 @@ set_property(TARGET seasocks PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 add_library(seasocks_so SHARED)
 set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks)
 target_link_libraries(seasocks_so
-  PRIVATE 
+  PRIVATE
     "-Wl,--whole-archive"
     seasocks
     "-Wl,--no-whole-archive"
