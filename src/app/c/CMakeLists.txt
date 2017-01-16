@@ -1,5 +1,6 @@
 macro(add_app _NAME)
     add_executable(${_NAME} ${_NAME}.cpp)
+    target_include_directories(embedded PUBLIC $<TARGET_PROPERTY:seasocks,INTERFACE_INCLUDE_DIRECTORIES>)
     target_link_libraries(${_NAME} seasocks)
 endmacro()
 
