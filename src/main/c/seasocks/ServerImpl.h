@@ -51,6 +51,7 @@ public:
     virtual std::string getStatsDocument() const = 0;
     virtual void checkThread() const = 0;
     virtual Server &server() = 0;
+    virtual size_t clientBufferSize() const = 0;
 };
 
 }

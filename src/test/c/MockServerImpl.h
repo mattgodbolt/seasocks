@@ -53,6 +53,7 @@ public:
     std::string getStatsDocument() const override { return ""; }
     void checkThread() const override { }
     Server &server() override { throw std::runtime_error("not supported"); };
+    size_t clientBufferSize() const { return 512 * 1024; }
 };
 
 }

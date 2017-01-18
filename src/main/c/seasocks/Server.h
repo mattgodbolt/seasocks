@@ -58,17 +58,6 @@ public:
     void addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
             bool allowCrossOriginRequests = false);
 
-    // If we haven't heard anything ever on a connection for this long, kill it.
-    // This is possibly caused by bad WebSocket implementation in Chrome.
-    void setLameConnectionTimeoutSeconds(int seconds);
-
-    // Sets the maximum number of TCP level keepalives that we can miss before
-    // we let the OS consider the connection dead. We configure keepalives every second,
-    // so this is also the minimum number of seconds it takes to notice a badly-behaved
-    // dead connection, e.g. a laptop going into sleep mode or a hard-crashed machine.
-    // A value of 0 disables keep alives, which is the default.
-    void setMaxKeepAliveDrops(int maxKeepAliveDrops);
-
     // Serves static content from the given port on the current thread, until terminate is called.
     // Roughly equivalent to startListening(port); setStaticPath(staticPath); loop();
     // Returns whether exiting was expected.
@@ -111,6 +100,24 @@ public:
 
     // Terminate any loop() or poll(). May be called from any thread.
     void terminate();
+
+    // If we haven't heard anything ever on a connection for this long, kill it.
+    // This is possibly caused by bad WebSocket implementation in Chrome.
+    void setLameConnectionTimeoutSeconds(int seconds);
+
+    // Sets the maximum number of TCP level keepalives that we can miss before
+    // we let the OS consider the connection dead. We configure keepalives every second,
+    // so this is also the minimum number of seconds it takes to notice a badly-behaved
+    // dead connection, e.g. a laptop going into sleep mode or a hard-crashed machine.
+    // A value of 0 disables keep alives, which is the default.
+    void setMaxKeepAliveDrops(int maxKeepAliveDrops);
+
+    // Set the maximum amount of data we'll buffer for a client before we close the
+    // connection assuming the client can't keep up with the data rate. Default
+    // is available here too.
+    static constexpr size_t DefaultClientBufferSize = 16 * 1024 * 1024u;
+    void setClientBufferSize(size_t bytesToBuffer);
+    size_t clientBufferSize() const { return _clientBufferSize; }
 
     class Runnable {
     public:
@@ -156,6 +163,7 @@ private:
     int _eventFd;
     int _maxKeepAliveDrops;
     int _lameConnectionTimeoutSeconds;
+    size_t _clientBufferSize;
     time_t _nextDeadConnectionCheck;
 
     struct WebSocketHandlerEntry {

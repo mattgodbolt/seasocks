@@ -87,10 +87,13 @@ pid_t gettid() {
 
 namespace seasocks {
 
+constexpr size_t Server::DefaultClientBufferSize;
+
 Server::Server(std::shared_ptr<Logger> logger)
 : _logger(logger), _listenSock(-1), _epollFd(-1), _eventFd(-1),
   _maxKeepAliveDrops(0),
   _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
+  _clientBufferSize(DefaultClientBufferSize),
   _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
   _expectedTerminate(false) {
 
@@ -605,6 +608,11 @@ std::shared_ptr<Response> Server::handle(const Request &request) {
         if (result != Response::unhandled()) return result;
     }
     return Response::unhandled();
+}
+
+void Server::setClientBufferSize(size_t bytesToBuffer) {
+    LS_INFO(_logger, "Setting client buffer size to " << bytesToBuffer << " bytes");
+    _clientBufferSize = bytesToBuffer;
 }
 
 }  // namespace seasocks

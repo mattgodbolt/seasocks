@@ -165,7 +165,6 @@ bool isCacheable(const std::string& path) {
     return false;
 }
 
-constexpr size_t MaxBufferSize = 16 * 1024 * 1024;
 constexpr size_t ReadWriteBufferSize = 16 * 1024;
 constexpr size_t MaxWebsocketMessageSize = 16384;
 constexpr size_t MaxHeadersSize = 64 * 1024;
@@ -333,9 +332,9 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         size_t bytesToBuffer = size - bytesSent;
         size_t endOfBuffer = _outBuf.size();
         size_t newBufferSize = endOfBuffer + bytesToBuffer;
-        if (newBufferSize >= MaxBufferSize) {
+        if (newBufferSize >= _server.clientBufferSize()) {
             LS_WARNING(_logger, "Closing connection: buffer size too large ("
-                    << newBufferSize << " >= " << MaxBufferSize << ")");
+                    << newBufferSize << " >= " << _server.clientBufferSize() << ")");
             closeInternal();
             return false;
         }
@@ -826,7 +825,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         return sendHeader(getContentType(requestUri), embedded->length);
     }
 
-    if (_request->contentLength() > MaxBufferSize) {
+    if (_request->contentLength() > _server.clientBufferSize()) {
         return sendBadRequest("Content length too long");
     }
     if (_request->contentLength() == 0) {
