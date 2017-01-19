@@ -145,7 +145,7 @@ static_assert(is_jsonable<JsonnedString>::value, "Internal stream problem");
 
 struct EpochTimeAsLocal {
     time_t t;
-    EpochTimeAsLocal(time_t t) : t(t) {}
+    EpochTimeAsLocal(time_t time) : t(time) {}
     void jsonToStream(std::ostream &o) const;
 };
 static_assert(is_jsonable<EpochTimeAsLocal>::value, "Internal stream problem");

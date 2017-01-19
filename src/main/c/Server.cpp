@@ -51,7 +51,7 @@ namespace {
 
 struct EventBits {
     uint32_t bits;
-    explicit EventBits(uint32_t bits) : bits(bits) {}
+    explicit EventBits(uint32_t b) : bits(b) {}
 };
 
 std::ostream& operator <<(std::ostream& o, const EventBits& b) {
