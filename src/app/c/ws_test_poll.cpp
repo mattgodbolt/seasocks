@@ -81,8 +81,8 @@ public:
         int value = atoi(data) + 1;
         if (value > _currentValue) {
             setValue(value);
-            for (auto connection : _connections) {
-                connection->send(_currentSetValue.c_str());
+            for (auto c : _connections) {
+                c->send(_currentSetValue.c_str());
             }
         }
     }

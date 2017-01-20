@@ -58,7 +58,7 @@ TEST_CASE("Server tests", "[ServerTests]") {
     SECTION("many executes") {
         std::atomic<bool> latch(false);
         for (auto i = 0; i < 100; ++i) {
-            for (auto i = 0; i < 100; ++i) {
+            for (auto j = 0; j < 100; ++j) {
                 server.execute([&] { test++; });
             }
             usleep(10);
