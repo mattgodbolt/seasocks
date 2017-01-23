@@ -20,11 +20,11 @@ set(SEASOCKS_SOURCE_FILES Connection.cpp
                         )
 
 add_library(seasocks_obj OBJECT ${SEASOCKS_SOURCE_FILES})
+target_compile_definitions(seasocks_obj PRIVATE SEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\")
 target_include_directories(seasocks_obj PUBLIC .)
 set_property(TARGET seasocks_obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
 add_library(seasocks STATIC $<TARGET_OBJECTS:seasocks_obj>)
-target_compile_definitions(seasocks PRIVATE SEASOCKS_VERSION_STRING=\"${PROJECT_VERSION}\")
 target_include_directories(seasocks PUBLIC .)
 target_link_libraries(seasocks PRIVATE ${CMAKE_THREAD_LIBS_INIT} embedded)
 
