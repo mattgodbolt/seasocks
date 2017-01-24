@@ -1148,7 +1148,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
     auto response = std::string("HTTP/1.1 " + toString(responseCodeInt) + " " + responseCodeName);
     LS_ACCESS(_logger, "Response: " << response);
     bufferLine(response);
-    bufferLine("Server: " + std::string{version});
+    bufferLine("Server: " + std::string(version));
     bufferLine("Date: " + now());
     bufferLine("Access-Control-Allow-Origin: *");
 }
