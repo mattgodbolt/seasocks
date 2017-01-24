@@ -4,4 +4,11 @@
 /* HAVE_UNORDERED_MAP_EMPLACE */
 #cmakedefine HAVE_UNORDERED_MAP_EMPLACE      @HAVE_UNORDERED_MAP_EMPLACE@
 
+
+namespace seasocks {
+
+    constexpr auto version = "@PROJECT_VERSION@";
+
+}
+
 #endif /* CONFIG_H */
