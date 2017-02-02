@@ -43,6 +43,7 @@
 #include "seasocks/ToString.h"
 #include "seasocks/ResponseWriter.h"
 
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
