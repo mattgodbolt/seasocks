@@ -58,6 +58,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <byteswap.h>
 #include <unordered_map>
 
 namespace {
