@@ -43,6 +43,7 @@
 #include "seasocks/ToString.h"
 #include "seasocks/ResponseWriter.h"
 
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -57,6 +58,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <byteswap.h>
 #include <unordered_map>
 
 namespace {

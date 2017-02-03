@@ -117,7 +117,7 @@ public:
     // is available here too.
     static constexpr size_t DefaultClientBufferSize = 16 * 1024 * 1024u;
     void setClientBufferSize(size_t bytesToBuffer);
-    size_t clientBufferSize() const { return _clientBufferSize; }
+    size_t clientBufferSize() const override { return _clientBufferSize; }
 
     class Runnable {
     public:
