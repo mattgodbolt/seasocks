@@ -1,7 +1,13 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+
+#pragma once
 
 /* HAVE_UNORDERED_MAP_EMPLACE */
 #cmakedefine HAVE_UNORDERED_MAP_EMPLACE      @HAVE_UNORDERED_MAP_EMPLACE@
 
-#endif /* CONFIG_H */
+
+namespace seasocks {
+
+    constexpr auto version = "@PROJECT_VERSION@";
+
+}
+

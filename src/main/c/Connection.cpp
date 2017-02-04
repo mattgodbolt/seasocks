@@ -30,7 +30,6 @@
 #include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
 #include "internal/PageRequest.h"
-#include "internal/Version.h"
 
 #include "md5/md5.h"
 
@@ -1151,7 +1150,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
     auto response = std::string("HTTP/1.1 " + toString(responseCodeInt) + " " + responseCodeName);
     LS_ACCESS(_logger, "Response: " << response);
     bufferLine(response);
-    bufferLine("Server: " SEASOCKS_VERSION_STRING);
+    bufferLine("Server: " + std::string(version));
     bufferLine("Date: " + now());
     bufferLine("Access-Control-Allow-Origin: *");
 }
