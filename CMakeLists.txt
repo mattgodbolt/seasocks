@@ -24,8 +24,15 @@ include_directories(${CMAKE_BINARY_DIR})
 
 add_definitions(-Wall -Werror -Wextra -pedantic -ggdb3)
 
-
 find_package(Threads)
+
+
+find_program(PYTHON_BIN python2 DOC "Python executable")
+
+if( NOT PYTHON_BIN )
+    message(SEND_ERROR "Python not found")
+endif()
+
 
 add_subdirectory("src/main/c")
 add_subdirectory("src/main/web")
