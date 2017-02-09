@@ -9,11 +9,7 @@ using namespace seasocks;
 namespace {
 
 void emplace(HeaderMap &map, const char *header, const char *value) {
-#if HAVE_UNORDERED_MAP_EMPLACE
     map.emplace(header, value);
-#else
-    map.insert(std::make_pair(header, value));
-#endif
 }
 
 TEST_CASE("shouldConstruct", "[HeaderMapTests]") {

@@ -793,11 +793,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         const char* key = headerLine;
         const char* value = skipWhitespace(colonPos + 1);
         LS_DEBUG(_logger, "Key: " << key << " || " << value);
-#if HAVE_UNORDERED_MAP_EMPLACE
         headers.emplace(key, value);
-#else
-        headers.insert(std::make_pair(key, value));
-#endif
     }
 
     if (headers.count("Connection") && headers.count("Upgrade")
