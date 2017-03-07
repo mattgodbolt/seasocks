@@ -39,7 +39,7 @@ HybiPacketDecoder::HybiPacketDecoder(Logger& logger,
 }
 
 HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
-        std::vector<uint8_t>& messageOut) {
+        std::vector<uint8_t>& messageOut, bool& deflateNeeded) {
     if (_messageStart + 1 >= _buffer.size()) {
         return MessageState::NoMessage;
     }
@@ -49,10 +49,15 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
         LS_WARNING(&_logger, "Received hybi frame without FIN bit set - unsupported");
         return MessageState::Error;
     }
-    if ((_buffer[_messageStart] & (7<<4)) != 0) {
+
+    auto reservedBits = _buffer[_messageStart] & (7<<4);
+    if ((reservedBits & 0x30) != 0) {
         LS_WARNING(&_logger, "Received hybi frame with reserved bits set - error");
         return MessageState::Error;
     }
+
+    deflateNeeded = !!(reservedBits & 0x40);
+
     auto opcode = static_cast<Opcode>(_buffer[_messageStart] & 0xf);
     size_t payloadLength = _buffer[_messageStart + 1] & 0x7fu;
     auto maskBit = _buffer[_messageStart + 1] & 0x80;

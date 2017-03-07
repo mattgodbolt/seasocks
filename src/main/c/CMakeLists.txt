@@ -28,8 +28,8 @@ target_include_directories(seasocks PUBLIC .)
 target_link_libraries(seasocks PRIVATE ${CMAKE_THREAD_LIBS_INIT} embedded)
 
 add_library(seasocks_so SHARED $<TARGET_OBJECTS:seasocks_obj>)
-target_include_directories(seasocks_so PUBLIC .)
-target_link_libraries(seasocks_so PRIVATE ${CMAKE_THREAD_LIBS_INIT} embedded)
+target_include_directories(seasocks_so PUBLIC ${ZLIB_INCLUDE_DIRS} .)
+target_link_libraries(seasocks_so PRIVATE ${CMAKE_THREAD_LIBS_INIT} embedded "${ZLIB_LIBRARIES}")
 set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks)
 
 install(TARGETS seasocks seasocks_so

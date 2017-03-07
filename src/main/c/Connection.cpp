@@ -59,6 +59,7 @@
 #include <unistd.h>
 #include <byteswap.h>
 #include <unordered_map>
+#include <memory>
 
 namespace {
 
@@ -570,7 +571,22 @@ void Connection::send(const uint8_t* data, size_t length) {
 
 void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size_t messageLength) {
     uint8_t firstByte = 0x80 | opcode;
+    if (_perMessageDeflate) firstByte |= 0x40;
     if (!write(&firstByte, 1, false)) return;
+
+    if (_perMessageDeflate) {
+        std::vector<uint8_t> compressed;
+
+        zlibContext->deflate(webSocketResponse, messageLength, compressed);
+
+        LS_DEBUG(_logger, "Compression result: " << messageLength << " bytes -> " << compressed.size() << " bytes");
+        sendHybiData(compressed.data(), compressed.size());
+    } else {
+        sendHybiData(webSocketResponse, messageLength);
+    }
+}
+
+void Connection::sendHybiData(const uint8_t* webSocketResponse, size_t messageLength) {
     if (messageLength < 126) {
         uint8_t nextByte = messageLength; // No MASK bit set.
         if (!write(&nextByte, 1, false)) return;
@@ -637,7 +653,38 @@ void Connection::handleHybiWebSocket() {
     bool done = false;
     while (!done) {
         std::vector<uint8_t> decodedMessage;
-        switch (decoder.decodeNextMessage(decodedMessage)) {
+        bool deflateNeeded = false;
+
+        auto messageState = decoder.decodeNextMessage(decodedMessage, deflateNeeded);
+
+        if (deflateNeeded) {
+            if (!_perMessageDeflate) {
+                LS_WARNING(_logger, "Received deflated hybi frame but deflate wasn't negotiated");
+                closeInternal();
+                return;
+            }
+
+            size_t compressed_size = decodedMessage.size();
+
+            std::vector<uint8_t> decompressed;
+            int zlibError;
+
+            // Note: inflate() alters decodedMessage
+            bool success = zlibContext->inflate(decodedMessage, decompressed, zlibError);
+
+            if (!success) {
+                LS_WARNING(_logger, "Decompression error from zlib: " << zlibError);
+                closeInternal();
+                return;
+            }
+
+            LS_DEBUG(_logger, "Decompression result: " << compressed_size << " bytes -> " << decodedMessage.size() << " bytes");
+
+            decodedMessage.swap(decompressed);
+        }
+
+
+        switch (messageState) {
         default:
             closeInternal();
             LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
@@ -809,6 +856,10 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
             return send404();
         }
         verb = Request::Verb::WebSocket;
+
+        if (_server.server().getPerMessageDeflateEnabled() && headers.count("Sec-WebSocket-Extensions")) {
+            parsePerMessageDeflateHeader(headers["Sec-WebSocket-Extensions"]);
+        }
     }
 
     _request.reset(new PageRequest(_address, requestUri, _server.server(),
@@ -975,6 +1026,7 @@ bool Connection::handleHybiHandshake(
     bufferLine("Upgrade: websocket");
     bufferLine("Connection: Upgrade");
     bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
+    if (_perMessageDeflate) bufferLine("Sec-WebSocket-Extensions: permessage-deflate");
     bufferLine("");
     flush();
 
@@ -983,6 +1035,19 @@ bool Connection::handleHybiHandshake(
     }
     _state = State::HANDLING_HYBI_WEBSOCKET;
     return true;
+}
+
+void Connection::parsePerMessageDeflateHeader(const std::string& header) {
+    for (auto &extField : seasocks::split(header, ';')) {
+        while (!extField.empty() && isspace(extField[0]))
+            extField = extField.substr(1);
+
+        if (seasocks::caseInsensitiveSame(extField, "permessage-deflate")) {
+            LS_INFO(_logger, "Enabling per-message deflate");
+            _perMessageDeflate = true;
+            zlibContext = std::unique_ptr<ZlibContext>(new ZlibContext());
+        }
+    }
 }
 
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {

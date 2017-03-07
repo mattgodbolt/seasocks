@@ -34,6 +34,9 @@ if( NOT PYTHON_BIN )
 endif()
 
 
+find_package(ZLIB REQUIRED)
+
+
 add_subdirectory("src/main/c")
 add_subdirectory("src/main/web")
 add_subdirectory("src/app/c")
@@ -43,4 +46,3 @@ if (UNITTESTS)
     enable_testing()
     add_subdirectory("src/test/c")
 endif ()
-

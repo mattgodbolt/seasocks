@@ -30,6 +30,8 @@
 #include "seasocks/ResponseWriter.h"
 #include "seasocks/TransferEncoding.h"
 
+#include "internal/ZlibContext.h"
+
 #include <netinet/in.h>
 
 #include <sys/socket.h>
@@ -126,6 +128,8 @@ private:
 
     void sendHybi(uint8_t opcode, const uint8_t* webSocketResponse,
                   size_t messageLength);
+    void sendHybiData(const uint8_t* webSocketResponse, size_t messageLength);
+
 
     bool sendResponse(std::shared_ptr<Response> response);
 
@@ -176,6 +180,10 @@ private:
     TransferEncoding _transferEncoding;
     unsigned _chunk;
     std::shared_ptr<Writer> _writer;
+
+    void parsePerMessageDeflateHeader(const std::string& header);
+    bool _perMessageDeflate = false;
+    std::unique_ptr<ZlibContext> zlibContext;
 
     enum class State {
         INVALID,

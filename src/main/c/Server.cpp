@@ -592,6 +592,11 @@ void Server::setMaxKeepAliveDrops(int maxKeepAliveDrops) {
     _maxKeepAliveDrops = maxKeepAliveDrops;
 }
 
+void Server::setPerMessageDeflateEnabled(bool enabled) {
+    LS_INFO(_logger, "Setting per-message deflate to " << (enabled ? "enabled" : "disabled"));
+    _perMessageDeflateEnabled = enabled;
+}
+
 void Server::checkThread() const {
     auto thisTid = gettid();
     if (thisTid != _threadId) {
