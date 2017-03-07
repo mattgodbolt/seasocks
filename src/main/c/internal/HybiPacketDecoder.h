@@ -59,7 +59,11 @@ public:
         Pong,
         Close
     };
-    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut);
+    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded);
+    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut) {
+        bool ignore;
+        return decodeNextMessage(messageOut, ignore);
+    }
 
     size_t numBytesDecoded() const;
 };

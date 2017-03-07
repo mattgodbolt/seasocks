@@ -119,6 +119,9 @@ public:
     void setClientBufferSize(size_t bytesToBuffer);
     size_t clientBufferSize() const override { return _clientBufferSize; }
 
+    void setPerMessageDeflateEnabled(bool enabled);
+    bool getPerMessageDeflateEnabled() { return _perMessageDeflateEnabled;}
+
     class Runnable {
     public:
         virtual ~Runnable() {}
@@ -165,6 +168,9 @@ private:
     int _lameConnectionTimeoutSeconds;
     size_t _clientBufferSize;
     time_t _nextDeadConnectionCheck;
+
+    // Compression settings
+    bool _perMessageDeflateEnabled = false;
 
     struct WebSocketHandlerEntry {
         std::shared_ptr<WebSocket::Handler> handler;
