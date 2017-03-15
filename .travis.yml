@@ -1,4 +1,5 @@
-language: cpp
+language: generic
+
 sudo: false
 dist: trusty
 
