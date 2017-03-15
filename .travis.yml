@@ -1,4 +1,5 @@
-language: cpp
+language: generic
+
 sudo: false
 dist: trusty
 
@@ -22,6 +23,8 @@ matrix:
             - llvm-toolchain-precise-3.8
             - llvm-toolchain-precise-3.7
             - llvm-toolchain-precise-3.6
+            - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main'
+              key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
     - env: CXX=g++-5 CC=gcc-5
       addons:
         apt:
@@ -48,6 +51,14 @@ matrix:
         apt:
           packages:
             - g++-4.7
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-4.0 CC=clang-4.0
+      addons:
+        apt:
+          packages:
+            - clang-4.0
+            - libc++-dev
             - valgrind
           sources: *sources
     - env: CXX=clang++-3.9 CC=clang-3.9
