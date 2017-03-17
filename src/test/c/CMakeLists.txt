@@ -11,7 +11,9 @@ add_executable(AllTests test_main.cpp
         MockServerImpl.h
         ServerTests.cpp
         ToStringTests.cpp
-        EmbeddedContentTests.cpp)
+        EmbeddedContentTests.cpp
+        ResponseBuilderTests.cpp
+        )
 
 add_test(NAME ${TESTS} COMMAND ${TESTS})
 target_link_libraries(${TESTS} seasocks "${ZLIB_LIBRARIES}")
