@@ -35,9 +35,12 @@ class ConcreteResponse : public SynchronousResponse {
     const std::string _contentType;
     const Headers _headers;
     const bool _keepAlive;
+
 public:
-    ConcreteResponse(ResponseCode responseCode, const std::string& payload, const std::string& contentType, const Headers& headers, bool keepAlive) :
-        _responseCode(responseCode), _payload(payload), _contentType(contentType), _headers(headers), _keepAlive(keepAlive) {}
+    ConcreteResponse(ResponseCode responseCode, const std::string& payload,
+        const std::string& contentType, const Headers& headers, bool keepAlive) :
+            _responseCode(responseCode), _payload(payload), _contentType(contentType),
+            _headers(headers), _keepAlive(keepAlive) { }
 
     virtual ResponseCode responseCode() const override {
         return _responseCode;
