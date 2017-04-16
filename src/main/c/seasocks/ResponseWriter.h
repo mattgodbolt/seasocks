@@ -57,6 +57,7 @@ public:
     virtual void payload(const void* data, size_t size, bool flush=true) = 0;
     // Finish a response.
     virtual void finish(bool keepConnectionOpen) = 0;
+
     // Send an error back to the user. No calls to 'header' or 'payload'
     // or 'finish' should be executed. If you wish to serve your own error document
     // then use the normal 'begin'/'header'/'payload'/'finish' process but with

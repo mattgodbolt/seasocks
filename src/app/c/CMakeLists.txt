@@ -10,6 +10,7 @@ add_app(ws_echo)
 add_app(ws_test)
 add_app(ws_test_poll)
 add_app(async_test)
+add_app(streaming_test)
 
 add_custom_command(TARGET ws_test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

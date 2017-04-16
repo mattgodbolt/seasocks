@@ -12,6 +12,7 @@ set(SEASOCKS_SOURCE_FILES Connection.cpp
                         seasocks/ResponseCode.cpp
                         seasocks/SynchronousResponse.cpp
                         seasocks/ResponseBuilder.cpp
+                        seasocks/StreamingResponse.cpp
                         sha1/sha1.cpp
                         util/CrackedUri.cpp
                         util/Json.cpp
