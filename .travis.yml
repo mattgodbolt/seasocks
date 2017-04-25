@@ -31,6 +31,7 @@ matrix:
           packages:
             - g++-6
             - valgrind
+          sources: *sources
     - env: CXX=g++-5 CC=gcc-5
       addons:
         apt:
