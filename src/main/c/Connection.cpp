@@ -30,7 +30,6 @@
 #include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
 #include "internal/PageRequest.h"
-#include "internal/ZlibContext.h"
 
 #include "md5/md5.h"
 
@@ -42,6 +41,7 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/ToString.h"
 #include "seasocks/ResponseWriter.h"
+#include "seasocks/ZlibContext.h"
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -578,7 +578,7 @@ void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size
     if (_perMessageDeflate) {
         std::vector<uint8_t> compressed;
 
-        zlibContext->deflate(webSocketResponse, messageLength, compressed);
+        zlibContext.deflate(webSocketResponse, messageLength, compressed);
 
         LS_DEBUG(_logger, "Compression result: " << messageLength << " bytes -> " << compressed.size() << " bytes");
         sendHybiData(compressed.data(), compressed.size());
@@ -671,7 +671,7 @@ void Connection::handleHybiWebSocket() {
             int zlibError;
 
             // Note: inflate() alters decodedMessage
-            bool success = zlibContext->inflate(decodedMessage, decompressed, zlibError);
+            bool success = zlibContext.inflate(decodedMessage, decompressed, zlibError);
 
             if (!success) {
                 LS_WARNING(_logger, "Decompression error from zlib: " << zlibError);
@@ -1046,7 +1046,7 @@ void Connection::parsePerMessageDeflateHeader(const std::string& header) {
         if (seasocks::caseInsensitiveSame(extField, "permessage-deflate")) {
             LS_INFO(_logger, "Enabling per-message deflate");
             _perMessageDeflate = true;
-            zlibContext = std::unique_ptr<ZlibContext>(new ZlibContext());
+            zlibContext.initialise();
         }
     }
 }

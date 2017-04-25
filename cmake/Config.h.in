@@ -4,6 +4,7 @@
 namespace seasocks {
 
     constexpr auto version = "@PROJECT_VERSION@";
+    constexpr bool deflateEnabled = ${DEFLATE_SUPPORT_BOOL};
 
 }
 

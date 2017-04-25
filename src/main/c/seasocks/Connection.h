@@ -29,6 +29,7 @@
 #include "seasocks/WebSocket.h"
 #include "seasocks/ResponseWriter.h"
 #include "seasocks/TransferEncoding.h"
+#include "seasocks/ZlibContext.h"
 
 #include <netinet/in.h>
 
@@ -47,7 +48,6 @@ class Logger;
 class ServerImpl;
 class PageRequest;
 class Response;
-class ZlibContext;
 
 class Connection : public WebSocket {
 public:
@@ -183,7 +183,7 @@ private:
 
     void parsePerMessageDeflateHeader(const std::string& header);
     bool _perMessageDeflate = false;
-    std::unique_ptr<ZlibContext> zlibContext;
+    ZlibContext zlibContext;
 
     enum class State {
         INVALID,

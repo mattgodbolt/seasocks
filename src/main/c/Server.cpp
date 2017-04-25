@@ -23,6 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include "internal/Config.h"
 #include "internal/LogStream.h"
 
 #include "seasocks/Connection.h"
@@ -593,6 +594,10 @@ void Server::setMaxKeepAliveDrops(int maxKeepAliveDrops) {
 }
 
 void Server::setPerMessageDeflateEnabled(bool enabled) {
+    if (!deflateEnabled) {
+        LS_ERROR(_logger, "Ignoring request to enable deflate as Seasocks was compiled without support");
+        return;
+    }
     LS_INFO(_logger, "Setting per-message deflate to " << (enabled ? "enabled" : "disabled"));
     _perMessageDeflateEnabled = enabled;
 }

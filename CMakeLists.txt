@@ -7,13 +7,17 @@ set(PROJECT_VERSION 1.2.6)
 
 
 option(UNITTESTS "Build unittests." ON)
-
+option(DEFLATE_SUPPORT "Include suuport for deflate (requires zlib)." ON)
+if (DEFLATE_SUPPORT)
+    set(DEFLATE_SUPPORT_BOOL "true")
+else ()
+    set(DEFLATE_SUPPORT_BOOL "false")
+endif ()
 message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 message(STATUS "Unittests: ${UNITTESTS}")
 
 
-
-set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "") 
+set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "")
 include(CTest)
 include(CompilerCheck)
 include(GNUInstallDirs)
@@ -29,13 +33,13 @@ find_package(Threads)
 
 find_program(PYTHON_BIN python2 DOC "Python executable")
 
-if( NOT PYTHON_BIN )
+if (NOT PYTHON_BIN)
     message(SEND_ERROR "Python not found")
-endif()
+endif ()
 
-
-find_package(ZLIB REQUIRED)
-
+if (DEFLATE_SUPPORT)
+    find_package(ZLIB REQUIRED)
+endif ()
 
 add_subdirectory("src/main/c")
 add_subdirectory("src/main/web")
