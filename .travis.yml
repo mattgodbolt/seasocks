@@ -25,6 +25,12 @@ matrix:
             - llvm-toolchain-precise-3.6
             - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main'
               key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
+    - env: CXX=g++-6 CC=gcc-6 EXTRA_CMAKE=-DDEFLATE_SUPPORT=Off
+      addons:
+        apt:
+          packages:
+            - g++-6
+            - valgrind
     - env: CXX=g++-5 CC=gcc-5
       addons:
         apt:
@@ -113,7 +119,7 @@ install:
 before_script:
     - cd "${TRAVIS_BUILD_DIR}"
     - cmake --version
-    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release 
+    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release ${EXTRA_CMAKE}
     - cmake --build build -- -j${JOBS}
 
 script:
