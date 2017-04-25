@@ -3,8 +3,8 @@
 
 namespace seasocks {
 
-    constexpr auto version = "@PROJECT_VERSION@";
-    constexpr bool deflateEnabled = ${DEFLATE_SUPPORT_BOOL};
+    static constexpr auto version = "@PROJECT_VERSION@";
+    static constexpr bool deflateEnabled = ${DEFLATE_SUPPORT_BOOL};
 
 }
 
