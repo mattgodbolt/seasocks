@@ -1,10 +1,11 @@
-
 #pragma once
 
 namespace seasocks {
 
-    static constexpr auto version = "@PROJECT_VERSION@";
-    static constexpr bool deflateEnabled = ${DEFLATE_SUPPORT_BOOL};
+    struct Config {
+        static constexpr auto version = "@PROJECT_VERSION@";
+        static constexpr bool deflateEnabled = ${DEFLATE_SUPPORT_BOOL};
+    };
 
 }
 

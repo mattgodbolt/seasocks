@@ -594,7 +594,7 @@ void Server::setMaxKeepAliveDrops(int maxKeepAliveDrops) {
 }
 
 void Server::setPerMessageDeflateEnabled(bool enabled) {
-    if (!deflateEnabled) {
+    if (!Config::deflateEnabled) {
         LS_ERROR(_logger, "Ignoring request to enable deflate as Seasocks was compiled without support");
         return;
     }
