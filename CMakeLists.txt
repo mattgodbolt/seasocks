@@ -7,7 +7,7 @@ set(PROJECT_VERSION 1.2.6)
 
 
 option(UNITTESTS "Build unittests." ON)
-option(DEFLATE_SUPPORT "Include suuport for deflate (requires zlib)." ON)
+option(DEFLATE_SUPPORT "Include support for deflate (requires zlib)." ON)
 if (DEFLATE_SUPPORT)
     set(DEFLATE_SUPPORT_BOOL "true")
 else ()
