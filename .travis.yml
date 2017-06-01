@@ -10,11 +10,11 @@ cache:
 
 matrix:
     include:
-    - env: CXX=g++-6 CC=gcc-6
+    - env: CXX=g++-7 CC=gcc-7
       addons:
         apt:
           packages:
-            - g++-6
+            - g++-7
             - valgrind
           sources: &sources
             - ubuntu-toolchain-r-test
@@ -26,6 +26,13 @@ matrix:
             - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main'
               key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
     - env: CXX=g++-6 CC=gcc-6 EXTRA_CMAKE=-DDEFLATE_SUPPORT=Off
+      addons:
+        apt:
+          packages:
+            - g++-6
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-6 CC=gcc-6
       addons:
         apt:
           packages:
