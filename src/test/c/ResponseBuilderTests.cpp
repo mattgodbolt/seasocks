@@ -3,6 +3,7 @@
 #include "catch.hpp"
 
 using namespace seasocks;
+using namespace Catch::Matchers;
 
 TEST_CASE("appendIntValue", "[ResponseBuilderTests]") {
     ResponseBuilder builder;
