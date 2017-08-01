@@ -39,7 +39,7 @@ target_include_directories(seasocks_so PUBLIC ${ZLIB_INCLUDE_DIRS} .)
 if (DEFLATE_SUPPORT)
     target_link_libraries(seasocks_so PRIVATE ${CMAKE_THREAD_LIBS_INIT} "${ZLIB_LIBRARIES}")
 endif()
-set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks)
+set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks VERSION ${PROJECT_VERSION})
 
 install(TARGETS seasocks seasocks_so
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
