@@ -1,7 +1,9 @@
+add_library(Catch INTERFACE)
+target_include_directories(Catch INTERFACE "catch")
+
 set(TESTS "AllTests")
 
 add_executable(AllTests test_main.cpp
-        catch.hpp
         ConnectionTests.cpp
         CrackedUriTests.cpp
         HeaderMapTests.cpp
@@ -16,4 +18,4 @@ add_executable(AllTests test_main.cpp
         )
 
 add_test(NAME ${TESTS} COMMAND ${TESTS})
-target_link_libraries(${TESTS} seasocks "${ZLIB_LIBRARIES}")
+target_link_libraries(${TESTS} seasocks ${ZLIB_LIBRARIES} Catch)
