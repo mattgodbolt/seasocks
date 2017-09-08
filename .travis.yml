@@ -18,13 +18,13 @@ matrix:
             - valgrind
           sources: &sources
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise
-            - llvm-toolchain-precise-3.9
+            - llvm-toolchain-trusty
+            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-trusty-4.0
+            - llvm-toolchain-trusty-3.9
             - llvm-toolchain-precise-3.8
             - llvm-toolchain-precise-3.7
             - llvm-toolchain-precise-3.6
-            - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main'
-              key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
     - env: CXX=g++-6 CC=gcc-6 EXTRA_CMAKE=-DDEFLATE_SUPPORT=Off
       addons:
         apt:
@@ -65,6 +65,14 @@ matrix:
         apt:
           packages:
             - g++-4.7
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-5.0 CC=clang-5.0
+      addons:
+        apt:
+          packages:
+            - clang-5.0
+            - libc++-dev
             - valgrind
           sources: *sources
     - env: CXX=clang++-4.0 CC=clang-4.0
