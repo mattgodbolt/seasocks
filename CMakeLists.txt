@@ -40,12 +40,5 @@ if (DEFLATE_SUPPORT)
     find_package(ZLIB REQUIRED)
 endif ()
 
-add_subdirectory("src/main/c")
-add_subdirectory("src/main/web")
-add_subdirectory("src/app/c")
+add_subdirectory("src")
 
-if (UNITTESTS)
-    find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
-    enable_testing()
-    add_subdirectory("src/test/c")
-endif ()
