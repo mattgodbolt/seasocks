@@ -25,7 +25,7 @@ include(GNUInstallDirs)
 configure_file(${CMAKE_MODULE_PATH}/Config.h.in internal/Config.h)
 include_directories(${CMAKE_BINARY_DIR})
 
-add_definitions(-Wall -Werror -Wextra -pedantic)
+add_compile_options(-Wall -Werror -Wextra -pedantic)
 
 find_package(Threads)
 
