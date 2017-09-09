@@ -60,13 +60,6 @@ matrix:
             - g++-4.8
             - valgrind
           sources: *sources
-    - env: CXX=g++-4.7 CC=gcc-4.7
-      addons:
-        apt:
-          packages:
-            - g++-4.7
-            - valgrind
-          sources: *sources
     - env: CXX=clang++-5.0 CC=clang-5.0
       addons:
         apt:
