@@ -36,9 +36,9 @@ std::shared_ptr<Response> Response::unhandled() {
 
 std::shared_ptr<Response> Response::notFound() {
     static std::shared_ptr<Response> notFound = std::make_shared<ConcreteResponse>(
-                                            ConcreteResponse(ResponseCode::NotFound,
+                                            ResponseCode::NotFound,
                                             "Not found", "text/plain",
-                                            SynchronousResponse::Headers(), false));
+                                            SynchronousResponse::Headers(), false);
     return notFound;
 }
 
