@@ -43,7 +43,7 @@ std::shared_ptr<Response> Response::notFound() {
 }
 
 std::shared_ptr<Response> Response::error(ResponseCode code, const std::string& reason) {
-    return  std::make_shared<ConcreteResponse>(
+    return std::make_shared<ConcreteResponse>(
                 code, reason, "text/plain",
                 SynchronousResponse::Headers(), false);
 }

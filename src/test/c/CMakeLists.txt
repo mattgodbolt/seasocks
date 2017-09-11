@@ -15,6 +15,7 @@ add_executable(AllTests test_main.cpp
         ToStringTests.cpp
         EmbeddedContentTests.cpp
         ResponseBuilderTests.cpp
+        ResponseTests.cpp
         )
 
 add_test(NAME ${TESTS} COMMAND ${TESTS})
