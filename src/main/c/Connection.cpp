@@ -230,7 +230,7 @@ Connection::Connection(
         ServerImpl& server,
         int fd,
         const sockaddr_in& address)
-    : _logger(new PrefixWrapper(formatAddress(address) + " : ", logger)),
+    : _logger(std::make_shared<PrefixWrapper>(formatAddress(address) + " : ", logger)),
       _server(server),
       _fd(fd),
       _shutdown(false),
