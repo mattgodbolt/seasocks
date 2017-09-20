@@ -107,11 +107,11 @@ private:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
-    shared_ptr<Logger> logger(new PrintfLogger(Logger::Level::DEBUG));
+    auto logger = std::make_shared<PrintfLogger>(Logger::Level::DEBUG);
 
     Server server(logger);
 
-    shared_ptr<MyHandler> handler(new MyHandler(&server));
+    auto handler = std::make_shared<MyHandler>(&server);
     server.addWebSocketHandler("/ws", handler);
     server.setStaticPath("src/ws_test_web");
     if (!server.startListening(9090)) {
