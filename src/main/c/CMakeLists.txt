@@ -50,8 +50,6 @@ set(SEASOCKS_SOURCE_FILES
         seasocks/util/RootPageHandler.h
         seasocks/util/StaticResponseHandler.h
         seasocks/WebSocket.h
-        seasocks/ZlibContext.cpp
-        seasocks/ZlibContextDisabled.cpp
         seasocks/ZlibContext.h
         Server.cpp
         sha1/sha1.cpp
