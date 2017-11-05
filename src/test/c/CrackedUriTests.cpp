@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "seasocks/util/CrackedUri.h"
+#include <algorithm>
 
 #include "catch.hpp"
 
