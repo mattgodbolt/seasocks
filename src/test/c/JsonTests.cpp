@@ -126,9 +126,8 @@ TEST_CASE("handlesMaps", "[JsonTests]") {
     std::map<std::string, JsonnedString> unordMap;
     unordMap["hello"] = to_json(true);
     unordMap["goodbye"] = to_json(false);
-    CHECK_THAT(makeMapFromContainer(unordMap), AnyOf(
-            Catch::Equals(R"({"goodbye":false,"hello":true})"),
-            Catch::Equals(R"({"hello":true,"goodbye":false})")));
+    CHECK_THAT(makeMapFromContainer(unordMap), Catch::Equals(R"({"goodbye":false,"hello":true})")
+                                            || Catch::Equals(R"({"hello":true,"goodbye":false})"));
 }
 
 }
