@@ -10,7 +10,7 @@ cache:
 
 matrix:
     include:
-    - env: CXX=g++-7 CC=gcc-7
+    - env: CXX=g++-7 CC=gcc-7 EXTRA_CMAKE=-DCOVERAGE=On
       addons:
         apt:
           packages:
@@ -135,3 +135,4 @@ script:
     - cd build
     - ctest -D ExperimentalBuild -j${JOBS}
     - ctest -D ExperimentalMemCheck -j${JOBS}
+    - if [ echo "${EXTRA_CMAKE} | grep COVERAGE=On ]; then bash <(curl -s https://codecov.io/bash); fi

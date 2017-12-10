@@ -3,3 +3,4 @@
 .gdb_history
 /build
 gdb.txt
+/cmake-*
