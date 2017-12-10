@@ -76,7 +76,7 @@ matrix:
             - libc++-dev
             - valgrind
           sources: *sources
-    - env: CXX=clang++-3.9 CC=clang-3.9
+    - env: CXX=clang++-3.9 CC=clang-3.9 -DCOVERAGE=Off
       addons:
         apt:
           packages:
@@ -128,7 +128,7 @@ install:
 before_script:
     - cd "${TRAVIS_BUILD_DIR}"
     - cmake --version
-    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=On ${EXTRA_CMAKE}
+    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=On ${EXTRA_CMAKE}
     - cmake --build build -- -j${JOBS}
 
 script:
