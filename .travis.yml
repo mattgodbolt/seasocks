@@ -10,7 +10,7 @@ cache:
 
 matrix:
     include:
-    - env: CXX=g++-7 CC=gcc-7 EXTRA_CMAKE=-DCOVERAGE=On
+    - env: CXX=g++-7 CC=gcc-7
       addons:
         apt:
           packages:
@@ -128,11 +128,11 @@ install:
 before_script:
     - cd "${TRAVIS_BUILD_DIR}"
     - cmake --version
-    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release ${EXTRA_CMAKE}
+    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=On ${EXTRA_CMAKE}
     - cmake --build build -- -j${JOBS}
 
 script:
     - cd build
     - ctest -D ExperimentalBuild -j${JOBS}
     - ctest -D ExperimentalMemCheck -j${JOBS}
-    - if [ echo "${EXTRA_CMAKE} | grep COVERAGE=On ]; then bash <(curl -s https://codecov.io/bash); fi
+    - bash <(curl -s https://codecov.io/bash)
