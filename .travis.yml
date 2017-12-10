@@ -76,7 +76,7 @@ matrix:
             - libc++-dev
             - valgrind
           sources: *sources
-    - env: CXX=clang++-3.9 CC=clang-3.9 -DCOVERAGE=Off
+    - env: CXX=clang++-3.9 CC=clang-3.9 EXTRA_CMAKE=-DCOVERAGE=Off
       addons:
         apt:
           packages:
