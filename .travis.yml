@@ -114,16 +114,6 @@ install:
     - JOBS=2
     - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
     - mkdir -p "${DEPS_DIR}" && cd "${DEPS_DIR}"
-    - |
-      if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-        if [[ ! -d "$(ls -A ${DEPS_DIR}/cmake)" ]]; then
-          CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.2-Linux-x86_64.tar.gz"
-          mkdir -p cmake && travis_retry wget --no-check-certificate --quiet -O - "${CMAKE_URL}" | tar --strip-components=1 -xz -C cmake
-        fi
-        export PATH="${DEPS_DIR}/cmake/bin:${PATH}"
-      else
-        if ! brew ls --version cmake &>/dev/null; then brew install cmake; fi
-      fi
 
 before_script:
     - cd "${TRAVIS_BUILD_DIR}"
