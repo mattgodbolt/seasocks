@@ -64,7 +64,7 @@ public:
      */
     class Handler {
     public:
-        virtual ~Handler() { }
+        virtual ~Handler() = default;
 
         /**
          * Called on the seasocks thread during initial connection.
@@ -87,7 +87,7 @@ public:
 protected:
     // To delete a WebSocket, just close it. It is owned by the Server, and
     // the server will delete it when it's finished.
-    virtual ~WebSocket() {}
+    virtual ~WebSocket() = default;
 };
 
 }  // namespace seasocks

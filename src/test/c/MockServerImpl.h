@@ -34,7 +34,7 @@ namespace seasocks {
 
 class MockServerImpl : public ServerImpl {
 public:
-    virtual ~MockServerImpl() {}
+    virtual ~MockServerImpl() = default;
 
     std::string staticPath;
     std::unordered_map<std::string, std::shared_ptr<WebSocket::Handler>> handlers;

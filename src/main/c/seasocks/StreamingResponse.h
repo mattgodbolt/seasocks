@@ -39,7 +39,7 @@ class StreamingResponse : public Response {
     bool closed = false;
 
 public:
-    virtual ~StreamingResponse() { }
+    virtual ~StreamingResponse() = default;
     virtual void handle(std::shared_ptr<ResponseWriter> writer) override;
     virtual void cancel() override;
 

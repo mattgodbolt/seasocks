@@ -38,7 +38,7 @@ class Server;
 
 class Request {
 public:
-    virtual ~Request() {}
+    virtual ~Request() = default;
 
     enum class Verb {
         Invalid,

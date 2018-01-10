@@ -133,7 +133,7 @@ void jsonKeyPairToStream(std::ostream& str, const K& key, const V& value, Args&&
 }
 
 struct JsonnedString : std::string {
-    JsonnedString() {}
+    JsonnedString() = default;
     JsonnedString(const std::string& s) : std::string(s) {}
     JsonnedString(const std::stringstream& str) : std::string(str.str()) {}
     void jsonToStream(std::ostream &o) const {

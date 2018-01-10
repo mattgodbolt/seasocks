@@ -32,7 +32,7 @@ namespace seasocks {
  */
 class Logger {
 public:
-    virtual ~Logger() {}
+    virtual ~Logger() = default;
 
     enum class Level {
         DEBUG,  // NB DEBUG is usually opted-out of at compile-time.

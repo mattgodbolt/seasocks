@@ -32,7 +32,7 @@ namespace seasocks {
 
 class SynchronousResponse : public Response {
 public:
-    virtual ~SynchronousResponse() { }
+    virtual ~SynchronousResponse() = default;
     virtual void handle(std::shared_ptr<ResponseWriter> writer) override;
     virtual void cancel() override;
 

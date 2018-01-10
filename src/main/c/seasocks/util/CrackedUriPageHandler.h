@@ -35,7 +35,7 @@ namespace seasocks {
 
 class CrackedUriPageHandler {
 public:
-    virtual ~CrackedUriPageHandler() {}
+    virtual ~CrackedUriPageHandler() = default;
 
     virtual std::shared_ptr<Response> handle(const CrackedUri& uri, const Request& request) = 0;
 

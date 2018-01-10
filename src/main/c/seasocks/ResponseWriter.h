@@ -38,7 +38,7 @@ namespace seasocks {
 // wish to take note of closed connections must use their cancel() callback.
 class ResponseWriter {
 public:
-    virtual ~ResponseWriter() {}
+    virtual ~ResponseWriter() = default;
 
     // Begins a request with the given code. If you want to generate a "normal"
     // seasocks error, see 'error' below. After beginning, it is expected you

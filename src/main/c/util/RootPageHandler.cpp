@@ -31,11 +31,9 @@
 
 using namespace seasocks;
 
-RootPageHandler::RootPageHandler() {
-}
+RootPageHandler::RootPageHandler() = default;
 
-RootPageHandler::~RootPageHandler() {
-}
+RootPageHandler::~RootPageHandler() = default;
 
 CrackedUriPageHandler::Ptr RootPageHandler::add(const CrackedUriPageHandler::Ptr& handler) {
     _handlers.emplace_back(handler);

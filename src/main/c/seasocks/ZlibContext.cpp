@@ -125,11 +125,9 @@ struct ZlibContext::Impl {
     }
 };
 
-ZlibContext::ZlibContext() {
-}
+ZlibContext::ZlibContext() = default;
 
-ZlibContext::~ZlibContext() {
-}
+ZlibContext::~ZlibContext() = default;
 
 void ZlibContext::initialise(int deflateBits, int inflateBits, int memLevel) {
     _impl.reset(new Impl(deflateBits, inflateBits, memLevel));

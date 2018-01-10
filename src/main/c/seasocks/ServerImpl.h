@@ -39,7 +39,7 @@ class Server;
 // Internal implementation used to give access to internals to Connections.
 class ServerImpl {
 public:
-    virtual ~ServerImpl() {}
+    virtual ~ServerImpl() = default;
 
     virtual void remove(Connection* connection) = 0;
     virtual bool subscribeToWriteEvents(Connection* connection) = 0;

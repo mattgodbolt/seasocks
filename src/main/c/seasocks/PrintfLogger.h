@@ -36,8 +36,7 @@ public:
     PrintfLogger(Level _minLevelToLog = Level::DEBUG) : minLevelToLog(_minLevelToLog) {
     }
 
-    ~PrintfLogger() {
-    }
+    ~PrintfLogger() = default;
 
     virtual void log(Level level, const char* message) {
         if (level >= minLevelToLog) {
