@@ -362,8 +362,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
     }
     // The connections are all deleted at the end so we've processed any other subject's
     // closes etc before we call onDisconnect().
-    for (auto it = toBeDeleted.begin(); it != toBeDeleted.end(); ++it) {
-        auto connection = *it;
+    for (auto connection : toBeDeleted) {
         if (_connections.find(connection) == _connections.end()) {
             LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*)connection
                     << formatAddress(connection->getRemoteAddress()));
@@ -438,9 +437,9 @@ void Server::processEventQueue() {
     time_t now = time(nullptr);
     if (now < _nextDeadConnectionCheck) return;
     std::list<Connection*> toRemove;
-    for (auto it = _connections.cbegin(); it != _connections.cend(); ++it) {
-        time_t numSecondsSinceConnection = now - it->second;
-        auto connection = it->first;
+    for (auto _connection : _connections) {
+        time_t numSecondsSinceConnection = now - _connection.second;
+        auto connection = _connection.first;
         if (connection->bytesReceived() == 0
             && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
             LS_INFO(_logger, formatAddress(connection->getRemoteAddress())
@@ -449,8 +448,8 @@ void Server::processEventQueue() {
             toRemove.push_back(connection);
         }
     }
-    for (auto it = toRemove.begin(); it != toRemove.end(); ++it) {
-        delete *it;
+    for (auto & it : toRemove) {
+        delete it;
     }
 }
 
@@ -562,11 +561,11 @@ void Server::execute(std::function<void()> toExecute) {
 std::string Server::getStatsDocument() const {
     std::ostringstream doc;
     doc << "clear();" << std::endl;
-    for (auto it = _connections.begin(); it != _connections.end(); ++it) {
+    for (auto _connection : _connections) {
         doc << "connection({";
-        auto connection = it->first;
+        auto connection = _connection.first;
         jsonKeyPairToStream(doc,
-                "since", EpochTimeAsLocal(it->second),
+                "since", EpochTimeAsLocal(_connection.second),
                 "fd", connection->getFd(),
                 "id", reinterpret_cast<uint64_t>(connection),
                 "uri", connection->getRequestUri(),

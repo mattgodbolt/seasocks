@@ -54,8 +54,8 @@ void SynchronousResponse::handle(std::shared_ptr<ResponseWriter> writer) {
         writer->header("Expires", now());
     }
 
-    for (auto it = headers.begin(); it != headers.end(); ++it) {
-        writer->header(it->first, it->second);
+    for (auto & header : headers) {
+        writer->header(header.first, header.second);
     }
 
     writer->payload(payload(), payloadSize());

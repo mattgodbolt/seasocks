@@ -40,8 +40,8 @@ std::string getAcceptKey(const std::string& challenge) {
     hasher.Input(fullString.c_str(), fullString.size());
     unsigned hash[5];
     hasher.Result(hash);
-    for (int i = 0; i < 5; ++i) {
-        hash[i] = htonl(hash[i]);
+    for (unsigned int & i : hash) {
+        i = htonl(i);
     }
     return base64Encode(hash, sizeof(hash));
 }

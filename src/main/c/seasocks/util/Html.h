@@ -125,14 +125,14 @@ public:
     friend std::ostream& operator << (std::ostream& os, const Element& elem) {
         if (elem._isTextNode) {
             os << elem._nameOrText;
-            for (auto it = elem._children.cbegin(); it != elem._children.cend(); ++it) {
-                os << *it;
+            for (const auto & it : elem._children) {
+                os << it;
             }
             return os;
         }
         os << "<" << elem._nameOrText << elem._attributes << ">";
-        for (auto it = elem._children.cbegin(); it != elem._children.cend(); ++it) {
-            os << *it;
+        for (const auto & it : elem._children) {
+            os << it;
         }
         if (elem._needsClose) {
             os << "</" << elem._nameOrText << ">";

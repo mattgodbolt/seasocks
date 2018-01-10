@@ -85,9 +85,9 @@ CrackedUri::CrackedUri(const std::string& uri) {
     std::transform(_path.begin(), _path.end(), _path.begin(), unescape);
 
     auto splitRemainder = split(remainder, '&');
-    for (auto iter = splitRemainder.cbegin(); iter != splitRemainder.cend(); ++iter) {
-        if (iter->empty()) continue;
-        auto split = seasocks::split(*iter, '=');
+    for (const auto & iter : splitRemainder) {
+        if (iter.empty()) continue;
+        auto split = seasocks::split(iter, '=');
         std::transform(split.begin(), split.end(), split.begin(), unescape);
         if (split.size() == 1) {
             _queryParams.insert(std::make_pair(split[0], std::string()));

@@ -33,8 +33,8 @@ void StreamingResponse::handle(std::shared_ptr<ResponseWriter> writer) {
     writer->begin(responseCode(), transferEncoding());
 
     auto headers = getHeaders();
-    for (auto it = headers.begin(); it != headers.end(); ++it) {
-        writer->header(it->first, it->second);
+    for (auto & header : headers) {
+        writer->header(header.first, header.second);
     }
 
     std::shared_ptr<std::istream> stream = getStream();

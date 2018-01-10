@@ -1082,9 +1082,9 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
         return false;
     }
     auto rangesText = split(range.substr(expectedPrefix.length()), ',');
-    for (auto it = rangesText.begin(); it != rangesText.end(); ++it) {
+    for (auto & it : rangesText) {
         Range r;
-        if (!parseRange(*it, r)) {
+        if (!parseRange(it, r)) {
             return false;
         }
         ranges.push_back(r);
@@ -1108,8 +1108,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
     std::ostringstream rangeLine;
     rangeLine << "Content-Range: bytes ";
     std::list<Range> sendRanges;
-    for (auto rangeIter = origRanges.cbegin(); rangeIter != origRanges.cend(); ++rangeIter) {
-        Range actualRange = *rangeIter;
+    for (auto actualRange : origRanges) {
         if (actualRange.start < 0) {
             actualRange.start += fileSize;
         }
@@ -1165,12 +1164,12 @@ bool Connection::sendStaticData() {
         return false;
     }
 
-    for (auto rangeIter = ranges.cbegin(); rangeIter != ranges.cend(); ++rangeIter) {
-        if (::lseek(input, rangeIter->start, SEEK_SET) == -1) {
+    for (auto range : ranges) {
+        if (::lseek(input, range.start, SEEK_SET) == -1) {
             // We've (probably) already sent data.
             return false;
         }
-        auto bytesLeft = rangeIter->length();
+        auto bytesLeft = range.length();
         while (bytesLeft) {
             char buf[ReadWriteBufferSize];
             auto bytesRead = ::read(input, buf, std::min(sizeof(buf), bytesLeft));
