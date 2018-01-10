@@ -54,6 +54,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <cstdio>
 #include <cstring>
@@ -863,8 +864,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         }
     }
 
-    _request.reset(new PageRequest(_address, requestUri, _server.server(),
-                                   verb, std::move(headers)));
+    _request = std::make_unique<PageRequest>(_address, requestUri, _server.server(),
+                                   verb, std::move(headers));
 
     const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
     if (verb == Request::Verb::Get && embedded) {
