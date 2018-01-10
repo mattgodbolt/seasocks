@@ -97,6 +97,11 @@ public:
     }
     void handleNewData();
 
+
+    Connection(Connection& other) = delete;
+    Connection& operator =(Connection& other) = delete;
+
+
 private:
     void finalise();
     bool closed() const;
@@ -198,8 +203,6 @@ private:
     };
     State _state;
 
-    Connection(Connection& other) = delete;
-    Connection& operator =(Connection& other) = delete;
     void writeChunkHeader(size_t size);
 };
 
