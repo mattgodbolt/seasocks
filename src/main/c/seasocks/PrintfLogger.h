@@ -27,7 +27,7 @@
 
 #include "seasocks/Logger.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace seasocks {
 

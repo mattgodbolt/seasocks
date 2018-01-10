@@ -78,7 +78,7 @@
 
 #include "md5/md5.h"
 
-#include <string.h>
+#include <cstring>
 
 #undef BYTE_ORDER    /* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN

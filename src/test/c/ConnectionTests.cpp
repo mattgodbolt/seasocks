@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <sstream>
-#include <string.h>
+#include <cstring>
 #include <string>
 
 using namespace seasocks;

@@ -27,7 +27,7 @@
 #include "internal/LogStream.h"
 
 #include <arpa/inet.h>
-#include <string.h>
+#include <cstring>
 
 namespace seasocks {
 

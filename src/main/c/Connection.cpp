@@ -47,16 +47,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <sstream>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <unistd.h>
 #include <byteswap.h>
 #include <unordered_map>

@@ -35,7 +35,7 @@
 
 #include <sys/socket.h>
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <list>
 #include <memory>
 #include <string>
