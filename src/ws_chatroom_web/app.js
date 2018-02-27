@@ -12,7 +12,8 @@ $(function begin() {
         ci.val("");
         e.preventDefault();
     });
-    ws = new WebSocket('ws://' + document.location.host + '/chat');
+    // Test the protocol support...
+    ws = new WebSocket('ws://' + document.location.host + '/chat', ['string', 'foo']);
     ws.onopen = function () {
         console.log('onopen');
     };

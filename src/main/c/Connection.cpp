@@ -47,6 +47,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cerrno>
@@ -514,6 +515,7 @@ void Connection::handleWebSocketKey3() {
         }
         bufferLine("Sec-WebSocket-Location: ws://" + host + _request->getRequestUri());
     }
+    pickProtocol();
     bufferLine("");
 
     write(&digest, 16, true);
@@ -522,6 +524,23 @@ void Connection::handleWebSocketKey3() {
     _inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
     if (_webSocketHandler) {
         _webSocketHandler->onConnect(this);
+    }
+}
+
+void Connection::pickProtocol() {
+    static std::string protocolHeader = "Sec-WebSocket-Protocol";
+    if (!_request->hasHeader(protocolHeader) || !_webSocketHandler) return;
+    // Ideally we need o support this header being set multiple times...but the headers don't support that.
+    auto protocols = split(_request->getHeader(protocolHeader), ',');
+    LS_DEBUG(_logger, "Requested protocols:");
+    std::transform(protocols.begin(), protocols.end(), protocols.begin(), trimWhitespace);
+    for (auto &&p : protocols) {
+        LS_DEBUG(_logger, "  " + p);
+    }
+    auto choice = _webSocketHandler->chooseProtocol(protocols);
+    if (choice >= 0 && choice < static_cast<ssize_t>(protocols.size())) {
+        LS_DEBUG(_logger, "Chose protocol " + protocols[choice]);
+        bufferLine(protocolHeader + ": " + protocols[choice]);
     }
 }
 
@@ -1029,6 +1048,7 @@ bool Connection::handleHybiHandshake(
     bufferLine("Connection: Upgrade");
     bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
     if (_perMessageDeflate) bufferLine("Sec-WebSocket-Extensions: permessage-deflate");
+    pickProtocol();
     bufferLine("");
     flush();
 

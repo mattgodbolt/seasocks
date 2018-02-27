@@ -82,6 +82,11 @@ public:
          * Called on the seasocks thread when the socket has been
          */
         virtual void onDisconnect(WebSocket* connection) = 0;
+        /**
+         * Choose a protocol before accepting a connection: return < 0 to reject the connection, else return the ordinal
+         * in the vector of string protocols.
+         */
+        virtual ssize_t chooseProtocol(const std::vector<std::string> &) const { return 0; }
     };
 
 protected:

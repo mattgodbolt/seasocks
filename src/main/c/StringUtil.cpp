@@ -62,6 +62,15 @@ char* shift(char*& str) {
     return startOfWord;
 }
 
+std::string trimWhitespace(const std::string& str) {
+    auto* start = str.c_str();
+    while (isspace(*start)) ++start;
+    auto* end = &str.back();
+    while (end >= start && isspace(*end)) --end;
+    return std::string(start, end - start + 1);
+}
+
+
 std::string getLastError(){
     char errbuf[1024];
     return strerror_r(errno, errbuf, sizeof(errbuf));

@@ -190,6 +190,8 @@ private:
     bool _perMessageDeflate = false;
     ZlibContext zlibContext;
 
+    void pickProtocol();
+
     enum class State {
         INVALID,
         READING_HEADERS,

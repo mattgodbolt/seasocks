@@ -36,6 +36,7 @@ namespace seasocks {
 char* skipWhitespace(char* str);
 char* skipNonWhitespace(char* str);
 char* shift(char*& str);
+std::string trimWhitespace(const std::string& str);
 
 std::string getLastError();
 std::string formatAddress(const sockaddr_in& address);
@@ -49,5 +50,6 @@ bool caseInsensitiveSame(const std::string &lhs, const std::string &rhs);
 std::string webtime(time_t time);
 
 std::string now();
+
 
 }  // namespace seasocks
