@@ -20,7 +20,7 @@ message(STATUS "Coverage: ${COVERAGE}")
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "")
 include(CTest)
-include(CompilerCheck)
+include(Compiler)
 include(GNUInstallDirs)
 
 
