@@ -10,11 +10,11 @@ cache:
 
 matrix:
     include:
-    - env: CXX=g++-7 CC=gcc-7
+    - env: CXX=g++-8 CC=gcc-8
       addons:
         apt:
           packages:
-            - g++-7
+            - g++-8
             - valgrind
           sources: &sources
             - ubuntu-toolchain-r-test
@@ -26,6 +26,13 @@ matrix:
             - llvm-toolchain-precise-3.8
             - llvm-toolchain-precise-3.7
             - llvm-toolchain-precise-3.6
+    - env: CXX=g++-7 CC=gcc-7
+      addons:
+        apt:
+          packages:
+            - g++-7
+            - valgrind
+          sources: *sources
     - env: CXX=g++-6 CC=gcc-6 EXTRA_CMAKE=-DDEFLATE_SUPPORT=Off
       addons:
         apt:
