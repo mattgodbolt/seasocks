@@ -36,10 +36,12 @@ endif ()
 find_package(Threads)
 
 
-find_program(PYTHON_BIN python2 DOC "Python executable")
+find_program(PYTHON_BIN python DOC "Python executable")
 
 if (NOT PYTHON_BIN)
     message(SEND_ERROR "Python not found")
+else()
+    message(STATUS "Using Python: '${PYTHON_BIN}'")
 endif ()
 
 if (DEFLATE_SUPPORT)

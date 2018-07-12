@@ -4,14 +4,14 @@ import os, os.path, sys
 
 MAX_SLICE = 70
 
-print """
+print("""
 #include "internal/Embedded.h"
 
 #include <string>
 #include <unordered_map>
 
 namespace {
-"""
+""")
 
 files = []
 index = 1
@@ -21,19 +21,19 @@ for f in sys.argv[1:]:
     name = "fileData%d" % index
     index += 1
     files.append((name, os.path.basename(f), len(bytes)))
-    print 'const char %s[] = {' % name
+    print('const char %s[] = {' % name)
     for start in range(0, len(bytes), MAX_SLICE):
-        print '' + "".join(["'\\x%02x'," % ord(x) for x in bytes[start:start+MAX_SLICE]])
-    print '0 };'
+        print('' + "".join(["'\\x%02x'," % x for x in bytes[start:start+MAX_SLICE]]))
+    print('0 };')
 
-print """
+print("""
 std::unordered_map<std::string, EmbeddedContent> embedded = {
-"""
+""")
 
 for name, base, length in files:
-    print '{"/%s", { %s, %d }},' % (base, name, length)
+    print('{"/%s", { %s, %d }},' % (base, name, length))
 
-print """
+print("""
 };
 
 }  // namespace
@@ -45,5 +45,5 @@ const EmbeddedContent* findEmbeddedContent(const std::string& name) {
 	}
 	return &found->second;
 }
-"""
+""")
 
