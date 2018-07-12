@@ -39,7 +39,7 @@ print("""
 }  // namespace
 
 const EmbeddedContent* findEmbeddedContent(const std::string& name) {
-    auto found = embedded.find(name);
+    const auto found = embedded.find(name);
     if (found == embedded.end()) {
         return nullptr;
     }
