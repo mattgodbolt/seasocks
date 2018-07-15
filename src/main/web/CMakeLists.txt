@@ -1,7 +1,7 @@
 set(SCRIPT "${PROJECT_SOURCE_DIR}/scripts/gen_embedded.py")
 
 
-set(EMBEDDED_FILES 
+set(EMBEDDED_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/_404.png
     ${CMAKE_CURRENT_SOURCE_DIR}/_error.css
     ${CMAKE_CURRENT_SOURCE_DIR}/_error.html
@@ -13,7 +13,7 @@ set(EMBEDDED_FILES
 
 
 add_custom_command(OUTPUT Embedded.cpp
-                        COMMAND ${PYTHON_BIN} ${SCRIPT} ${EMBEDDED_FILES} $<ANGLE-R> Embedded.cpp
+                        COMMAND ${PYTHON_BIN} ${SCRIPT} -o Embedded.cpp -f ${EMBEDDED_FILES}
                         COMMENT "Generating embedded content"
                         )
 add_library(embedded OBJECT Embedded.cpp)
