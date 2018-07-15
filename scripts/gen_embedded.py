@@ -63,19 +63,19 @@ def create_file_info(file_list):
 def main():
     args = parse_arguments()
 
+    files = []
+    index = 1
+    file_byte_entries = []
+
+    for file_name in args.input_file:
+        with open(file_name, 'rb') as f:
+            file_bytes = f.read()
+        name = "fileData%d" % index
+        index += 1
+        files.append((name, os.path.basename(file_name), len(file_bytes)))
+        file_byte_entries.append(create_file_byte(name, file_bytes))
+
     with open(args.output_file, 'w') as output_file:
-        files = []
-        index = 1
-        file_byte_entries = []
-
-        for file_name in args.input_file:
-            with open(file_name, 'rb') as f:
-                file_bytes = f.read()
-            name = "fileData%d" % index
-            index += 1
-            files.append((name, os.path.basename(file_name), len(file_bytes)))
-            file_byte_entries.append(create_file_byte(name, file_bytes))
-
         output_file.write(SOURCE_TEMPLATE % (''.join(file_byte_entries), create_file_info(files)))
 
 
