@@ -2,15 +2,15 @@
 
 import os, os.path, sys, argparse
 
-SOURCE_INTRO = """
+SOURCE_TEMPLATE = """
 #include "internal/Embedded.h"
 
 #include <string>
 #include <unordered_map>
 
 namespace {
-"""
-SOURCE_OUTRO = """
+%s
+
     std::unordered_map<std::string, EmbeddedContent> embedded = {
 %s
     };
@@ -43,12 +43,14 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def write_file_bytes(file, name, file_bytes):
-    file.write('    const char %s[] = {' % name)
+def create_file_byte(file, name, file_bytes):
+    output = []
+    output.append('    const char %s[] = {' % name)
 
     for start in range(0, len(file_bytes), MAX_SLICE):
-        file.write('' + "".join(["'\\x%02x'," % as_byte(x) for x in file_bytes[start:start+MAX_SLICE]]) + "\n")
-    file.write('0};\n')
+        output.append('' + "".join(["'\\x%02x'," % as_byte(x) for x in file_bytes[start:start+MAX_SLICE]]) + "\n")
+    output.append('0};\n')
+    return ''.join(output)
 
 
 def create_file_info(file, file_list):
@@ -62,10 +64,9 @@ def main():
     args = parse_arguments()
 
     with open(args.output_file, 'w') as output_file:
-        output_file.write(SOURCE_INTRO)
-
         files = []
         index = 1
+        file_byte_entries = []
 
         for file_name in args.input_file:
             with open(file_name, 'rb') as f:
@@ -73,10 +74,9 @@ def main():
             name = "fileData%d" % index
             index += 1
             files.append((name, os.path.basename(file_name), len(file_bytes)))
-            write_file_bytes(output_file, name, file_bytes)
+            file_byte_entries.append(create_file_byte(output_file, name, file_bytes))
 
-        file_info = create_file_info(output_file, files)
-        output_file.write(SOURCE_OUTRO % file_info)
+        output_file.write(SOURCE_TEMPLATE % (''.join(file_byte_entries), create_file_info(output_file, files)))
 
 
 if __name__ == '__main__':
