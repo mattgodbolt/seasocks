@@ -43,7 +43,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def create_file_byte(file, name, file_bytes):
+def create_file_byte(name, file_bytes):
     output = []
     output.append('    const char %s[] = {' % name)
 
@@ -53,7 +53,7 @@ def create_file_byte(file, name, file_bytes):
     return ''.join(output)
 
 
-def create_file_info(file, file_list):
+def create_file_info(file_list):
     output = []
     for name, base, length in file_list:
         output.append('        {"/%s", { %s, %d }},\n' % (base, name, length))
@@ -74,9 +74,9 @@ def main():
             name = "fileData%d" % index
             index += 1
             files.append((name, os.path.basename(file_name), len(file_bytes)))
-            file_byte_entries.append(create_file_byte(output_file, name, file_bytes))
+            file_byte_entries.append(create_file_byte(name, file_bytes))
 
-        output_file.write(SOURCE_TEMPLATE % (''.join(file_byte_entries), create_file_info(output_file, files)))
+        output_file.write(SOURCE_TEMPLATE % (''.join(file_byte_entries), create_file_info(files)))
 
 
 if __name__ == '__main__':
