@@ -11,6 +11,8 @@ SOURCE_INTRO = """
 namespace {
 """
 SOURCE_OUTRO = """
+    std::unordered_map<std::string, EmbeddedContent> embedded = {
+%s
     };
 
 }  // namespace
@@ -49,9 +51,11 @@ def write_file_bytes(file, name, file_bytes):
     file.write('0};\n')
 
 
-def write_file_info(file, file_list):
+def create_file_info(file, file_list):
+    output = []
     for name, base, length in file_list:
-        file.write('        {"/%s", { %s, %d }},\n' % (base, name, length))
+        output.append('        {"/%s", { %s, %d }},\n' % (base, name, length))
+    return ''.join(output)
 
 
 def main():
@@ -71,9 +75,8 @@ def main():
             files.append((name, os.path.basename(file_name), len(file_bytes)))
             write_file_bytes(output_file, name, file_bytes)
 
-        output_file.write("\n    std::unordered_map<std::string, EmbeddedContent> embedded = {\n")
-        write_file_info(output_file, files)
-        output_file.write(SOURCE_OUTRO)
+        file_info = create_file_info(output_file, files)
+        output_file.write(SOURCE_OUTRO % file_info)
 
 
 if __name__ == '__main__':
