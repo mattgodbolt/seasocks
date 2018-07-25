@@ -25,7 +25,7 @@
 
 #include "seasocks/util/Json.h"
 
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 #include <ostream>
 #include <map>

@@ -26,7 +26,7 @@
 #include "seasocks/util/CrackedUri.h"
 #include <algorithm>
 
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 using namespace seasocks;
 using namespace std;

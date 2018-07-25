@@ -4,7 +4,6 @@ target_include_directories(Catch INTERFACE "catch")
 set(TESTS "AllTests")
 
 add_executable(AllTests
-        catch.hpp
         test_main.cpp
         ConnectionTests.cpp
         CrackedUriTests.cpp

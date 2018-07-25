@@ -1,6 +1,6 @@
 
 #include "seasocks/ResponseBuilder.h"
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 using namespace seasocks;
 using namespace Catch::Matchers;

@@ -1,6 +1,6 @@
 
 #include "internal/Embedded.h"
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 TEST_CASE("findEmbeddedContent returns nullptr if not found", "[EmbeddedContentTests]") {
     const auto* content = findEmbeddedContent("/not-included");
