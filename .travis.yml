@@ -121,8 +121,6 @@ matrix:
 install:
     - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
     - JOBS=2
-    - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-    - mkdir -p "${DEPS_DIR}" && cd "${DEPS_DIR}"
 
 before_script:
     - cd "${TRAVIS_BUILD_DIR}"
