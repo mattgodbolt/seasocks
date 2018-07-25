@@ -20,4 +20,4 @@ add_executable(AllTests
         )
 
 add_test(NAME ${TESTS} COMMAND ${TESTS})
-target_link_libraries(${TESTS} seasocks ${ZLIB_LIBRARIES} Catch)
+target_link_libraries(${TESTS} PRIVATE seasocks ${ZLIB_LIBRARIES} Catch)
