@@ -40,7 +40,7 @@ class ResponseBuilder {
     SynchronousResponse::Headers _headers;
     std::shared_ptr<std::ostringstream> _stream;
 public:
-    ResponseBuilder(ResponseCode code = ResponseCode::Ok);
+    explicit ResponseBuilder(ResponseCode code = ResponseCode::Ok);
 
     ResponseBuilder& asHtml();
     ResponseBuilder& asText();
