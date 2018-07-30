@@ -53,10 +53,14 @@ struct Handler : WebSocket::Handler {
     }
 
     void onData(WebSocket *con, const char *data) override
-    { send(con->credentials()->username + ": " + data); }
+    {
+        send(con->credentials()->username + ": " + data);
+    }
 
     void send(const string& msg) {
-        for (auto *con : _cons) con->send(msg);
+        for (auto *con : _cons) {
+            con->send(msg);
+        }
     }
 };
 
