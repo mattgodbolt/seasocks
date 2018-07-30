@@ -33,12 +33,12 @@ namespace seasocks {
 
 class PrintfLogger : public Logger {
 public:
-    explicit PrintfLogger(Level _minLevelToLog = Level::DEBUG) : minLevelToLog(_minLevelToLog) {
+    explicit PrintfLogger(Level minLevelToLog_ = Level::DEBUG) : minLevelToLog(minLevelToLog_) {
     }
 
     ~PrintfLogger() = default;
 
-    virtual void log(Level level, const char* message) {
+    virtual void log(Level level, const char* message) override {
         if (level >= minLevelToLog) {
             printf("%s: %s\n", levelToString(level), message);
         }
