@@ -41,18 +41,18 @@ using namespace seasocks;
 
 class EchoHandler: public WebSocket::Handler {
 public:
-    virtual void onConnect(WebSocket* /*connection*/) {
+    virtual void onConnect(WebSocket* /*connection*/) override {
     }
 
-    virtual void onData(WebSocket* connection, const uint8_t* data, size_t length) {
+    virtual void onData(WebSocket* connection, const uint8_t* data, size_t length) override {
         connection->send(data, length); // binary
     }
 
-    virtual void onData(WebSocket* connection, const char* data) {
+    virtual void onData(WebSocket* connection, const char* data) override {
         connection->send(data); // text
     }
 
-    virtual void onDisconnect(WebSocket* /*connection*/) {
+    virtual void onDisconnect(WebSocket* /*connection*/) override {
     }
 };
 
