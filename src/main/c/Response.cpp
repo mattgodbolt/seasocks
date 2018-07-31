@@ -42,9 +42,9 @@ std::shared_ptr<Response> Response::notFound() {
     return notFound;
 }
 
-std::shared_ptr<Response> Response::error(ResponseCode code, const std::string& reason) {
+std::shared_ptr<Response> Response::error(ResponseCode code, const std::string& error) {
     return std::make_shared<ConcreteResponse>(
-                code, reason, "text/plain",
+                code, error, "text/plain",
                 SynchronousResponse::Headers(), false);
 }
 
