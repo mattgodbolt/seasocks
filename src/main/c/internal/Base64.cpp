@@ -28,8 +28,9 @@
 #include <cstdint>
 
 namespace seasocks {
-
-const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    namespace {
+        const char cb64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    }
 
 std::string base64Encode(const void* data, size_t length) {
     std::string output;
