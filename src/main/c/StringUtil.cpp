@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 namespace seasocks {
 
@@ -123,6 +124,15 @@ std::string webtime(time_t time) {
     // Wed, 20 Apr 2011 17:31:28 GMT
     strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
     return buf;
+}
+
+time_t webtime(std::string time) {
+    struct tm tm;
+    if (strptime(time.c_str(), "%a, %d %b %Y %H:%M:%S %Z", &tm) == nullptr) {
+        return -1;
+    }
+    tm.tm_isdst = -1;
+    return timegm(&tm);
 }
 
 std::string now() {
