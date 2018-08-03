@@ -60,6 +60,9 @@ SEASOCKS_DEFINE_RESPONSECODE(402, PaymentRequired, "Payment Required")
 SEASOCKS_DEFINE_RESPONSECODE(403, Forbidden, "Forbidden")
 SEASOCKS_DEFINE_RESPONSECODE(404, NotFound, "Not Found")
 SEASOCKS_DEFINE_RESPONSECODE(405, MethodNotAllowed, "Method Not Allowed")
+SEASOCKS_DEFINE_RESPONSECODE(412, PreconditionFailed, "Precondition Failed")
+SEASOCKS_DEFINE_RESPONSECODE(416, RangeNotSatisfiable, "Range Not Satisfiable")
+
 // more here...
 
 SEASOCKS_DEFINE_RESPONSECODE(500, InternalServerError, "Internal Server Error")
