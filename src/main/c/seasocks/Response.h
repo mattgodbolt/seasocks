@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "seasocks/Request.h"
 #include "seasocks/ResponseCode.h"
 
 #include <map>
@@ -52,6 +53,7 @@ public:
     static std::shared_ptr<Response> textResponse(const std::string& response);
     static std::shared_ptr<Response> jsonResponse(const std::string& response);
     static std::shared_ptr<Response> htmlResponse(const std::string& response);
+    static std::shared_ptr<Response> fileResponse(const Request &request, const std::string &filePath, const std::string &contentType, bool allowCompression, bool allowCaching);
 };
 
 }
