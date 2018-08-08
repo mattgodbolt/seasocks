@@ -95,9 +95,6 @@ struct ZlibContext::Impl {
 
             output.insert(output.end(), buffer, buffer + sizeof(buffer) - deflateStream.avail_out);
         } while (deflateStream.avail_out == 0);
-
-        // Remove 4-byte tail end prior to transmission (see RFC 7692, section 7.2.1)
-        output.resize(output.size() - 4);
     }
 
     bool inflate(std::vector<uint8_t> &input, std::vector<uint8_t> &output, int &zlibError) {

@@ -600,6 +600,9 @@ void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size
 
         zlibContext.deflate(webSocketResponse, messageLength, compressed);
 
+        // Remove 4-byte tail end prior to transmission (see RFC 7692, section 7.2.1)
+        compressed.resize(compressed.size() - 4);
+
         LS_DEBUG(_logger, "Compression result: " << messageLength << " bytes -> " << compressed.size() << " bytes");
         sendHybiData(compressed.data(), compressed.size());
     } else {
