@@ -30,6 +30,7 @@
 #include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
 #include "internal/PageRequest.h"
+#include "internal/RaiiFd.h"
 
 #include "md5/md5.h"
 
@@ -93,27 +94,6 @@ char* extractLine(uint8_t*& first, uint8_t* last, char** colon = nullptr) {
     }
     return nullptr;
 }
-
-class RaiiFd {
-    int _fd;
-public:
-    explicit RaiiFd(const char* filename) {
-        _fd = ::open(filename, O_RDONLY);
-    }
-    RaiiFd(const RaiiFd&) = delete;
-    RaiiFd& operator=(const RaiiFd&) = delete;
-    ~RaiiFd() {
-        if (_fd != -1) {
-            ::close(_fd);
-        }
-    }
-    bool ok() const {
-        return _fd != -1;
-    }
-    operator int() const {
-        return _fd;
-    }
-};
 
 const std::unordered_map<std::string, std::string> contentTypes = {
     { "txt", "text/plain" },
@@ -1160,7 +1140,8 @@ bool Connection::sendStaticData() {
     if (*path.rbegin() == '/') {
         path += "index.html";
     }
-    RaiiFd input(path.c_str());
+
+    RaiiFd input{::open(path.c_str(), O_RDONLY)};
     struct stat stat;
     if (!input.ok() || ::fstat(input, &stat) == -1) {
         return send404();
