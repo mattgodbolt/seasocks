@@ -3,11 +3,6 @@ language: generic
 sudo: false
 dist: trusty
 
-
-cache:
-    directories:
-        - ${TRAVIS_BUILD_DIR}/deps/cmake
-
 matrix:
     include:
     - env: CXX=g++-8 CC=gcc-8
@@ -123,7 +118,6 @@ install:
     - JOBS=2
 
 before_script:
-    - cd "${TRAVIS_BUILD_DIR}"
     - cmake --version
     - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=On ${EXTRA_CMAKE}
     - cmake --build build -- -j${JOBS}
