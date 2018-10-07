@@ -14,6 +14,7 @@ matrix:
           sources: &sources
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty
+            - llvm-toolchain-trusty-7
             - llvm-toolchain-trusty-6.0
             - llvm-toolchain-trusty-5.0
             - llvm-toolchain-trusty-4.0
@@ -54,6 +55,15 @@ matrix:
         apt:
           packages:
             - g++-4.9
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-7 CC=clang-7
+      addons:
+        apt:
+          packages:
+            - clang-7
+            - libc++-7-dev
+            - libc++abi-7-dev
             - valgrind
           sources: *sources
     - env: CXX=clang++-6.0 CC=clang-6.0
