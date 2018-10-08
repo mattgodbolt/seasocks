@@ -24,7 +24,8 @@ include(Compiler)
 include(GNUInstallDirs)
 
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h)include_directories(${CMAKE_BINARY_DIR})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h)
+include_directories(${CMAKE_BINARY_DIR})
 add_compile_options(-Wall -Werror -Wextra -pedantic)
 if (COVERAGE)
     add_compile_options(--coverage -O0)
