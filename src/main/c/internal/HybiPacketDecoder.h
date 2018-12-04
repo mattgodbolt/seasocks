@@ -62,7 +62,11 @@ public:
         Close
     };
     MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded, Opcode& firstOpcodeFinunset);
-
+    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut) {
+        bool ignore;
+        Opcode opcode = Opcode::Cont;
+        return decodeNextMessage(messageOut, ignore, opcode);
+    }
     size_t numBytesDecoded() const;
 };
 
