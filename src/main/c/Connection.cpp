@@ -706,9 +706,9 @@ void Connection::handleHybiWebSocket() {
 			}
 			else {
 				decodedMessage.push_back(0);  // avoids a copy
-				handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
-				decodedMessageConcatenatedFragments.clear();
+				handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));				
 			}			
+			decodedMessageConcatenatedFragments.clear();
             break;
         case HybiPacketDecoder::MessageState::BinaryMessage:
 			if (decodedMessageConcatenatedFragments.size() != 0) {
@@ -717,9 +717,9 @@ void Connection::handleHybiWebSocket() {
 				firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
 			}
 			else {				
-				handleWebSocketBinaryMessage(decodedMessage);
-				decodedMessageConcatenatedFragments.clear();
+				handleWebSocketBinaryMessage(decodedMessage);				
 			}            
+			decodedMessageConcatenatedFragments.clear();
             break;
         case HybiPacketDecoder::MessageState::Ping:
             sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
