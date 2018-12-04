@@ -647,105 +647,105 @@ void Connection::handleHixieWebSocket() {
 }
 
 void Connection::handleHybiWebSocket() {
-		if (_inBuf.empty()) {
-			return;
-		}
-		HybiPacketDecoder decoder(*_logger, _inBuf);
-		bool done = false;
-		while (!done) {
-			std::vector<uint8_t> decodedMessage;
-			bool deflateNeeded = false;
-
-			auto messageState = decoder.decodeNextMessage(decodedMessage, deflateNeeded, firstOpcodeFinunset);
-
-			if (deflateNeeded) {
-				if (!_perMessageDeflate) {
-					LS_WARNING(_logger, "Received deflated hybi frame but deflate wasn't negotiated");
-					closeInternal();
-					return;
-				}
-
-				size_t compressed_size = decodedMessage.size();
-
-				std::vector<uint8_t> decompressed;
-				int zlibError;
-
-				// Note: inflate() alters decodedMessage
-				bool success = zlibContext.inflate(decodedMessage, decompressed, zlibError);
-
-				if (!success) {
-					LS_WARNING(_logger, "Decompression error from zlib: " << zlibError);
-					closeInternal();
-					return;
-				}
-
-				LS_DEBUG(_logger, "Decompression result: " << compressed_size << " bytes -> " << decodedMessage.size() << " bytes");
-
-				decodedMessage.swap(decompressed);
-			}
-
-
-			switch (messageState) {
-			default:
-				closeInternal();
-				LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
-				return;
-			case HybiPacketDecoder::MessageState::Error:
-				closeInternal();
-				return;
-			case HybiPacketDecoder::MessageState::TextMessageFragment:
-			case HybiPacketDecoder::MessageState::BinaryMessageFragment:
-				decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
-				break;
-			case HybiPacketDecoder::MessageState::TextMessage:
-				if (decodedMessageConcatenatedFragments.size() != 0) {
-					decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
-					decodedMessageConcatenatedFragments.push_back(0);  // avoids a copy
-					handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessageConcatenatedFragments[0]));					
-				}
-				else {
-					decodedMessage.push_back(0);  // avoids a copy
-					handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));					
-				}
-				firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
-				decodedMessageConcatenatedFragments.clear();
-				break;
-			case HybiPacketDecoder::MessageState::BinaryMessage:
-				if (decodedMessageConcatenatedFragments.size() != 0) {
-					decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
-					handleWebSocketBinaryMessage(decodedMessageConcatenatedFragments);					
-				}
-				else {
-					handleWebSocketBinaryMessage(decodedMessage);					
-				}
-				firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
-				decodedMessageConcatenatedFragments.clear();
-				break;
-			case HybiPacketDecoder::MessageState::Ping:
-				sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
-					&decodedMessage[0], decodedMessage.size());
-				break;
-			case HybiPacketDecoder::MessageState::Pong:
-				// Pongs can be sent unsolicited (MSIE and Edge do this)
-				// The spec says to ignore them.
-				break;
-			case HybiPacketDecoder::MessageState::NoMessage:
-				done = true;
-				break;
-			case HybiPacketDecoder::MessageState::Close:
-				LS_DEBUG(_logger, "Received WebSocket close");
-				closeInternal();
-				return;
-			}
-		}
-		if (decoder.numBytesDecoded() != 0) {
-			_inBuf.erase(_inBuf.begin(), _inBuf.begin() + decoder.numBytesDecoded());
-		}
-		if (_inBuf.size() > MaxWebsocketMessageSize) {
-			LS_WARNING(_logger, "WebSocket message too long");
-			closeInternal();
-		}
+	if (_inBuf.empty()) {
+		return;
 	}
+    HybiPacketDecoder decoder(*_logger, _inBuf);
+    bool done = false;
+    while (!done) {
+        std::vector<uint8_t> decodedMessage;
+        bool deflateNeeded = false;
+
+        auto messageState = decoder.decodeNextMessage(decodedMessage, deflateNeeded, firstOpcodeFinunset);
+
+        if (deflateNeeded) {
+            if (!_perMessageDeflate) {
+                LS_WARNING(_logger, "Received deflated hybi frame but deflate wasn't negotiated");
+                closeInternal();
+                return;
+            }
+
+            size_t compressed_size = decodedMessage.size();
+
+            std::vector<uint8_t> decompressed;
+            int zlibError;
+
+            // Note: inflate() alters decodedMessage
+            bool success = zlibContext.inflate(decodedMessage, decompressed, zlibError);
+
+            if (!success) {
+                LS_WARNING(_logger, "Decompression error from zlib: " << zlibError);
+                closeInternal();
+                return;
+            }
+
+            LS_DEBUG(_logger, "Decompression result: " << compressed_size << " bytes -> " << decodedMessage.size() << " bytes");
+
+            decodedMessage.swap(decompressed);
+        }
+
+
+        switch (messageState) {
+        default:
+            closeInternal();
+            LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
+            return;
+        case HybiPacketDecoder::MessageState::Error:
+            closeInternal();
+            return;
+        case HybiPacketDecoder::MessageState::TextMessageFragment:
+        case HybiPacketDecoder::MessageState::BinaryMessageFragment:
+            decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
+            break;
+        case HybiPacketDecoder::MessageState::TextMessage:
+            if (decodedMessageConcatenatedFragments.size() != 0) {
+                decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
+                decodedMessageConcatenatedFragments.push_back(0);  // avoids a copy
+                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessageConcatenatedFragments[0]));					
+            }
+            else {
+                decodedMessage.push_back(0);  // avoids a copy
+                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));					
+            }
+            firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+            decodedMessageConcatenatedFragments.clear();
+            break;
+        case HybiPacketDecoder::MessageState::BinaryMessage:
+            if (decodedMessageConcatenatedFragments.size() != 0) {
+                decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
+                handleWebSocketBinaryMessage(decodedMessageConcatenatedFragments);					
+            }
+            else {
+                handleWebSocketBinaryMessage(decodedMessage);					
+            }
+            firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+            decodedMessageConcatenatedFragments.clear();
+            break;
+        case HybiPacketDecoder::MessageState::Ping:
+            sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
+                &decodedMessage[0], decodedMessage.size());
+            break;
+        case HybiPacketDecoder::MessageState::Pong:
+            // Pongs can be sent unsolicited (MSIE and Edge do this)
+            // The spec says to ignore them.
+            break;
+        case HybiPacketDecoder::MessageState::NoMessage:
+            done = true;
+            break;
+        case HybiPacketDecoder::MessageState::Close:
+            LS_DEBUG(_logger, "Received WebSocket close");
+            closeInternal();
+            return;
+        }
+    }
+    if (decoder.numBytesDecoded() != 0) {
+        _inBuf.erase(_inBuf.begin(), _inBuf.begin() + decoder.numBytesDecoded());
+    }
+    if (_inBuf.size() > MaxWebsocketMessageSize) {
+        LS_WARNING(_logger, "WebSocket message too long");
+        closeInternal();
+    }
+}
 
 void Connection::handleWebSocketTextMessage(const char* message) {
     LS_DEBUG(_logger, "Got text web socket message: '" << message << "'");
