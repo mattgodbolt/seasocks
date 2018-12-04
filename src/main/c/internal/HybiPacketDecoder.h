@@ -32,40 +32,45 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 namespace seasocks {
 
-class HybiPacketDecoder {
-    Logger& _logger;
-    const std::vector<uint8_t>& _buffer;
-    size_t _messageStart;
-public:
-    HybiPacketDecoder(Logger& logger, const std::vector<uint8_t>& buffer);
+	class HybiPacketDecoder {
+		Logger& _logger;
+		const std::vector<uint8_t>& _buffer;
+		size_t _messageStart;
 
-    enum class Opcode : uint8_t {
-        Cont = 0x0,  // Deprecated in latest hybi spec, here anyway.
-        Text = 0x1,
-        Binary = 0x2,
-        Close = 0x8,
-        Ping = 0x9,
-        Pong = 0xA,
-    };
+	public:
+		HybiPacketDecoder(Logger& logger, const std::vector<uint8_t>& buffer);
 
-    enum class MessageState {
-        NoMessage,
-        TextMessage,
-        BinaryMessage,
-        Error,
-        Ping,
-        Pong,
-        Close
-    };
-    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded);
-    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut) {
-        bool ignore;
-        return decodeNextMessage(messageOut, ignore);
-    }
+		enum class Opcode : uint8_t {
+			Cont = 0x0,  // Deprecated in latest hybi spec, here anyway.
+			Text = 0x1,
+			Binary = 0x2,
+			Close = 0x8,
+			Ping = 0x9,
+			Pong = 0xA,
+		};
 
-    size_t numBytesDecoded() const;
-};
+		enum class MessageState {
+			NoMessage,
+			TextMessage,
+			BinaryMessage,
+			TextMessageFragment,
+			BinaryMessageFragment,
+			Error,
+			Ping,
+			Pong,
+			Close,
+			ChunksStart,
+			ChunksNext,
+			ChunksEnd
+
+		};
+		MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded, Opcode& firstOpcodeFinunset);
+		
+		size_t numBytesDecoded() const;
+	};
 
 }
