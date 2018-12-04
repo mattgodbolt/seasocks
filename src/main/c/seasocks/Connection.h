@@ -30,7 +30,7 @@
 #include "seasocks/ResponseWriter.h"
 #include "seasocks/TransferEncoding.h"
 #include "seasocks/ZlibContext.h"
-#include "seasocks/HybiPacketDecoder.h"
+#include "internal/HybiPacketDecoder.h"
 
 #include <netinet/in.h>
 
