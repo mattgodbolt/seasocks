@@ -191,9 +191,8 @@ private:
     bool _perMessageDeflate = false;
     ZlibContext zlibContext;
 
-	std::vector<uint8_t> decodedMessageConcatenatedFragments;
+    std::vector<uint8_t> decodedMessageConcatenatedFragments;
 	HybiPacketDecoder::Opcode firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
-
 
     void pickProtocol();
 
