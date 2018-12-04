@@ -30,6 +30,7 @@
 #include "seasocks/ResponseWriter.h"
 #include "seasocks/TransferEncoding.h"
 #include "seasocks/ZlibContext.h"
+#include "seasocks/HybiPacketDecoder.h"
 
 #include <netinet/in.h>
 
@@ -189,6 +190,10 @@ private:
     void parsePerMessageDeflateHeader(const std::string& header);
     bool _perMessageDeflate = false;
     ZlibContext zlibContext;
+
+	std::vector<uint8_t> decodedMessageConcatenatedFragments;
+	HybiPacketDecoder::Opcode firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+
 
     void pickProtocol();
 
