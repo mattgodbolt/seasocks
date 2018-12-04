@@ -150,9 +150,9 @@ bool isCacheable(const std::string& path) {
     return false;
 }
 
-constexpr size_t ReadWriteBufferSize = 16 * 1024;
-constexpr size_t MaxWebsocketMessageSize = 16384;
-constexpr size_t MaxHeadersSize = 64 * 1024;
+constexpr size_t ReadWriteBufferSize = 10 * 1024 * 1024;
+constexpr size_t MaxWebsocketMessageSize = 10 * 1024 * 1024;
+constexpr size_t MaxHeadersSize = 512 * 1024;
 
 class PrefixWrapper : public seasocks::Logger {
     std::string _prefix;
@@ -693,12 +693,33 @@ void Connection::handleHybiWebSocket() {
         case HybiPacketDecoder::MessageState::Error:
             closeInternal();
             return;
+		case HybiPacketDecoder::MessageState::TextMessageFragment:
+		case HybiPacketDecoder::MessageState::BinaryMessageFragment:
+			decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
+			break;
         case HybiPacketDecoder::MessageState::TextMessage:
-            decodedMessage.push_back(0);  // avoids a copy
-            handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
+			if (decodedMessageConcatenatedFragments.size() != 0) {
+				decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
+				decodedMessageConcatenatedFragments.push_back(0);  // avoids a copy
+				handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessageConcatenatedFragments[0]));
+				firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+			}
+			else {
+				decodedMessage.push_back(0);  // avoids a copy
+				handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
+				decodedMessageConcatenatedFragments.clear();
+			}			
             break;
         case HybiPacketDecoder::MessageState::BinaryMessage:
-            handleWebSocketBinaryMessage(decodedMessage);
+			if (decodedMessageConcatenatedFragments.size() != 0) {
+				decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
+				handleWebSocketBinaryMessage(decodedMessageConcatenatedFragments);				
+				firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+			}
+			else {				
+				handleWebSocketBinaryMessage(decodedMessage);
+				decodedMessageConcatenatedFragments.clear();
+			}            
             break;
         case HybiPacketDecoder::MessageState::Ping:
             sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
@@ -1156,7 +1177,7 @@ bool Connection::sendStaticData() {
     bufferLine("Accept-Ranges: bytes");
     bufferLine("Last-Modified: " + webtime(stat.st_mtime));
     if (!isCacheable(path)) {
-        bufferLine("Cache-Control: no-store");
+        bufferLine("Cache-Control: no-cache, no-store, must-revalidate");
         bufferLine("Pragma: no-cache");
         bufferLine("Expires: " + now());
     }
