@@ -192,7 +192,7 @@ private:
     ZlibContext zlibContext;
 
     std::vector<uint8_t> decodedMessageConcatenatedFragments;
-	HybiPacketDecoder::Opcode firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+    HybiPacketDecoder::Opcode firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
 
     void pickProtocol();
 
