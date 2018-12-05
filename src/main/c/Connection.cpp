@@ -647,9 +647,9 @@ void Connection::handleHixieWebSocket() {
 }
 
 void Connection::handleHybiWebSocket() {
-	if (_inBuf.empty()) {
-		return;
-	}
+    if (_inBuf.empty()) {
+        return;
+    }
     HybiPacketDecoder decoder(*_logger, _inBuf);
     bool done = false;
     while (!done) {
@@ -701,29 +701,29 @@ void Connection::handleHybiWebSocket() {
             if (decodedMessageConcatenatedFragments.size() != 0) {
                 decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
                 decodedMessageConcatenatedFragments.push_back(0);  // avoids a copy
-                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessageConcatenatedFragments[0]));					
+                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessageConcatenatedFragments[0]));
             }
             else {
                 decodedMessage.push_back(0);  // avoids a copy
-                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));					
+                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
             }
-            firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+            firstOpcodeFinunset = (uint8_t)HybiPacketDecoder::Opcode::Cont;
             decodedMessageConcatenatedFragments.clear();
             break;
         case HybiPacketDecoder::MessageState::BinaryMessage:
             if (decodedMessageConcatenatedFragments.size() != 0) {
                 decodedMessageConcatenatedFragments.insert(decodedMessageConcatenatedFragments.end(), decodedMessage.begin(), decodedMessage.end());
-                handleWebSocketBinaryMessage(decodedMessageConcatenatedFragments);					
+                handleWebSocketBinaryMessage(decodedMessageConcatenatedFragments);
             }
             else {
-                handleWebSocketBinaryMessage(decodedMessage);					
+                handleWebSocketBinaryMessage(decodedMessage);
             }
-            firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+            firstOpcodeFinunset = (uint8_t)HybiPacketDecoder::Opcode::Cont;
             decodedMessageConcatenatedFragments.clear();
             break;
         case HybiPacketDecoder::MessageState::Ping:
             sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
-                &decodedMessage[0], decodedMessage.size());
+                     &decodedMessage[0], decodedMessage.size());
             break;
         case HybiPacketDecoder::MessageState::Pong:
             // Pongs can be sent unsolicited (MSIE and Edge do this)
