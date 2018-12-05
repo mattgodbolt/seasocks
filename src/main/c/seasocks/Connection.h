@@ -30,7 +30,6 @@
 #include "seasocks/ResponseWriter.h"
 #include "seasocks/TransferEncoding.h"
 #include "seasocks/ZlibContext.h"
-#include "internal/HybiPacketDecoder.h"
 
 #include <netinet/in.h>
 
@@ -192,7 +191,7 @@ private:
     ZlibContext zlibContext;
 
     std::vector<uint8_t> decodedMessageConcatenatedFragments;
-    HybiPacketDecoder::Opcode firstOpcodeFinunset = HybiPacketDecoder::Opcode::Cont;
+    uint8_t firstOpcodeFinunset = 0x0;
 
     void pickProtocol();
 
