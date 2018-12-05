@@ -39,7 +39,7 @@
 
 using namespace seasocks;
 
-class EchoHandler : public WebSocket::Handler {
+class EchoHandler: public WebSocket::Handler {
 public:
     virtual void onConnect(WebSocket* /*connection*/) override {
     }
