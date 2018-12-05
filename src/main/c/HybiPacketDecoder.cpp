@@ -54,6 +54,12 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
     deflateNeeded = !!(reservedBits & 0x40);
 
     auto opcode = static_cast<Opcode>(_buffer[_messageStart] & 0xf);
+
+    bool finset = (_buffer[_messageStart] & 0x80) == 0x80;
+    if (!finset && opcode != Opcode::Cont) {
+        firstOpcodeFinunset = (uint8_t)opcode;
+    }
+
     size_t payloadLength = _buffer[_messageStart + 1] & 0x7fu;
     auto maskBit = _buffer[_messageStart + 1] & 0x80;
     auto ptr = _messageStart + 2;
@@ -93,12 +99,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
         auto byteShift = (3 - (i & 3)) * 8;
         messageOut.push_back(static_cast<uint8_t>((_buffer[ptr++] ^ (mask >> byteShift)) & 0xff));
     }
-    _messageStart = ptr;
-
-    bool finset = (_buffer[_messageStart] & 0x80) == 0x80;
-    if (!finset && opcode != Opcode::Cont) {
-        firstOpcodeFinunset = (uint8_t)opcode;
-    }
+    _messageStart = ptr;    
 
     switch (opcode) {
     default:
