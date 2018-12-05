@@ -33,19 +33,19 @@
 namespace seasocks {
 
 HybiPacketDecoder::HybiPacketDecoder(Logger& logger,
-    const std::vector<uint8_t>& buffer) :
+                                     const std::vector<uint8_t>& buffer) :
     _logger(logger),
     _buffer(buffer),
     _messageStart(0) {
 }
 
 HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
-    std::vector<uint8_t>& messageOut, bool& deflateNeeded, uint8_t& firstOpcodeFinunset) {
+        std::vector<uint8_t>& messageOut, bool& deflateNeeded, uint8_t& firstOpcodeFinunset) {
     if (_messageStart + 1 >= _buffer.size()) {
         return MessageState::NoMessage;
     }
 
-    auto reservedBits = _buffer[_messageStart] & (7 << 4);
+    auto reservedBits = _buffer[_messageStart] & (7<<4);
     if ((reservedBits & 0x30) != 0) {
         LS_WARNING(&_logger, "Received hybi frame with reserved bits set - error");
         return MessageState::Error;
@@ -63,8 +63,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
         memcpy(&raw_length, &_buffer[ptr], sizeof(raw_length));
         payloadLength = htons(raw_length);
         ptr += 2;
-    }
-    else if (payloadLength == 127) {
+    } else if (payloadLength == 127) {
         if (_buffer.size() < 10) { return MessageState::NoMessage; }
         uint64_t raw_length;
         memcpy(&raw_length, &_buffer[ptr], sizeof(raw_length));
@@ -104,7 +103,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
     switch (opcode) {
     default:
         LS_WARNING(&_logger, "Received hybi frame with unknown opcode "
-            << static_cast<int>(opcode));
+                             << static_cast<int>(opcode));
         return MessageState::Error;
     case Opcode::Cont:
         switch ((Opcode)firstOpcodeFinunset)

@@ -159,7 +159,7 @@ class PrefixWrapper : public seasocks::Logger {
     std::shared_ptr<Logger> _logger;
 public:
     PrefixWrapper(const std::string& prefix, std::shared_ptr<Logger> logger)
-        : _prefix(prefix), _logger(logger) {}
+    : _prefix(prefix), _logger(logger) {}
 
     virtual void log(Level level, const char* message) {
         _logger->log(level, (_prefix + message).c_str());
@@ -208,25 +208,25 @@ struct Connection::Writer : ResponseWriter {
 };
 
 Connection::Connection(
-    std::shared_ptr<Logger> logger,
-    ServerImpl& server,
-    int fd,
-    const sockaddr_in& address)
+        std::shared_ptr<Logger> logger,
+        ServerImpl& server,
+        int fd,
+        const sockaddr_in& address)
     : _logger(std::make_shared<PrefixWrapper>(formatAddress(address) + " : ", logger)),
-    _server(server),
-    _fd(fd),
-    _shutdown(false),
-    _hadSendError(false),
-    _closeOnEmpty(false),
-    _registeredForWriteEvents(false),
-    _address(address),
-    _bytesSent(0),
-    _bytesReceived(0),
-    _shutdownByUser(false),
-    _transferEncoding(TransferEncoding::Raw),
-    _chunk(0u),
-    _writer(std::make_shared<Writer>(*this)),
-    _state(State::READING_HEADERS) {
+      _server(server),
+      _fd(fd),
+      _shutdown(false),
+      _hadSendError(false),
+      _closeOnEmpty(false),
+      _registeredForWriteEvents(false),
+      _address(address),
+      _bytesSent(0),
+      _bytesReceived(0),
+      _shutdownByUser(false),
+      _transferEncoding(TransferEncoding::Raw),
+      _chunk(0u),
+      _writer(std::make_shared<Writer>(*this)),
+      _state(State::READING_HEADERS) {
 }
 
 Connection::~Connection() {
@@ -319,7 +319,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         size_t newBufferSize = endOfBuffer + bytesToBuffer;
         if (newBufferSize >= _server.clientBufferSize()) {
             LS_WARNING(_logger, "Closing connection: buffer size too large ("
-                << newBufferSize << " >= " << _server.clientBufferSize() << ")");
+                    << newBufferSize << " >= " << _server.clientBufferSize() << ")");
             closeInternal();
             return false;
         }
@@ -407,7 +407,7 @@ void Connection::handleNewData() {
     case State::READING_HEADERS:
         handleHeaders();
         break;
-    case State::READING_WEBSOCKET_KEY3:
+        case State::READING_WEBSOCKET_KEY3:
         handleWebSocketKey3();
         break;
     case State::HANDLING_HIXIE_WEBSOCKET:
@@ -551,7 +551,7 @@ void Connection::send(const char* webSocketResponse) {
         return;
     }
     sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Text),
-        reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
+             reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
 }
 
 void Connection::send(const uint8_t* data, size_t length) {
@@ -567,7 +567,7 @@ void Connection::send(const uint8_t* data, size_t length) {
         return;
     }
     sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Binary),
-        data, length);
+             data, length);
 }
 
 void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size_t messageLength) {
@@ -723,7 +723,7 @@ void Connection::handleHybiWebSocket() {
             break;
         case HybiPacketDecoder::MessageState::Ping:
             sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
-                &decodedMessage[0], decodedMessage.size());
+                     &decodedMessage[0], decodedMessage.size());
             break;
         case HybiPacketDecoder::MessageState::Pong:
             // Pongs can be sent unsolicited (MSIE and Edge do this)
@@ -776,9 +776,9 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
     } else {
         std::stringstream documentStr;
         documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
-            << "<body><h1>" << errorNumber << " - " << message << "</h1>"
-            << "<div>" << body << "</div><hr/><div><i>Powered by "
-            "<a href=\"https://github.com/mattgodbolt/seasocks\">Seasocks</a></i></div></body></html>";
+                << "<body><h1>" << errorNumber << " - " << message << "</h1>"
+                << "<div>" << body << "</div><hr/><div><i>Powered by "
+                   "<a href=\"https://github.com/mattgodbolt/seasocks\">Seasocks</a></i></div></body></html>";
         document = documentStr.str();
     }
     bufferLine("Content-Length: " + toString(document.length()));
@@ -866,8 +866,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     }
 
     if (headers.count("Connection") && headers.count("Upgrade")
-        && hasConnectionType(headers["Connection"], "Upgrade")
-        && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
+            && hasConnectionType(headers["Connection"], "Upgrade")
+            && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
         LS_INFO(_logger, "Websocket request for " << requestUri << "'");
         if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");
@@ -885,7 +885,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     }
 
     _request = std::make_unique<PageRequest>(_address, requestUri, _server.server(),
-        verb, std::move(headers));
+                                   verb, std::move(headers));
 
     const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
     if (verb == Request::Verb::Get && embedded) {
@@ -1035,8 +1035,8 @@ void Connection::finish(bool keepConnectionOpen) {
 }
 
 bool Connection::handleHybiHandshake(
-    int webSocketVersion,
-    const std::string& webSocketKey) {
+        int webSocketVersion,
+        const std::string& webSocketKey) {
     if (webSocketVersion != 8 && webSocketVersion != 13) {
         return sendBadRequest("Invalid websocket version");
     }

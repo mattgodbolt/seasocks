@@ -52,10 +52,10 @@ class Response;
 class Connection : public WebSocket {
 public:
     Connection(
-        std::shared_ptr<Logger> logger,
-        ServerImpl& server,
-        int fd,
-        const sockaddr_in& address);
+            std::shared_ptr<Logger> logger,
+            ServerImpl& server,
+            int fd,
+            const sockaddr_in& address);
     virtual ~Connection();
 
     bool write(const void* data, size_t size, bool flush);
@@ -132,7 +132,7 @@ private:
     bool sendISE(const std::string& error);
 
     void sendHybi(uint8_t opcode, const uint8_t* webSocketResponse,
-        size_t messageLength);
+                  size_t messageLength);
     void sendHybiData(const uint8_t* webSocketResponse, size_t messageLength);
 
 
