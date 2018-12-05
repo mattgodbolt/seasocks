@@ -42,7 +42,7 @@ public:
     HybiPacketDecoder(Logger& logger, const std::vector<uint8_t>& buffer);
 
     enum class Opcode : uint8_t {
-        Cont = 0x0,  // Deprecated in latest hybi spec, here anyway.
+        Cont = 0x0,  // Deprecated in latest hybi spec, here anyway (and used).
         Text = 0x1,
         Binary = 0x2,
         Close = 0x8,
@@ -54,17 +54,19 @@ public:
         NoMessage,
         TextMessage,
         BinaryMessage,
+        TextMessageFragment,
+        BinaryMessageFragment,
         Error,
         Ping,
         Pong,
         Close
     };
-    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded);
+    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded, uint8_t& firstOpcodeFinunset);
     MessageState decodeNextMessage(std::vector<uint8_t>& messageOut) {
         bool ignore;
-        return decodeNextMessage(messageOut, ignore);
+        uint8_t opcode = 0x0;
+        return decodeNextMessage(messageOut, ignore, opcode);
     }
-
     size_t numBytesDecoded() const;
 };
 
