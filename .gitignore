@@ -4,15 +4,5 @@
 /build
 gdb.txt
 /cmake-*
-/.vs/config/applicationhost.config
-/.vs/seasocks/v15/ipch/AutoPCH/3cfc1b7e52619043/HYBIPACKETDECODER.ipch
-/.vs/seasocks/v15/ipch/AutoPCH/eac289f1480ae0b9/CONNECTION.ipch
-/.vs/seasocks/v15/ipch/AutoPCH/f236b926722561d5/CONNECTIONTESTS.ipch
-/.vs/seasocks/v15/Browse.VC.opendb
-/.vs/seasocks/v15/ipch/AutoPCH/c8df4019b61f2921/HYBITESTS.ipch
-/.vs/seasocks/v15/Browse.VC.db
-/.vs/ProjectSettings.json
-/.vs/slnx.sqlite
+/.vs/*
 /CMakeSettings.json
-/.vs/seasocks/v15/.suo
-/.vs/VSWorkspaceState.json
