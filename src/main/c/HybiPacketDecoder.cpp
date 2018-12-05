@@ -58,7 +58,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
     bool finset = (_buffer[_messageStart] & 0x80) == 0x80;
     if (!finset && opcode != Opcode::Cont) {
         firstOpcodeFinunset = (uint8_t)opcode;
-    }
+    } 
 
     size_t payloadLength = _buffer[_messageStart + 1] & 0x7fu;
     auto maskBit = _buffer[_messageStart + 1] & 0x80;
