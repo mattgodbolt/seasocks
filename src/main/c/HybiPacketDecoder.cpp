@@ -85,11 +85,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
         mask = htonl(raw_length);
         ptr += 4;
     }
-    else
-    {
-        LS_WARNING(&_logger, "Received unmasked hybi frame from client ");
-        return MessageState::Error;
-    }
+    
     auto bytesLeftInBuffer = _buffer.size() - ptr;
     if (payloadLength > bytesLeftInBuffer) { return MessageState::NoMessage; }
 
