@@ -133,6 +133,7 @@ before_script:
 
 script:
     - cd build
+    - cmake --build . --target unittest
     - ctest -D ExperimentalBuild -j${JOBS}
     - ctest -D ExperimentalMemCheck -j${JOBS}
     - bash <(curl -s https://codecov.io/bash)
