@@ -61,10 +61,10 @@ public:
         Pong,
         Close
     };
-    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded, Opcode& firstOpcodeFinunset);
+    MessageState decodeNextMessage(std::vector<uint8_t>& messageOut, bool& deflateNeeded, uint8_t& firstOpcodeFinunset);
     MessageState decodeNextMessage(std::vector<uint8_t>& messageOut) {
         bool ignore;
-        Opcode opcode = Opcode::Cont;
+        uint8_t opcode = 0x0;
         return decodeNextMessage(messageOut, ignore, opcode);
     }
     size_t numBytesDecoded() const;
