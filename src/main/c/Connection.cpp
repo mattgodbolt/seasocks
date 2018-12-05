@@ -73,8 +73,7 @@ uint32_t parseWebSocketKey(const std::string& key) {
     for (auto c : key) {
         if (c >= '0' && c <= '9') {
             keyNumber = keyNumber * 10 + c - '0';
-        }
-        else if (c == ' ') {
+        } else if (c == ' ') {
             ++numSpaces;
         }
     }
@@ -244,8 +243,7 @@ void Connection::close() {
 void Connection::closeWhenEmpty() {
     if (_outBuf.empty()) {
         closeInternal();
-    }
-    else {
+    } else {
         _closeOnEmpty = true;
     }
 }
@@ -293,8 +291,7 @@ ssize_t Connection::safeSend(const void* data, size_t size) {
         }
         LS_WARNING(_logger, "Unable to write to socket : " << getLastError() << " - disabling further writes");
         closeInternal();
-    }
-    else {
+    } else {
         _bytesSent += sendResult;
     }
     return sendResult;
@@ -388,8 +385,7 @@ bool Connection::flush() {
             return false;
         }
         _registeredForWriteEvents = true;
-    }
-    else if (_outBuf.empty() && _registeredForWriteEvents) {
+    } else if (_outBuf.empty() && _registeredForWriteEvents) {
         if (!_server.unsubscribeFromWriteEvents(this)) {
             return false;
         }
@@ -439,9 +435,9 @@ void Connection::handleHeaders() {
     }
     for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
         if (_inBuf[i] == '\r' &&
-            _inBuf[i + 1] == '\n' &&
-            _inBuf[i + 2] == '\r' &&
-            _inBuf[i + 3] == '\n') {
+            _inBuf[i+1] == '\n' &&
+            _inBuf[i+2] == '\r' &&
+            _inBuf[i+3] == '\n') {
             if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
                 closeInternal();
                 return;
@@ -490,7 +486,7 @@ void Connection::handleWebSocketKey3() {
     bufferLine("Connection: Upgrade");
     bool allowCrossOrigin = _server.isCrossOriginAllowed(_request->getRequestUri());
     if (_request->hasHeader("Origin") && allowCrossOrigin) {
-        bufferLine("Sec-WebSocket-Origin: " + _request->getHeader("Origin"));
+        bufferLine("Sec-WebSocket-Origin: " +  _request->getHeader("Origin"));
     }
     if (_request->hasHeader("Host")) {
         auto host = _request->getHeader("Host");
@@ -586,8 +582,7 @@ void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size
 
         LS_DEBUG(_logger, "Compression result: " << messageLength << " bytes -> " << compressed.size() << " bytes");
         sendHybiData(compressed.data(), compressed.size());
-    }
-    else {
+    } else {
         sendHybiData(webSocketResponse, messageLength);
     }
 }
@@ -596,14 +591,12 @@ void Connection::sendHybiData(const uint8_t* webSocketResponse, size_t messageLe
     if (messageLength < 126) {
         uint8_t nextByte = messageLength; // No MASK bit set.
         if (!write(&nextByte, 1, false)) return;
-    }
-    else if (messageLength < 65536) {
+    } else if (messageLength < 65536) {
         uint8_t nextByte = 126; // No MASK bit set.
         if (!write(&nextByte, 1, false)) return;
         auto lengthBytes = htons(messageLength);
         if (!write(&lengthBytes, 2, false)) return;
-    }
-    else {
+    } else {
         uint8_t nextByte = 127; // No MASK bit set.
         if (!write(&nextByte, 1, false)) return;
         uint64_t lengthBytes = __bswap_64(messageLength);
@@ -640,8 +633,7 @@ void Connection::handleHixieWebSocket() {
             _inBuf[endOfMessage] = 0;
             handleWebSocketTextMessage(reinterpret_cast<const char*>(&_inBuf[messageStart + 1]));
             messageStart = endOfMessage + 1;
-        }
-        else {
+        } else {
             break;
         }
     }
@@ -781,8 +773,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
         replace(document, "%%ERRORCODE%%", toString(errorNumber));
         replace(document, "%%MESSAGE%%", message);
         replace(document, "%%BODY%%", body);
-    }
-    else {
+    } else {
         std::stringstream documentStr;
         documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
             << "<body><h1>" << errorNumber << " - " << message << "</h1>"
@@ -810,12 +801,10 @@ bool Connection::send404() {
     auto embedded = findEmbeddedContent(path);
     if (embedded) {
         return sendData(getContentType(path), embedded->data, embedded->length);
-    }
-    else if (strcmp(path.c_str(), "/_livestats.js") == 0) {
+    } else if (strcmp(path.c_str(), "/_livestats.js") == 0) {
         auto stats = _server.getStatsDocument();
         return sendData("text/javascript", stats.c_str(), stats.length());
-    }
-    else {
+    } else {
         return sendError(ResponseCode::NotFound, "Unable to find resource for: " + path);
     }
 }
@@ -902,8 +891,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (verb == Request::Verb::Get && embedded) {
         // MRG: one day, this could be a request handler.
         return sendData(getContentType(requestUri), embedded->data, embedded->length);
-    }
-    else if (verb == Request::Verb::Head && embedded) {
+    } else if (verb == Request::Verb::Head && embedded) {
         return sendHeader(getContentType(requestUri), embedded->length);
     }
 
@@ -921,12 +909,10 @@ bool Connection::handlePageRequest() {
     std::shared_ptr<Response> response;
     try {
         response = _server.handle(*_request);
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         LS_ERROR(_logger, "page error: " << e.what());
         return sendISE(e.what());
-    }
-    catch (...) {
+    } catch (...) {
         LS_ERROR(_logger, "page error: (unknown)");
         return sendISE("(unknown)");
     }
@@ -974,8 +960,7 @@ void Connection::error(ResponseCode responseCode, const std::string &payload) {
     if (responseCode == ResponseCode::NotFound) {
         // TODO: better here; we use this purely to serve our own embedded content.
         send404();
-    }
-    else {
+    } else {
         sendError(responseCode, payload);
     }
 }
@@ -1007,8 +992,7 @@ void Connection::payload(const void *data, size_t size, bool flush) {
     if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
         _state = State::SENDING_RESPONSE_BODY;
-    }
-    else if (_state != State::SENDING_RESPONSE_BODY) {
+    } else if (_state != State::SENDING_RESPONSE_BODY) {
         LS_ERROR(_logger, "payload() called when in wrong state");
         return;
     }
@@ -1031,8 +1015,7 @@ void Connection::finish(bool keepConnectionOpen) {
     _server.checkThread();
     if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
-    }
-    else if (_state != State::SENDING_RESPONSE_BODY) {
+    } else if (_state != State::SENDING_RESPONSE_BODY) {
         LS_ERROR(_logger, "finish() called when in wrong state");
         return;
     }
@@ -1101,13 +1084,11 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
         range.start = atoi(rangeStr.c_str());
         range.end = std::numeric_limits<long>::max();
         return true;
-    }
-    else {
+    } else {
         range.start = atoi(rangeStr.substr(0, minusPos).c_str());
-        if (minusPos == rangeStr.size() - 1) {
+        if (minusPos == rangeStr.size()-1) {
             range.end = std::numeric_limits<long>::max();
-        }
-        else {
+        } else {
             range.end = atoi(rangeStr.substr(minusPos + 1).c_str());
         }
         return true;
@@ -1181,7 +1162,7 @@ bool Connection::sendStaticData() {
         path += "index.html";
     }
 
-    RaiiFd input{ ::open(path.c_str(), O_RDONLY) };
+    RaiiFd input{::open(path.c_str(), O_RDONLY)};
     struct stat stat;
     if (!input.ok() || ::fstat(input, &stat) == -1) {
         return send404();
