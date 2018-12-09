@@ -50,6 +50,12 @@ TEST_CASE("shouldHandleNewLinesInStrings", "[JsonTests]") {
     CHECK(str.str() == "\"I have\\nnew\\rlines\"");
 }
 
+TEST_CASE("shouldHandleAsciiStrings", "[JsonTests]") {
+    std::stringstream str;
+    jsonToStream(str, "0123xyz!$%(/)=_-");
+    CHECK(str.str() == R"("0123xyz!$%(/)=_-")");
+}
+
 TEST_CASE("shouldHandleCrazyChars", "[JsonTests]") {
     std::stringstream str;
     jsonToStream(str, "\x01\x02\x1f");
