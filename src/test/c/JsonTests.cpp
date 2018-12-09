@@ -62,6 +62,12 @@ TEST_CASE("shouldHandleDate", "[JsonTests]") {
     CHECK(str.str() == "new Date(209001600000).toLocaleString()");
 }
 
+TEST_CASE("shouldHandleNonAsciiChars", "[JsonTests]") {
+    std::stringstream str;
+    jsonToStream(str, "§");
+    CHECK(str.str() == R"("§")");
+}
+
 struct Object {
     void jsonToStream(std::ostream &ostr) const {
         ostr << makeMap("object", true);

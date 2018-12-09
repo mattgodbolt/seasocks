@@ -34,7 +34,7 @@ void jsonToStream(std::ostream& str, const char* t) {
     for (; *t; ++t) {
         switch (*t) {
         default:
-            if (*t >= 32) {
+            if (static_cast<unsigned char>(*t) >= 32) {
                 str << *t;
             } else {
                 str << "\\u" << std::setw(4)
