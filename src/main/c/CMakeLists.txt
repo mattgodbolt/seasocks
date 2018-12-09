@@ -91,3 +91,8 @@ install(DIRECTORY seasocks
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         FILES_MATCHING PATTERN "*.h"
         )
+export(
+    TARGETS seasocks seasocks_so
+    NAMESPACE ${PROJECT_NAME}::
+    FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+)
