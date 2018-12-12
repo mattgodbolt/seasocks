@@ -48,6 +48,6 @@ TEST_CASE("withFloatTypes", "[toStringTests]") {
     CHECK(toString(123.4f) == "123.4");
 }
 
-TEST_CASE("withCharType" "[toStringTests]") {
+TEST_CASE("withCharType", "[toStringTests]") {
     CHECK(toString('c') == "c");
 }
