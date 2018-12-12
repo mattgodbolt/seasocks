@@ -22,6 +22,7 @@ set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.t
 include(CTest)
 include(Compiler)
 include(GNUInstallDirs)
+include(ClangFormat)
 
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h)
