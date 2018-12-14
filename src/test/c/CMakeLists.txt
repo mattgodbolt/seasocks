@@ -20,7 +20,7 @@ add_executable(AllTests
         )
 
 add_test(NAME ${TESTS} COMMAND ${TESTS})
-target_link_libraries(${TESTS} PRIVATE seasocks ${ZLIB_LIBRARIES} Catch)
+target_link_libraries(${TESTS} PRIVATE seasocks Catch)
 
 add_custom_target(unittest ${TESTS}
                     COMMENT "Running unittests\n\n"
