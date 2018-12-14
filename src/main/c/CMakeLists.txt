@@ -74,6 +74,9 @@ set_property(TARGET seasocks_obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 add_library(seasocks STATIC $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
 target_include_directories(seasocks PUBLIC .)
 target_link_libraries(seasocks PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+if (DEFLATE_SUPPORT)
+    target_link_libraries(seasocks PRIVATE "${ZLIB_LIBRARIES}")
+endif()
 
 add_library(seasocks_so SHARED $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
 target_include_directories(seasocks_so PUBLIC ${ZLIB_INCLUDE_DIRS} .)
@@ -91,3 +94,8 @@ install(DIRECTORY seasocks
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         FILES_MATCHING PATTERN "*.h"
         )
+export(
+    TARGETS seasocks seasocks_so
+    NAMESPACE ${PROJECT_NAME}::
+    FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+)
