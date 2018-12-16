@@ -39,7 +39,7 @@ using namespace seasocks;
 
 class MyPageHandler: public PageHandler {
 public:
-    virtual std::shared_ptr<Response> handle(const Request& request) {
+    virtual std::shared_ptr<Response> handle(const Request& request) override {
         if (request.verb() == Request::Verb::Post) {
             std::string content(request.content(), request.content() + request.contentLength());
             return Response::textResponse("Thanks for the post. You said: " + content);

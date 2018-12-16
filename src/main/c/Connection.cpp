@@ -161,7 +161,7 @@ public:
     PrefixWrapper(const std::string& prefix, std::shared_ptr<Logger> logger)
     : _prefix(prefix), _logger(logger) {}
 
-    virtual void log(Level level, const char* message) {
+    virtual void log(Level level, const char* message) override {
         _logger->log(level, (_prefix + message).c_str());
     }
 };

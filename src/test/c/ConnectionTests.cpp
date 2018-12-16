@@ -47,9 +47,9 @@ public:
             FAIL("Invalid state");
         }
     }
-    virtual void onConnect(WebSocket*) {
+    virtual void onConnect(WebSocket*) override {
     }
-    virtual void onData(WebSocket*, const char* data) {
+    virtual void onData(WebSocket*, const char* data) override {
         if (_stage == 0) {
             CHECK(strcmp(data, "a") == 0);
         } else if (_stage == 1) {
@@ -59,7 +59,7 @@ public:
         }
         ++_stage;
     }
-    virtual void onDisconnect(WebSocket*) {
+    virtual void onDisconnect(WebSocket*) override {
     }
 };
 

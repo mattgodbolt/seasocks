@@ -47,7 +47,7 @@ size_t streamlen(std::shared_ptr<std::istream> stream) {
 
 class MyPageHandler: public PageHandler {
 public:
-    virtual std::shared_ptr<Response> handle(const Request& request) {
+    virtual std::shared_ptr<Response> handle(const Request& request) override {
         if (request.verb() != Request::Verb::Get) {
             return Response::unhandled();
         }
