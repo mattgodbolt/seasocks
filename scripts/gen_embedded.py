@@ -11,19 +11,19 @@ SOURCE_TEMPLATE = """
 namespace {
 %s
 
-    std::unordered_map<std::string, EmbeddedContent> embedded = {
+    const std::unordered_map<std::string, EmbeddedContent> embedded = {
 %s
     };
 
 }  // namespace
 
-    const EmbeddedContent* findEmbeddedContent(const std::string& name) {
-        const auto found = embedded.find(name);
-        if (found == embedded.end()) {
-            return nullptr;
-        }
-        return &found->second;
-    }\n
+const EmbeddedContent* findEmbeddedContent(const std::string& name) {
+    const auto found = embedded.find(name);
+    if (found == embedded.end()) {
+        return nullptr;
+    }
+    return &found->second;
+}\n
 """
 
 MAX_SLICE = 70
