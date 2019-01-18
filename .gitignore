@@ -4,3 +4,5 @@
 /build
 gdb.txt
 /cmake-*
+/.vs/*
+/CMakeSettings.json

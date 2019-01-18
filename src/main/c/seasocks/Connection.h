@@ -190,6 +190,9 @@ private:
     bool _perMessageDeflate = false;
     ZlibContext zlibContext;
 
+    std::vector<uint8_t> decodedMessageConcatenatedFragments;
+    uint8_t firstOpcodeFinunset = 0x0;
+
     void pickProtocol();
 
     enum class State {
