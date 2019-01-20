@@ -25,6 +25,8 @@
 
 #pragma once
 
+#undef DEBUG    // DEBUG was defined with a value, this is confusing the compiler as the tokenization happened already, need to undefine it so that the DEBUG can be an enumerator
+
 namespace seasocks {
 
 /**
