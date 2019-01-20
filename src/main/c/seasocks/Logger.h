@@ -35,12 +35,12 @@ public:
     virtual ~Logger() = default;
 
     enum class Level {
-        DEBUG,  // NB DEBUG is usually opted-out of at compile-time.
-        ACCESS, // Used to log page requests etc
-        INFO,
-        WARNING,
-        ERROR,
-        SEVERE,
+        Debug,  // NB Debug is usually opted-out of at compile-time.
+        Access, // Used to log page requests etc
+        Info,
+        Warning,
+        Error,
+        Severe,
     };
 
     virtual void log(Level level, const char* message) = 0;
@@ -54,12 +54,12 @@ public:
 
     static const char* levelToString(Level level) {
         switch (level) {
-        case Level::DEBUG: return "debug";
-        case Level::ACCESS: return "access";
-        case Level::INFO: return "info";
-        case Level::WARNING: return "warning";
-        case Level::ERROR: return "ERROR";
-        case Level::SEVERE: return "SEVERE";
+        case Level::Debug: return "debug";
+        case Level::Access: return "access";
+        case Level::Info: return "info";
+        case Level::Warning: return "warning";
+        case Level::Error: return "ERROR";
+        case Level::Severe: return "SEVERE";
         default: return "???";
         }
     }

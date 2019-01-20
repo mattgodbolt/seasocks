@@ -44,7 +44,7 @@ constexpr int MAX_MESSAGE_LENGTH = 1024;
 void Logger::debug(const char* message, ...) {
 #ifdef LOG_DEBUG_INFO
     PRINT_TO_MESSAGEBUF();
-    log(Level::DEBUG, messageBuf);
+    log(Level::Debug, messageBuf);
 #else
     (void)message;
 #endif
@@ -52,27 +52,27 @@ void Logger::debug(const char* message, ...) {
 
 void Logger::access(const char* message, ...) {
     PRINT_TO_MESSAGEBUF();
-    log(Level::ACCESS, messageBuf);
+    log(Level::Access, messageBuf);
 }
 
 void Logger::info(const char* message, ...) {
     PRINT_TO_MESSAGEBUF();
-    log(Level::INFO, messageBuf);
+    log(Level::Info, messageBuf);
 }
 
 void Logger::warning(const char* message, ...) {
     PRINT_TO_MESSAGEBUF();
-    log(Level::WARNING, messageBuf);
+    log(Level::Warning, messageBuf);
 }
 
 void Logger::error(const char* message, ...) {
     PRINT_TO_MESSAGEBUF();
-    log(Level::ERROR, messageBuf);
+    log(Level::Error, messageBuf);
 }
 
 void Logger::severe(const char* message, ...) {
     PRINT_TO_MESSAGEBUF();
-    log(Level::SEVERE, messageBuf);
+    log(Level::Severe, messageBuf);
 }
 
 }  // namespace seasocks

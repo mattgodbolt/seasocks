@@ -58,7 +58,7 @@ public:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
-    auto logger = std::make_shared<PrintfLogger>(Logger::Level::INFO);
+    auto logger = std::make_shared<PrintfLogger>(Logger::Level::Info);
 
     Server server(logger);
     server.addPageHandler(std::make_shared<MyPageHandler>());

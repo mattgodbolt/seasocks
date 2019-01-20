@@ -107,7 +107,7 @@ private:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
-    auto logger = std::make_shared<PrintfLogger>(Logger::Level::DEBUG);
+    auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);
 
