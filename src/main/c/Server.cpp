@@ -52,13 +52,23 @@ namespace {
 
 struct EventBits {
     uint32_t bits;
-    explicit EventBits(uint32_t b) : bits(b) {}
+    explicit EventBits(uint32_t b)
+            : bits(b) {
+    }
 };
 
-std::ostream& operator <<(std::ostream& o, const EventBits& b) {
+std::ostream& operator<<(std::ostream& o, const EventBits& b) {
     uint32_t bits = b.bits;
-#define DO_BIT(NAME) \
-        do { if (bits & (NAME)) { if (bits != b.bits) {o << ", "; } o << #NAME; bits &= ~(NAME); } } while (0)
+#define DO_BIT(NAME)              \
+    do {                          \
+        if (bits & (NAME)) {      \
+            if (bits != b.bits) { \
+                o << ", ";        \
+            }                     \
+            o << #NAME;           \
+            bits &= ~(NAME);      \
+        }                         \
+    } while (0)
     DO_BIT(EPOLLIN);
     DO_BIT(EPOLLPRI);
     DO_BIT(EPOLLOUT);
@@ -78,7 +88,7 @@ std::ostream& operator <<(std::ostream& o, const EventBits& b) {
     return o;
 }
 
-constexpr int EpollTimeoutMillis = 500;  // Twice a second is ample.
+constexpr int EpollTimeoutMillis = 500; // Twice a second is ample.
 constexpr int DefaultLameConnectionTimeoutSeconds = 10;
 pid_t gettid() {
     return static_cast<pid_t>(syscall(SYS_gettid));
@@ -91,12 +101,12 @@ namespace seasocks {
 constexpr size_t Server::DefaultClientBufferSize;
 
 Server::Server(std::shared_ptr<Logger> logger)
-: _logger(logger), _listenSock(-1), _epollFd(-1), _eventFd(-1),
-  _maxKeepAliveDrops(0),
-  _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
-  _clientBufferSize(DefaultClientBufferSize),
-  _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
-  _expectedTerminate(false) {
+        : _logger(logger), _listenSock(-1), _epollFd(-1), _eventFd(-1),
+          _maxKeepAliveDrops(0),
+          _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
+          _clientBufferSize(DefaultClientBufferSize),
+          _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
+          _expectedTerminate(false) {
 
     _epollFd = epoll_create(10);
     if (_epollFd == -1) {
@@ -110,7 +120,7 @@ Server::Server(std::shared_ptr<Logger> logger)
         return;
     }
 
-    epoll_event eventWake = { EPOLLIN, { &_eventFd } };
+    epoll_event eventWake = {EPOLLIN, {&_eventFd}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _eventFd, &eventWake) == -1) {
         LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
         return;
@@ -229,7 +239,7 @@ bool Server::startListening(uint32_t hostAddr, int port) {
         LS_ERROR(_logger, "Unable to listen on socket: " << getLastError());
         return false;
     }
-    epoll_event event = { EPOLLIN, { this } };
+    epoll_event event = {EPOLLIN, {this}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
         LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
         return false;
@@ -268,7 +278,7 @@ bool Server::startListeningUnix(const char* socketPath) {
         return false;
     }
 
-    epoll_event event = { EPOLLIN, { this } };
+    epoll_event event = {EPOLLIN, {this}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
         LS_ERROR(_logger, "Unable to add unix listen socket to epoll: " << getLastError());
         return false;
@@ -292,17 +302,17 @@ void Server::handlePipe() {
 }
 
 Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t events) {
-    if (events & ~(EPOLLIN|EPOLLOUT|EPOLLHUP|EPOLLERR)) {
+    if (events & ~(EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLERR)) {
         LS_WARNING(_logger, "Got unhandled epoll event (" << EventBits(events) << ") on connection: "
-                << formatAddress(connection->getRemoteAddress()));
+                                                          << formatAddress(connection->getRemoteAddress()));
         return NewState::Close;
     } else if (events & EPOLLERR) {
         LS_INFO(_logger, "Error on socket (" << EventBits(events) << "): "
-                << formatAddress(connection->getRemoteAddress()));
+                                             << formatAddress(connection->getRemoteAddress()));
         return NewState::Close;
     } else if (events & EPOLLHUP) {
         LS_DEBUG(_logger, "Graceful hang-up (" << EventBits(events) << ") of socket: "
-                << formatAddress(connection->getRemoteAddress()));
+                                               << formatAddress(connection->getRemoteAddress()));
         return NewState::Close;
     } else {
         if (events & EPOLLOUT) {
@@ -332,7 +342,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         time_t now = time(nullptr);
         if (now - lastWarnTime >= 60) {
             LS_WARNING(_logger, "Full event queue; may start starving connections. "
-                    "Will warn at most once a minute");
+                                "Will warn at most once a minute");
             lastWarnTime = now;
         }
     }
@@ -340,7 +350,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         if (events[i].data.ptr == this) {
             if (events[i].events & ~EPOLLIN) {
                 LS_SEVERE(_logger, "Got unexpected event on listening socket ("
-                        << EventBits(events[i].events) << ") - terminating");
+                                       << EventBits(events[i].events) << ") - terminating");
                 _terminate = true;
                 break;
             }
@@ -348,7 +358,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         } else if (events[i].data.ptr == &_eventFd) {
             if (events[i].events & ~EPOLLIN) {
                 LS_SEVERE(_logger, "Got unexpected event on management pipe ("
-                        << EventBits(events[i].events) << ") - terminating");
+                                       << EventBits(events[i].events) << ") - terminating");
                 _terminate = true;
                 break;
             }
@@ -364,8 +374,8 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
     // closes etc before we call onDisconnect().
     for (auto connection : toBeDeleted) {
         if (_connections.find(connection) == _connections.end()) {
-            LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*)connection
-                    << formatAddress(connection->getRemoteAddress()));
+            LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*) connection
+                                                                                     << formatAddress(connection->getRemoteAddress()));
             _terminate = true;
             break;
         }
@@ -411,7 +421,8 @@ bool Server::loop() {
 
 Server::PollResult Server::poll(int millis) {
     // Grab the thread ID on the first poll.
-    if (_threadId == 0) _threadId = gettid();
+    if (_threadId == 0)
+        _threadId = gettid();
     if (_threadId != gettid()) {
         LS_ERROR(_logger, "poll() called from the wrong thread");
         return PollResult::Error;
@@ -422,7 +433,8 @@ Server::PollResult Server::poll(int millis) {
     }
     processEventQueue();
     checkAndDispatchEpoll(millis);
-    if (!_terminate) return PollResult::Continue;
+    if (!_terminate)
+        return PollResult::Continue;
 
     // Reasonable effort to ensure anything enqueued during terminate has a chance to run.
     processEventQueue();
@@ -435,20 +447,20 @@ Server::PollResult Server::poll(int millis) {
 void Server::processEventQueue() {
     runExecutables();
     time_t now = time(nullptr);
-    if (now < _nextDeadConnectionCheck) return;
+    if (now < _nextDeadConnectionCheck)
+        return;
     std::list<Connection*> toRemove;
     for (auto _connection : _connections) {
         time_t numSecondsSinceConnection = now - _connection.second;
         auto connection = _connection.first;
-        if (connection->bytesReceived() == 0
-            && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
+        if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
             LS_INFO(_logger, formatAddress(connection->getRemoteAddress())
-                    << " : Killing lame connection - no bytes received after "
-                             << numSecondsSinceConnection << "s");
+                                 << " : Killing lame connection - no bytes received after "
+                                 << numSecondsSinceConnection << "s");
             toRemove.push_back(connection);
         }
     }
-    for (auto & it : toRemove) {
+    for (auto& it : toRemove) {
         delete it;
     }
 }
@@ -458,15 +470,16 @@ void Server::runExecutables() {
     std::unique_lock<decltype(_pendingExecutableMutex)> lock(_pendingExecutableMutex);
     copy.swap(_pendingExecutables);
     lock.unlock();
-    for (auto &&ex : copy) ex();
+    for (auto&& ex : copy)
+        ex();
 }
 
 void Server::handleAccept() {
     sockaddr_in address;
     socklen_t addrLen = sizeof(address);
     int fd = ::accept(_listenSock,
-            reinterpret_cast<sockaddr*>(&address),
-            &addrLen);
+                      reinterpret_cast<sockaddr*>(&address),
+                      &addrLen);
     if (fd == -1) {
         LS_ERROR(_logger, "Unable to accept: " << getLastError());
         return;
@@ -477,7 +490,7 @@ void Server::handleAccept() {
     }
     LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
     Connection* newConnection = new Connection(_logger, *this, fd, address);
-    epoll_event event = { EPOLLIN, { newConnection } };
+    epoll_event event = {EPOLLIN, {newConnection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
         LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
         delete newConnection;
@@ -489,7 +502,7 @@ void Server::handleAccept() {
 
 void Server::remove(Connection* connection) {
     checkThread();
-    epoll_event event = { 0, { connection } };
+    epoll_event event = {0, {connection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
         LS_ERROR(_logger, "Unable to remove from epoll: " << getLastError());
     }
@@ -497,7 +510,7 @@ void Server::remove(Connection* connection) {
 }
 
 bool Server::subscribeToWriteEvents(Connection* connection) {
-    epoll_event event = { EPOLLIN | EPOLLOUT, { connection } };
+    epoll_event event = {EPOLLIN | EPOLLOUT, {connection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
         LS_ERROR(_logger, "Unable to subscribe to write events: " << getLastError());
         return false;
@@ -506,7 +519,7 @@ bool Server::subscribeToWriteEvents(Connection* connection) {
 }
 
 bool Server::unsubscribeFromWriteEvents(Connection* connection) {
-    epoll_event event = { EPOLLIN, { connection } };
+    epoll_event event = {EPOLLIN, {connection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
         LS_ERROR(_logger, "Unable to unsubscribe from write events: " << getLastError());
         return false;
@@ -515,15 +528,15 @@ bool Server::unsubscribeFromWriteEvents(Connection* connection) {
 }
 
 void Server::addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
-        bool allowCrossOriginRequests) {
-    _webSocketHandlerMap[endpoint] = { handler, allowCrossOriginRequests };
+                                 bool allowCrossOriginRequests) {
+    _webSocketHandlerMap[endpoint] = {handler, allowCrossOriginRequests};
 }
 
 void Server::addPageHandler(std::shared_ptr<PageHandler> handler) {
     _pageHandlers.emplace_back(handler);
 }
 
-bool Server::isCrossOriginAllowed(const std::string &endpoint) const {
+bool Server::isCrossOriginAllowed(const std::string& endpoint) const {
     auto splits = split(endpoint, '?');
     auto iter = _webSocketHandlerMap.find(splits[0]);
     if (iter == _webSocketHandlerMap.end()) {
@@ -542,7 +555,7 @@ std::shared_ptr<WebSocket::Handler> Server::getWebSocketHandler(const char* endp
 }
 
 void Server::execute(std::shared_ptr<Runnable> runnable) {
-    execute([runnable]{ runnable->run(); });
+    execute([runnable] { runnable->run(); });
 }
 
 void Server::execute(std::function<void()> toExecute) {
@@ -565,18 +578,16 @@ std::string Server::getStatsDocument() const {
         doc << "connection({";
         auto connection = _connection.first;
         jsonKeyPairToStream(doc,
-                "since", EpochTimeAsLocal(_connection.second),
-                "fd", connection->getFd(),
-                "id", reinterpret_cast<uint64_t>(connection),
-                "uri", connection->getRequestUri(),
-                "addr", formatAddress(connection->getRemoteAddress()),
-                "user", connection->credentials() ?
-                        connection->credentials()->username : "(not authed)",
-                "input", connection->inputBufferSize(),
-                "read", connection->bytesReceived(),
-                "output", connection->outputBufferSize(),
-                "written", connection->bytesSent()
-        );
+                            "since", EpochTimeAsLocal(_connection.second),
+                            "fd", connection->getFd(),
+                            "id", reinterpret_cast<uint64_t>(connection),
+                            "uri", connection->getRequestUri(),
+                            "addr", formatAddress(connection->getRemoteAddress()),
+                            "user", connection->credentials() ? connection->credentials()->username : "(not authed)",
+                            "input", connection->inputBufferSize(),
+                            "read", connection->bytesReceived(),
+                            "output", connection->outputBufferSize(),
+                            "written", connection->bytesSent());
         doc << "});" << std::endl;
     }
     return doc.str();
@@ -611,10 +622,11 @@ void Server::checkThread() const {
     }
 }
 
-std::shared_ptr<Response> Server::handle(const Request &request) {
+std::shared_ptr<Response> Server::handle(const Request& request) {
     for (auto handler : _pageHandlers) {
         auto result = handler->handle(request);
-        if (result != Response::unhandled()) return result;
+        if (result != Response::unhandled())
+            return result;
     }
     return Response::unhandled();
 }
@@ -624,4 +636,4 @@ void Server::setClientBufferSize(size_t bytesToBuffer) {
     _clientBufferSize = bytesToBuffer;
 }
 
-}  // namespace seasocks
+} // namespace seasocks

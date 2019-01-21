@@ -45,7 +45,7 @@ size_t streamlen(std::shared_ptr<std::istream> stream) {
     return len;
 }
 
-class MyPageHandler: public PageHandler {
+class MyPageHandler : public PageHandler {
 public:
     virtual std::shared_ptr<Response> handle(const Request& request) override {
         if (request.verb() != Request::Verb::Get) {
@@ -54,10 +54,11 @@ public:
 
         auto ss = std::make_shared<std::stringstream>();
         (*ss) << "<html><head><title>seasocks example</title></head>"
-               "<body>Hello, " << request.credentials()->attributes["fullName"] << "! You asked for " << request.getRequestUri()
-               << " and your ip is " << request.getRemoteAddress().sin_addr.s_addr
-               << " and a random number is " << rand()
-               << "</body></html>";
+                 "<body>Hello, "
+              << request.credentials()->attributes["fullName"] << "! You asked for " << request.getRequestUri()
+              << " and your ip is " << request.getRemoteAddress().sin_addr.s_addr
+              << " and a random number is " << rand()
+              << "</body></html>";
 
         auto headers = SimpleResponse::Headers({
             {"Content-Type", "text/html"},
@@ -66,11 +67,11 @@ public:
         });
 
         const auto response = std::make_shared<SimpleResponse>(
-            ResponseCode::Ok,  // response code
-            ss,                // stream
-            headers,           // headers
-            true,              // keep alive
-            true               // flush instantly
+            ResponseCode::Ok, // response code
+            ss,               // stream
+            headers,          // headers
+            true,             // keep alive
+            true              // flush instantly
         );
         return response;
     }

@@ -42,12 +42,13 @@ public:
     static constexpr size_t DefaultBufferSize = 16 * 1024 * 1024u;
 
     SimpleResponse(ResponseCode responseCode, std::shared_ptr<std::istream> stream,
-    const Headers& headers, bool keepAlive = true, bool flushInstantly = false,
-    size_t bufferSize = DefaultBufferSize,
-    TransferEncoding transferEncoding = TransferEncoding::Raw):
-        _responseCode(responseCode), _stream(stream), _headers(headers),
-        _keepAlive(keepAlive), _flushInstantly(flushInstantly),
-        _bufferSize(bufferSize), _transferEncoding(transferEncoding) { }
+                   const Headers& headers, bool keepAlive = true, bool flushInstantly = false,
+                   size_t bufferSize = DefaultBufferSize,
+                   TransferEncoding transferEncoding = TransferEncoding::Raw)
+            : _responseCode(responseCode), _stream(stream), _headers(headers),
+              _keepAlive(keepAlive), _flushInstantly(flushInstantly),
+              _bufferSize(bufferSize), _transferEncoding(transferEncoding) {
+    }
 
     virtual std::shared_ptr<std::istream> getStream() const override {
         return _stream;
@@ -79,4 +80,3 @@ public:
 };
 
 }
-

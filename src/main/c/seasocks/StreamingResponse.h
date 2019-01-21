@@ -45,7 +45,7 @@ public:
 
     virtual std::shared_ptr<std::istream> getStream() const = 0;
 
-    typedef std::multimap <std::string, std::string> Headers;
+    typedef std::multimap<std::string, std::string> Headers;
     virtual Headers getHeaders() const = 0;
 
     virtual ResponseCode responseCode() const = 0;
@@ -58,4 +58,3 @@ public:
 };
 
 }
-

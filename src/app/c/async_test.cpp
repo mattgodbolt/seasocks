@@ -57,16 +57,18 @@ using namespace std;
 // in the cancel() method. It is assumed the lifetime of the Server object is
 // long enough for all requests to complete before it is destroyed.
 struct AsyncResponse : Response {
-    Server &_server;
-    explicit AsyncResponse(Server &server) : _server(server) {}
+    Server& _server;
+    explicit AsyncResponse(Server& server)
+            : _server(server) {
+    }
 
     // From Response:
     virtual void handle(shared_ptr<ResponseWriter> writer) override {
-        auto &server = _server;
-        thread t([&server, writer] () mutable {
+        auto& server = _server;
+        thread t([&server, writer]() mutable {
             usleep(1000000); // A long database query...
             string response = "some kind of response...beginning<br>";
-            server.execute([response, writer]{
+            server.execute([response, writer] {
                 writer->begin(ResponseCode::Ok, TransferEncoding::Chunked);
                 writer->header("Content-type", "application/html");
                 writer->payload(response.data(), response.length());
@@ -74,13 +76,13 @@ struct AsyncResponse : Response {
             response = "more data...<br>";
             for (auto i = 0; i < 5; ++i) {
                 usleep(1000000); // more data
-                server.execute([response, writer]{
+                server.execute([response, writer] {
                     writer->payload(response.data(), response.length());
                 });
             }
             response = "Done!";
             usleep(100000); // final data
-            server.execute([response, writer]{
+            server.execute([response, writer] {
                 writer->payload(response.data(), response.length());
                 writer->finish(true);
             });
@@ -96,7 +98,7 @@ struct AsyncResponse : Response {
 
 struct DataHandler : CrackedUriPageHandler {
     virtual std::shared_ptr<Response> handle(
-            const CrackedUri &/*uri*/, const Request &request) override {
+        const CrackedUri& /*uri*/, const Request& request) override {
         return make_shared<AsyncResponse>(request.server());
     }
 };

@@ -39,6 +39,7 @@ class ResponseBuilder {
     bool _keepAlive;
     SynchronousResponse::Headers _headers;
     std::shared_ptr<std::ostringstream> _stream;
+
 public:
     explicit ResponseBuilder(ResponseCode code = ResponseCode::Ok);
 
@@ -55,19 +56,19 @@ public:
     ResponseBuilder& setsCookie(const std::string& cookie, const std::string& value);
 
     ResponseBuilder& withHeader(const std::string& name, const std::string& value);
-    template<typename T>
+    template <typename T>
     ResponseBuilder& withHeader(const std::string& name, const T& t) {
         return withHeader(name, toString(t));
     }
 
     ResponseBuilder& addHeader(const std::string& name, const std::string& value);
-    template<typename T>
+    template <typename T>
     ResponseBuilder& addHeader(const std::string& name, const T& t) {
         return addHeader(name, toString(t));
     }
 
-    template<typename T>
-    ResponseBuilder& operator << (T&& t) {
+    template <typename T>
+    ResponseBuilder& operator<<(T&& t) {
         (*_stream) << std::forward<T>(t);
         return *this;
     }

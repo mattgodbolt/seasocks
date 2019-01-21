@@ -46,13 +46,12 @@ struct ZlibContext::Impl {
         deflateStream.opaque = Z_NULL;
 
         ret = ::deflateInit2(
-                &deflateStream,
-                Z_DEFAULT_COMPRESSION,
-                Z_DEFLATED,
-                deflateBits * -1,
-                memLevel,
-                Z_DEFAULT_STRATEGY
-        );
+            &deflateStream,
+            Z_DEFAULT_COMPRESSION,
+            Z_DEFLATED,
+            deflateBits * -1,
+            memLevel,
+            Z_DEFAULT_STRATEGY);
 
         if (ret != Z_OK) {
             throw std::runtime_error("error initialising zlib deflater");
@@ -65,9 +64,8 @@ struct ZlibContext::Impl {
         inflateStream.next_in = Z_NULL;
 
         ret = ::inflateInit2(
-                &inflateStream,
-                inflateBits * -1
-        );
+            &inflateStream,
+            inflateBits * -1);
 
         if (ret != Z_OK) {
             ::deflateEnd(&deflateStream);
@@ -78,13 +76,14 @@ struct ZlibContext::Impl {
     }
 
     ~Impl() {
-        if (!streamsInitialised) return;
+        if (!streamsInitialised)
+            return;
         ::deflateEnd(&deflateStream);
         ::inflateEnd(&inflateStream);
     }
 
-    void deflate(const uint8_t *input, size_t inputLen, std::vector<uint8_t> &output) {
-        deflateStream.next_in = (unsigned char *) input;
+    void deflate(const uint8_t* input, size_t inputLen, std::vector<uint8_t>& output) {
+        deflateStream.next_in = (unsigned char*) input;
         deflateStream.avail_in = inputLen;
 
         do {
@@ -100,7 +99,7 @@ struct ZlibContext::Impl {
         output.resize(output.size() - 4);
     }
 
-    bool inflate(std::vector<uint8_t> &input, std::vector<uint8_t> &output, int &zlibError) {
+    bool inflate(std::vector<uint8_t>& input, std::vector<uint8_t>& output, int& zlibError) {
         // Append 4 octets prior to decompression (see RFC 7692, section 7.2.2)
         uint8_t tail_end[4] = {0x00, 0x00, 0xff, 0xff};
         input.insert(input.end(), tail_end, tail_end + 4);
@@ -134,11 +133,11 @@ void ZlibContext::initialise(int deflateBits, int inflateBits, int memLevel) {
     _impl = std::make_unique<Impl>(deflateBits, inflateBits, memLevel);
 }
 
-void ZlibContext::deflate(const uint8_t *input, size_t inputLen, std::vector<uint8_t> &output) {
+void ZlibContext::deflate(const uint8_t* input, size_t inputLen, std::vector<uint8_t>& output) {
     return _impl->deflate(input, inputLen, output);
 }
 
-bool ZlibContext::inflate(std::vector<uint8_t> &input, std::vector<uint8_t> &output, int &zlibError) {
+bool ZlibContext::inflate(std::vector<uint8_t>& input, std::vector<uint8_t>& output, int& zlibError) {
     return _impl->inflate(input, output, zlibError);
 }
 

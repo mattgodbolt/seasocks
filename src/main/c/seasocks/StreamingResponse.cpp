@@ -33,7 +33,7 @@ void StreamingResponse::handle(std::shared_ptr<ResponseWriter> writer) {
     writer->begin(responseCode(), transferEncoding());
 
     auto headers = getHeaders();
-    for (auto & header : headers) {
+    for (auto& header : headers) {
         writer->header(header.first, header.second);
     }
 
@@ -67,4 +67,3 @@ void StreamingResponse::handle(std::shared_ptr<ResponseWriter> writer) {
 void StreamingResponse::cancel() {
     closed = true;
 }
-

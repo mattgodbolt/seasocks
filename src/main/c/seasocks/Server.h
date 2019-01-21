@@ -56,7 +56,7 @@ public:
     void addPageHandler(std::shared_ptr<PageHandler> handler);
 
     void addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
-            bool allowCrossOriginRequests = false);
+                             bool allowCrossOriginRequests = false);
 
     // Serves static content from the given port on the current thread, until terminate is called.
     // Roughly equivalent to startListening(port); setStaticPath(staticPath); loop();
@@ -96,7 +96,9 @@ public:
     // Returns a file descriptor that can be polled for changes (e.g. by
     // placing it in an epoll set. The poll() method above only need be called
     // when this file descriptor is readable.
-    int fd() const { return _epollFd; }
+    int fd() const {
+        return _epollFd;
+    }
 
     // Terminate any loop() or poll(). May be called from any thread.
     void terminate();
@@ -117,10 +119,14 @@ public:
     // is available here too.
     static constexpr size_t DefaultClientBufferSize = 16 * 1024 * 1024u;
     void setClientBufferSize(size_t bytesToBuffer);
-    size_t clientBufferSize() const override { return _clientBufferSize; }
+    size_t clientBufferSize() const override {
+        return _clientBufferSize;
+    }
 
     void setPerMessageDeflateEnabled(bool enabled);
-    bool getPerMessageDeflateEnabled() { return _perMessageDeflateEnabled;}
+    bool getPerMessageDeflateEnabled() {
+        return _perMessageDeflateEnabled;
+    }
 
     class Runnable {
     public:
@@ -137,13 +143,17 @@ private:
     virtual void remove(Connection* connection) override;
     virtual bool subscribeToWriteEvents(Connection* connection) override;
     virtual bool unsubscribeFromWriteEvents(Connection* connection) override;
-    virtual const std::string& getStaticPath() const override { return _staticPath; }
+    virtual const std::string& getStaticPath() const override {
+        return _staticPath;
+    }
     virtual std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const override;
-    virtual bool isCrossOriginAllowed(const std::string &endpoint) const override;
-    virtual std::shared_ptr<Response> handle(const Request &request) override;
+    virtual bool isCrossOriginAllowed(const std::string& endpoint) const override;
+    virtual std::shared_ptr<Response> handle(const Request& request) override;
     virtual std::string getStatsDocument() const override;
     virtual void checkThread() const override;
-    virtual Server &server() override { return *this; }
+    virtual Server& server() override {
+        return *this;
+    }
 
     bool makeNonBlocking(int fd) const;
     bool configureSocket(int fd) const;
@@ -155,7 +165,8 @@ private:
 
     void checkAndDispatchEpoll(int epollMillis);
     void handlePipe();
-    enum class NewState { KeepOpen, Close };
+    enum class NewState { KeepOpen,
+                          Close };
     NewState handleConnectionEvents(Connection* connection, uint32_t events);
 
     // Connections, mapped to initial connection time.
@@ -191,4 +202,4 @@ private:
     std::atomic<bool> _expectedTerminate;
 };
 
-}  // namespace seasocks
+} // namespace seasocks

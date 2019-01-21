@@ -52,17 +52,19 @@ class Response;
 class Connection : public WebSocket {
 public:
     Connection(
-            std::shared_ptr<Logger> logger,
-            ServerImpl& server,
-            int fd,
-            const sockaddr_in& address);
+        std::shared_ptr<Logger> logger,
+        ServerImpl& server,
+        int fd,
+        const sockaddr_in& address);
     virtual ~Connection();
 
     bool write(const void* data, size_t size, bool flush);
     void handleDataReadyForRead();
     void handleDataReadyForWrite();
 
-    int getFd() const { return _fd; }
+    int getFd() const {
+        return _fd;
+    }
 
     // From WebSocket.
     virtual void send(const char* webSocketResponse) override;
@@ -71,25 +73,43 @@ public:
 
     // From Request.
     virtual std::shared_ptr<Credentials> credentials() const override;
-    virtual const sockaddr_in& getRemoteAddress() const override { return _address; }
+    virtual const sockaddr_in& getRemoteAddress() const override {
+        return _address;
+    }
     virtual const std::string& getRequestUri() const override;
-    virtual Request::Verb verb() const override { return Request::Verb::WebSocket; }
-    virtual size_t contentLength() const override { return 0; }
-    virtual const uint8_t* content() const override { return nullptr; }
+    virtual Request::Verb verb() const override {
+        return Request::Verb::WebSocket;
+    }
+    virtual size_t contentLength() const override {
+        return 0;
+    }
+    virtual const uint8_t* content() const override {
+        return nullptr;
+    }
     virtual bool hasHeader(const std::string&) const override;
     virtual std::string getHeader(const std::string&) const override;
-    virtual Server &server() const override;
+    virtual Server& server() const override;
 
     void setLinger();
 
-    size_t inputBufferSize() const { return _inBuf.size(); }
-    size_t outputBufferSize() const { return _outBuf.size(); }
+    size_t inputBufferSize() const {
+        return _inBuf.size();
+    }
+    size_t outputBufferSize() const {
+        return _outBuf.size();
+    }
 
-    size_t bytesReceived() const { return _bytesReceived; }
-    size_t bytesSent() const { return _bytesSent; }
+    size_t bytesReceived() const {
+        return _bytesReceived;
+    }
+    size_t bytesSent() const {
+        return _bytesSent;
+    }
 
     // For testing:
-    std::vector<uint8_t>& getInputBuffer() { return _inBuf; }
+    std::vector<uint8_t>& getInputBuffer() {
+        return _inBuf;
+    }
     void handleHixieWebSocket();
     void handleHybiWebSocket();
     void setHandler(std::shared_ptr<WebSocket::Handler> handler) {
@@ -99,7 +119,7 @@ public:
 
 
     Connection(Connection& other) = delete;
-    Connection& operator =(Connection& other) = delete;
+    Connection& operator=(Connection& other) = delete;
 
 
 private:
@@ -145,15 +165,17 @@ private:
     // Delegated from ResponseWriter.
     struct Writer;
     void begin(ResponseCode responseCode, TransferEncoding encoding);
-    void header(const std::string &header, const std::string &value);
-    void payload(const void *data, size_t size, bool flush);
+    void header(const std::string& header, const std::string& value);
+    void payload(const void* data, size_t size, bool flush);
     void finish(bool keepConnectionOpen);
-    void error(ResponseCode responseCode, const std::string &payload);
+    void error(ResponseCode responseCode, const std::string& payload);
 
     struct Range {
         long start;
         long end;
-        size_t length() const { return end - start + 1; }
+        size_t length() const {
+            return end - start + 1;
+        }
     };
 
     bool parseRange(const std::string& rangeStr, Range& range) const;
@@ -167,7 +189,7 @@ private:
     std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
 
     std::shared_ptr<Logger> _logger;
-    ServerImpl &_server;
+    ServerImpl& _server;
     int _fd;
     bool _shutdown;
     bool _hadSendError;
@@ -208,4 +230,4 @@ private:
     void writeChunkHeader(size_t size);
 };
 
-}  // namespace seasocks
+} // namespace seasocks

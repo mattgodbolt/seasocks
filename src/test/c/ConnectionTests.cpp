@@ -39,8 +39,8 @@ using namespace seasocks;
 class TestHandler : public WebSocket::Handler {
 public:
     int _stage;
-    TestHandler() :
-        _stage(0) {
+    TestHandler()
+            : _stage(0) {
     }
     ~TestHandler() {
         if (_stage != 2) {
@@ -74,7 +74,7 @@ TEST_CASE("Connection tests", "[ConnectionTests]") {
 
     SECTION("should break hixie messages apart in same buffer") {
         connection.setHandler(std::make_shared<TestHandler>());
-        uint8_t foo[] = { 0x00, 'a', 0xff, 0x00, 'b', 0xff };
+        uint8_t foo[] = {0x00, 'a', 0xff, 0x00, 'b', 0xff};
         connection.getInputBuffer().assign(&foo[0], &foo[sizeof(foo)]);
         connection.handleHixieWebSocket();
     }

@@ -72,7 +72,7 @@ TEST_CASE("shouldWorkWithAnchors", "[HtmlTests]") {
 }
 
 TEST_CASE("shouldAddAll", "[HtmlTests]") {
-    std::vector<std::string> strings = { "Hi", "Moo", "Foo" };
+    std::vector<std::string> strings = {"Hi", "Moo", "Foo"};
     auto list = ul().addAll(strings, [](const std::string& s) { return li(s); });
     CHECK(list.str() == "<ul><li>Hi</li><li>Moo</li><li>Foo</li></ul>");
 }

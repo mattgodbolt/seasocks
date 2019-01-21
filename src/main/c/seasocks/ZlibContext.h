@@ -14,7 +14,7 @@ public:
 
     ZlibContext();
     ~ZlibContext();
-    void initialise(int deflateBits=15, int inflateBits=15, int memLevel=6);
+    void initialise(int deflateBits = 15, int inflateBits = 15, int memLevel = 6);
 
     void deflate(const uint8_t* input, size_t inputLen, std::vector<uint8_t>& output);
 
@@ -26,4 +26,4 @@ private:
     std::unique_ptr<Impl> _impl;
 };
 
-}  // namespace seasocks
+} // namespace seasocks
