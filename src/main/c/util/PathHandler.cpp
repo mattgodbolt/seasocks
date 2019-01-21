@@ -37,15 +37,15 @@ CrackedUriPageHandler::Ptr PathHandler::add(const CrackedUriPageHandler::Ptr& ha
 }
 
 std::shared_ptr<Response> PathHandler::handle(
-        const CrackedUri& uri, const Request& request) {
-    const auto &path = uri.path();
+    const CrackedUri& uri, const Request& request) {
+    const auto& path = uri.path();
     if (path.empty() || path[0] != _path) {
         return Response::unhandled();
     }
 
     auto shiftedUri = uri.shift();
 
-    for (const auto &it : _handlers) {
+    for (const auto& it : _handlers) {
         auto response = it->handle(shiftedUri, request);
         if (response != Response::unhandled()) {
             return response;

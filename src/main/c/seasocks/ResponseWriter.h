@@ -49,12 +49,12 @@ public:
                        TransferEncoding encoding = TransferEncoding::Raw) = 0;
     // Add a header. Must be called after 'begin' and before 'payload'. May be
     // called as many times as needed.
-    virtual void header(const std::string &header, const std::string &value) = 0;
+    virtual void header(const std::string& header, const std::string& value) = 0;
     // Add some payload data. Must be called after 'begin' and any 'header' calls.
     // May be called multiple times. The flush parameter controls whether the
     // data should be sent immediately, or buffered to be sent with a subsequent
     // call to 'payload', or 'finish'.
-    virtual void payload(const void* data, size_t size, bool flush=true) = 0;
+    virtual void payload(const void* data, size_t size, bool flush = true) = 0;
     // Finish a response.
     virtual void finish(bool keepConnectionOpen) = 0;
 
@@ -62,7 +62,7 @@ public:
     // or 'finish' should be executed. If you wish to serve your own error document
     // then use the normal 'begin'/'header'/'payload'/'finish' process but with
     // an error code. This routine is to get Seasocks to generate its own error.
-    virtual void error(ResponseCode responseCode, const std::string &payload) = 0;
+    virtual void error(ResponseCode responseCode, const std::string& payload) = 0;
     // Check whether this writer is still active; i.e. the underlying connection
     // is still open.
     virtual bool isActive() const = 0;

@@ -33,7 +33,8 @@ namespace seasocks {
 
 class PrintfLogger : public Logger {
 public:
-    explicit PrintfLogger(Level minLevelToLog_ = Level::Debug) : minLevelToLog(minLevelToLog_) {
+    explicit PrintfLogger(Level minLevelToLog_ = Level::Debug)
+            : minLevelToLog(minLevelToLog_) {
     }
 
     ~PrintfLogger() = default;
@@ -47,4 +48,4 @@ public:
     Level minLevelToLog;
 };
 
-}  // namespace seasocks
+} // namespace seasocks

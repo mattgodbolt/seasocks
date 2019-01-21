@@ -64,4 +64,3 @@ TEST_CASE("html response", "[ResponseTests]") {
     CHECK(resp->getAdditionalHeaders().empty() == true);
     CHECK(resp->keepConnectionAlive() == true);
 }
-

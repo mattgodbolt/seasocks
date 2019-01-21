@@ -39,18 +39,19 @@ TEST_CASE("Server tests", "[ServerTests]") {
     auto logger = std::make_shared<IgnoringLogger>();
     Server server(logger);
     REQUIRE(server.startListening(0));
-    std::thread seasocksThread([&]{
+    std::thread seasocksThread([&] {
         REQUIRE(server.loop());
     });
 
     std::atomic<int> test(0);
     SECTION("execute should work") {
-        server.execute([&]{
+        server.execute([&] {
             CHECK(test == 0);
             test++;
         });
         for (int i = 0; i < 1000 * 1000 * 1000; ++i) {
-            if (test) break;
+            if (test)
+                break;
         }
         CHECK(test == 1);
     }
@@ -66,7 +67,8 @@ TEST_CASE("Server tests", "[ServerTests]") {
         server.execute([&] { latch = true; });
         for (int i = 0; i < 1000; ++i) {
             usleep(1000);
-            if (latch) break;
+            if (latch)
+                break;
         }
         CHECK(latch == 1);
         CHECK(test == 10000);

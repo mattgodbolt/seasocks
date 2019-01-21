@@ -30,10 +30,10 @@
 #include <sstream>
 #include <stdexcept>
 
-#define THROW(stuff) \
-    do {\
-        std::ostringstream err; \
-        err << stuff; \
+#define THROW(stuff)                         \
+    do {                                     \
+        std::ostringstream err;              \
+        err << stuff;                        \
         throw std::runtime_error(err.str()); \
     } while (0);
 
@@ -87,8 +87,9 @@ CrackedUri::CrackedUri(const std::string& uri) {
     std::transform(_path.begin(), _path.end(), _path.begin(), unescape);
 
     auto splitRemainder = split(remainder, '&');
-    for (const auto & iter : splitRemainder) {
-        if (iter.empty()) continue;
+    for (const auto& iter : splitRemainder) {
+        if (iter.empty())
+            continue;
         auto split = seasocks::split(iter, '=');
         std::transform(split.begin(), split.end(), split.begin(), unescape);
         if (split.size() == 1) {

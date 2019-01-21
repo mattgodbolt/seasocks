@@ -51,9 +51,10 @@
 using namespace seasocks;
 using namespace std;
 
-class MyHandler: public WebSocket::Handler {
+class MyHandler : public WebSocket::Handler {
 public:
-    explicit MyHandler(Server* server) : _server(server), _currentValue(0) {
+    explicit MyHandler(Server* server)
+            : _server(server), _currentValue(0) {
         setValue(1);
     }
 
@@ -61,8 +62,8 @@ public:
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
         cout << "Connected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
+             << " : " << formatAddress(connection->getRemoteAddress())
+             << endl;
         cout << "Credentials: " << *(connection->credentials()) << endl;
     }
 
@@ -90,8 +91,8 @@ public:
     virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
         cout << "Disconnected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
+             << " : " << formatAddress(connection->getRemoteAddress())
+             << endl;
     }
 
 private:
@@ -119,11 +120,11 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         return 1;
     }
     int myEpoll = epoll_create(10);
-    epoll_event wakeSeasocks = { EPOLLIN|EPOLLOUT|EPOLLERR, { &server } };
+    epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
 
     // Also poll stdin
-    epoll_event wakeStdin = { EPOLLIN, { nullptr } };
+    epoll_event wakeStdin = {EPOLLIN, {nullptr}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
     auto prevFlags = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
@@ -140,8 +141,10 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         for (auto i = 0; i < res; ++i) {
             if (events[i].data.ptr == &server) {
                 auto seasocksResult = server.poll(0);
-                if (seasocksResult == Server::PollResult::Terminated) return 0;
-                if (seasocksResult == Server::PollResult::Error) return 1;
+                if (seasocksResult == Server::PollResult::Terminated)
+                    return 0;
+                if (seasocksResult == Server::PollResult::Error)
+                    return 1;
             } else if (events[i].data.ptr == nullptr) {
                 // Echo stdin to stdout to show we can read from that too.
                 for (;;) {

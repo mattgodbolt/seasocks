@@ -41,21 +41,21 @@ TEST_CASE("shouldHandleRoot", "[CrackedUriTests]") {
 
 TEST_CASE("shouldHandleTopLevel", "[CrackedUriTests]") {
     CrackedUri uri("/monkey");
-    vector<string> expected = { "monkey" };
+    vector<string> expected = {"monkey"};
     CHECK(uri.path() == expected);
     CHECK(uri.queryParams().empty());
 }
 
 TEST_CASE("shouldHandleSimplePaths", "[CrackedUriTests]") {
     CrackedUri uri("/foo/bar/baz/bungo");
-    vector<string> expected = { "foo", "bar", "baz", "bungo" };
+    vector<string> expected = {"foo", "bar", "baz", "bungo"};
     CHECK(uri.path() == expected);
     CHECK(uri.queryParams().empty());
 }
 
 TEST_CASE("shouldTreatTrailingSlashAsNewPage", "[CrackedUriTests]") {
     CrackedUri uri("/ooh/a/directory/");
-    vector<string> expected = { "ooh", "a", "directory", "" };
+    vector<string> expected = {"ooh", "a", "directory", ""};
     CHECK(uri.path() == expected);
     CHECK(uri.queryParams().empty());
 }
@@ -82,7 +82,7 @@ TEST_CASE("shouldHandleEmptyParams", "[CrackedUriTests]") {
 
 TEST_CASE("shouldHandleDuplicateParams", "[CrackedUriTests]") {
     CrackedUri uri("/?a=a&q=10&q=5&z=yibble&q=100&q=blam");
-    vector<string> expected = { "10", "5", "100", "blam" };
+    vector<string> expected = {"10", "5", "100", "blam"};
     sort(expected.begin(), expected.end());
     auto params = uri.allQueryParams("q");
     sort(params.begin(), params.end());
@@ -92,7 +92,7 @@ TEST_CASE("shouldHandleDuplicateParams", "[CrackedUriTests]") {
 
 TEST_CASE("shouldHandlePathWithQuery", "[CrackedUriTests]") {
     CrackedUri uri("/badger/badger/badger/mushroom?q=snake");
-    vector<string> expected = { "badger", "badger", "badger", "mushroom" };
+    vector<string> expected = {"badger", "badger", "badger", "mushroom"};
     CHECK(uri.path() == expected);
     REQUIRE_FALSE(uri.queryParams().empty());
     CHECK(uri.hasParam("q"));
@@ -101,7 +101,7 @@ TEST_CASE("shouldHandlePathWithQuery", "[CrackedUriTests]") {
 
 TEST_CASE("shouldUnescapePaths", "[CrackedUriTests]") {
     CrackedUri uri("/foo+bar/baz%2f/%40%4F");
-    vector<string> expected = { "foo bar", "baz/", "@O" };
+    vector<string> expected = {"foo bar", "baz/", "@O"};
     CHECK(uri.path() == expected);
 }
 

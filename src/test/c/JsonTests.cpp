@@ -41,7 +41,7 @@ TEST_CASE("shouldHandleMaps", "[JsonTests]") {
 
 TEST_CASE("shouldHandleQuotedStrings", "[JsonTests]") {
     CHECK(makeMap("key", "I have \"quotes\"") ==
-                  "{\"key\":\"I have \\\"quotes\\\"\"}");
+          "{\"key\":\"I have \\\"quotes\\\"\"}");
 }
 
 TEST_CASE("shouldHandleNewLinesInStrings", "[JsonTests]") {
@@ -75,19 +75,19 @@ TEST_CASE("shouldHandleNonAsciiChars", "[JsonTests]") {
 }
 
 struct Object {
-    void jsonToStream(std::ostream &ostr) const {
+    void jsonToStream(std::ostream& ostr) const {
         ostr << makeMap("object", true);
     }
     // Clang is pernickity about this. We don't want use this function
     // but it's here to catch errors where we accidentally use it instead of the
     // jsonToStream.
-    friend std::ostream &operator << (std::ostream &o, const Object &) {
+    friend std::ostream& operator<<(std::ostream& o, const Object&) {
         return o << "Not this one";
     }
 };
 
 struct Object2 {
-    friend std::ostream &operator << (std::ostream &o, const Object2 &) {
+    friend std::ostream& operator<<(std::ostream& o, const Object2&) {
         return o << "This is object 2";
     }
 };
@@ -124,7 +124,7 @@ TEST_CASE("handlesArrays", "[JsonTests]") {
     CHECK(makeArray("abc") == R"(["abc"])");
     CHECK(makeArray("a", "b", "c") == R"(["a","b","c"])");
     CHECK(makeArray({"a", "b", "c"}) == R"(["a","b","c"])");
-    std::vector<JsonnedString> strs = { to_json(false), to_json(true) };
+    std::vector<JsonnedString> strs = {to_json(false), to_json(true)};
     CHECK(makeArrayFromContainer(strs) == R"([false,true])");
 }
 
@@ -138,8 +138,7 @@ TEST_CASE("handlesMaps", "[JsonTests]") {
     std::map<std::string, JsonnedString> unordMap;
     unordMap["hello"] = to_json(true);
     unordMap["goodbye"] = to_json(false);
-    CHECK_THAT(makeMapFromContainer(unordMap), Catch::Equals(R"({"goodbye":false,"hello":true})")
-                                            || Catch::Equals(R"({"hello":true,"goodbye":false})"));
+    CHECK_THAT(makeMapFromContainer(unordMap), Catch::Equals(R"({"goodbye":false,"hello":true})") || Catch::Equals(R"({"hello":true,"goodbye":false})"));
 }
 
 }

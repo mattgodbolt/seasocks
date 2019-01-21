@@ -39,21 +39,40 @@ public:
     std::string staticPath;
     std::unordered_map<std::string, std::shared_ptr<WebSocket::Handler>> handlers;
 
-    void remove(Connection* /*connection*/) override {}
-    bool subscribeToWriteEvents(Connection* /*connection*/) override {return false;};
-    bool unsubscribeFromWriteEvents(Connection* /*connection*/) override {return false;}
-    const std::string& getStaticPath() const override { return staticPath; }
-    std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char *endpoint) const override {
+    void remove(Connection* /*connection*/) override {
+    }
+    bool subscribeToWriteEvents(Connection* /*connection*/) override {
+        return false;
+    };
+    bool unsubscribeFromWriteEvents(Connection* /*connection*/) override {
+        return false;
+    }
+    const std::string& getStaticPath() const override {
+        return staticPath;
+    }
+    std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const override {
         auto it = handlers.find(endpoint);
-        if (it == handlers.end()) return std::shared_ptr<WebSocket::Handler>();
+        if (it == handlers.end())
+            return std::shared_ptr<WebSocket::Handler>();
         return it->second;
     }
-    bool isCrossOriginAllowed(const std::string &/*endpoint*/) const override { return false; }
-    std::shared_ptr<Response> handle(const Request &/*request*/) override { return std::shared_ptr<Response>(); }
-    std::string getStatsDocument() const override { return ""; }
-    void checkThread() const override { }
-    Server &server() override { throw std::runtime_error("not supported"); };
-    size_t clientBufferSize() const override { return 512 * 1024; }
+    bool isCrossOriginAllowed(const std::string& /*endpoint*/) const override {
+        return false;
+    }
+    std::shared_ptr<Response> handle(const Request& /*request*/) override {
+        return std::shared_ptr<Response>();
+    }
+    std::string getStatsDocument() const override {
+        return "";
+    }
+    void checkThread() const override {
+    }
+    Server& server() override {
+        throw std::runtime_error("not supported");
+    };
+    size_t clientBufferSize() const override {
+        return 512 * 1024;
+    }
 };
 
 }

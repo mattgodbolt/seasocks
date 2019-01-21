@@ -42,7 +42,7 @@ CrackedUriPageHandler::Ptr RootPageHandler::add(const CrackedUriPageHandler::Ptr
 
 std::shared_ptr<Response> RootPageHandler::handle(const Request& request) {
     CrackedUri uri(request.getRequestUri());
-    for (const auto &it : _handlers) {
+    for (const auto& it : _handlers) {
         auto response = it->handle(uri, request);
         if (response != Response::unhandled()) {
             return response;

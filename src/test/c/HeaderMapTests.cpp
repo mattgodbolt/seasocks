@@ -6,7 +6,7 @@ using namespace seasocks;
 
 namespace {
 
-void emplace(HeaderMap &map, const char *header, const char *value) {
+void emplace(HeaderMap& map, const char* header, const char* value) {
     map.emplace(header, value);
 }
 

@@ -34,7 +34,8 @@
 namespace seasocks {
 
 char* skipWhitespace(char* str) {
-    while (isspace(*str)) ++str;
+    while (isspace(*str))
+        ++str;
     return str;
 }
 
@@ -64,14 +65,16 @@ char* shift(char*& str) {
 
 std::string trimWhitespace(const std::string& str) {
     auto* start = str.c_str();
-    while (isspace(*start)) ++start;
+    while (isspace(*start))
+        ++start;
     auto* end = &str.back();
-    while (end >= start && isspace(*end)) --end;
+    while (end >= start && isspace(*end))
+        --end;
     return std::string(start, end - start + 1);
 }
 
 
-std::string getLastError(){
+std::string getLastError() {
     char errbuf[1024];
     strerror_r(errno, errbuf, sizeof(errbuf));
     return errbuf;
@@ -90,7 +93,8 @@ std::string formatAddress(const sockaddr_in& address) {
 }
 
 std::vector<std::string> split(const std::string& input, char splitChar) {
-    if (input.empty()) return std::vector<std::string>();
+    if (input.empty())
+        return std::vector<std::string>();
     std::vector<std::string> result;
     size_t pos = 0;
     size_t newPos;
@@ -113,7 +117,7 @@ void replace(std::string& string, const std::string& find,
     }
 }
 
-bool caseInsensitiveSame(const std::string &lhs, const std::string &rhs) {
+bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
     return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
 }
 
@@ -122,7 +126,7 @@ std::string webtime(time_t time) {
     gmtime_r(&time, &tm);
     char buf[1024];
     // Wed, 20 Apr 2011 17:31:28 GMT
-    strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+    strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
     return buf;
 }
 

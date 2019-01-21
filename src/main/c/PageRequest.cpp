@@ -31,22 +31,23 @@
 namespace seasocks {
 
 PageRequest::PageRequest(
-        const sockaddr_in& remoteAddress,
-        const std::string& requestUri,
-        Server &server,
-        Verb verb,
-        HeaderMap&& headers) :
-            _credentials(std::make_shared<Credentials>()),
-            _remoteAddress(remoteAddress),
-            _requestUri(requestUri),
-            _server(server),
-            _verb(verb),
-            _headers(std::move(headers)),
-            _contentLength(getUintHeader("Content-Length")) {
+    const sockaddr_in& remoteAddress,
+    const std::string& requestUri,
+    Server& server,
+    Verb verb,
+    HeaderMap&& headers)
+        : _credentials(std::make_shared<Credentials>()),
+          _remoteAddress(remoteAddress),
+          _requestUri(requestUri),
+          _server(server),
+          _verb(verb),
+          _headers(std::move(headers)),
+          _contentLength(getUintHeader("Content-Length")) {
 }
 
 bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
-    if (buffer.size() < _contentLength) return false;
+    if (buffer.size() < _contentLength)
+        return false;
     if (buffer.size() == _contentLength) {
         _content.swap(buffer);
     } else {
@@ -56,12 +57,14 @@ bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
     return true;
 }
 
-size_t PageRequest::getUintHeader(const std::string &name) const {
+size_t PageRequest::getUintHeader(const std::string& name) const {
     auto iter = _headers.find(name);
-    if (iter == _headers.end()) return 0u;
+    if (iter == _headers.end())
+        return 0u;
     auto val = atoi(iter->second.c_str());
-    if (val < 0) return 0u;
+    if (val < 0)
+        return 0u;
     return static_cast<size_t>(val);
 }
 
-}  // namespace seasocks
+} // namespace seasocks

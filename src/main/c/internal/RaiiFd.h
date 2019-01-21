@@ -33,7 +33,8 @@ class RaiiFd {
     int fd_;
 
 public:
-    explicit RaiiFd(int fd) : fd_(fd) {
+    explicit RaiiFd(int fd)
+            : fd_(fd) {
     }
 
     RaiiFd(const RaiiFd&) = delete;

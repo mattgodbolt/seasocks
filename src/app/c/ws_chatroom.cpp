@@ -41,31 +41,30 @@ using namespace seasocks;
 namespace {
 
 struct Handler : WebSocket::Handler {
-    set<WebSocket *> _cons;
+    set<WebSocket*> _cons;
 
-    void onConnect(WebSocket *con) override {
+    void onConnect(WebSocket* con) override {
         _cons.insert(con);
         send(con->credentials()->username + " has joined");
     }
-    void onDisconnect(WebSocket *con) override {
+    void onDisconnect(WebSocket* con) override {
         _cons.erase(con);
         send(con->credentials()->username + " has left");
     }
 
-    void onData(WebSocket *con, const char *data) override
-    {
+    void onData(WebSocket* con, const char* data) override {
         send(con->credentials()->username + ": " + data);
     }
 
     void send(const string& msg) {
-        for (auto *con : _cons) {
+        for (auto* con : _cons) {
             con->send(msg);
         }
     }
 };
 
 struct MyAuthHandler : PageHandler {
-    shared_ptr<Response> handle(const Request &request) override {
+    shared_ptr<Response> handle(const Request& request) override {
         // Here one would handle one's authentication system, for example;
         // * check to see if the user has a trusted cookie: if so, accept it.
         // * if not, redirect to a login handler page, and await a redirection
@@ -74,7 +73,7 @@ struct MyAuthHandler : PageHandler {
         // For this example, we set the user's authentication information purely
         // from their connection.
         request.credentials()->username = formatAddress(request.getRemoteAddress());
-        return Response::unhandled();  // cause next handler to run
+        return Response::unhandled(); // cause next handler to run
     }
 };
 

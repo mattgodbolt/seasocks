@@ -22,5 +22,3 @@ TEST_CASE("all files generated", "[EmbeddedContentTests]") {
     CHECK(findEmbeddedContent("/_seasocks.css") != nullptr);
     CHECK(findEmbeddedContent("/_stats.html") != nullptr);
 }
-
-

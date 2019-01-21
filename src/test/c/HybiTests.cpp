@@ -40,10 +40,10 @@ using namespace seasocks;
 static IgnoringLogger ignore;
 
 void testSingleString(
-        HybiPacketDecoder::MessageState expectedState,
-        const char* expectedPayload,
-        const std::vector<uint8_t>& v,
-        uint32_t size = 0) {
+    HybiPacketDecoder::MessageState expectedState,
+    const char* expectedPayload,
+    const std::vector<uint8_t>& v,
+    uint32_t size = 0) {
     HybiPacketDecoder decoder(ignore, v);
     std::vector<uint8_t> decoded;
     CHECK(decoder.decodeNextMessage(decoded) == expectedState);
@@ -82,8 +82,8 @@ TEST_CASE("withPartialMessageFollowing", "[HybiTests]") {
 }
 
 TEST_CASE("binaryMessage", "[HybiTests]") {
-    std::vector<uint8_t> packet { 0x82, 0x03, 0x00, 0x01, 0x02 };
-    std::vector<uint8_t> expected_body { 0x00, 0x01, 0x02 };
+    std::vector<uint8_t> packet{0x82, 0x03, 0x00, 0x01, 0x02};
+    std::vector<uint8_t> expected_body{0x00, 0x01, 0x02};
     HybiPacketDecoder decoder(ignore, packet);
     std::vector<uint8_t> decoded;
     CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::BinaryMessage);
@@ -93,7 +93,7 @@ TEST_CASE("binaryMessage", "[HybiTests]") {
 }
 
 TEST_CASE("withTwoMessages", "[HybiTests]") {
-    std::vector<uint8_t> data {
+    std::vector<uint8_t> data{
         0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
         0x81, 0x07, 0x47, 0x6f, 0x6f, 0x64, 0x62, 0x79, 0x65};
     HybiPacketDecoder decoder(ignore, data);
@@ -107,9 +107,9 @@ TEST_CASE("withTwoMessages", "[HybiTests]") {
 }
 
 TEST_CASE("withTwoMessagesOneBeingMaskedd", "[HybiTests]") {
-    std::vector<uint8_t> data {
-        0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f,  // hello
-        0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58  // also hello
+    std::vector<uint8_t> data{
+        0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f,                        // hello
+        0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58 // also hello
     };
     HybiPacketDecoder decoder(ignore, data);
     std::vector<uint8_t> decoded;
@@ -123,10 +123,9 @@ TEST_CASE("withTwoMessagesOneBeingMaskedd", "[HybiTests]") {
 
 TEST_CASE("regressionBug", "[HybiTests]") {
     // top bit set of second byte of message used to trigger a MASK decode of the remainder
-    std::vector<uint8_t> data {
-        0x82, 0x05, 0x80, 0x81, 0x82, 0x83, 0x84
-    };
-    std::vector<uint8_t> expected_body { 0x80, 0x81, 0x82, 0x83, 0x84 };
+    std::vector<uint8_t> data{
+        0x82, 0x05, 0x80, 0x81, 0x82, 0x83, 0x84};
+    std::vector<uint8_t> expected_body{0x80, 0x81, 0x82, 0x83, 0x84};
     HybiPacketDecoder decoder(ignore, data);
     std::vector<uint8_t> decoded;
     CHECK(decoder.decodeNextMessage(decoded) == HybiPacketDecoder::MessageState::BinaryMessage);

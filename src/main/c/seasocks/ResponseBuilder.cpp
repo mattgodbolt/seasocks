@@ -29,12 +29,11 @@
 
 namespace seasocks {
 
-ResponseBuilder::ResponseBuilder(ResponseCode code) :
-        _code(code),
-        _contentType("text/plain"),
-        _keepAlive(true),
-        _stream(std::make_shared<std::ostringstream>()) {
-
+ResponseBuilder::ResponseBuilder(ResponseCode code)
+        : _code(code),
+          _contentType("text/plain"),
+          _keepAlive(true),
+          _stream(std::make_shared<std::ostringstream>()) {
 }
 
 ResponseBuilder& ResponseBuilder::asHtml() {

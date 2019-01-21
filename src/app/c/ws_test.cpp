@@ -45,9 +45,10 @@
 using namespace seasocks;
 using namespace std;
 
-class MyHandler: public WebSocket::Handler {
+class MyHandler : public WebSocket::Handler {
 public:
-    explicit MyHandler(Server* server) : _server(server), _currentValue(0) {
+    explicit MyHandler(Server* server)
+            : _server(server), _currentValue(0) {
         setValue(1);
     }
 
@@ -55,8 +56,8 @@ public:
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
         cout << "Connected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
+             << " : " << formatAddress(connection->getRemoteAddress())
+             << endl;
         cout << "Credentials: " << *(connection->credentials()) << endl;
     }
 
@@ -84,8 +85,8 @@ public:
     virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
         cout << "Disconnected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
+             << " : " << formatAddress(connection->getRemoteAddress())
+             << endl;
     }
 
 private:

@@ -38,8 +38,12 @@ class CrackedUri {
 public:
     explicit CrackedUri(const std::string& uri);
 
-    const std::vector<std::string>& path() const { return _path; }
-    const std::unordered_multimap<std::string, std::string> queryParams() const { return _queryParams; }
+    const std::vector<std::string>& path() const {
+        return _path;
+    }
+    const std::unordered_multimap<std::string, std::string> queryParams() const {
+        return _queryParams;
+    }
 
     bool hasParam(const std::string& param) const;
 

@@ -1,0 +1,23 @@
+﻿---
+AccessModifierOffset: '-4'
+AllowShortBlocksOnASingleLine: 'false'
+AllowShortCaseLabelsOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: 'false'
+AllowShortLoopsOnASingleLine: 'false'
+AlwaysBreakTemplateDeclarations: 'true'
+ConstructorInitializerIndentWidth: '8'
+ColumnLimit: '0'
+FixNamespaceComments: 'false'
+IndentCaseLabels: 'true'
+IndentWidth: '4'
+Language: Cpp
+MaxEmptyLinesToKeep: '2'
+PointerAlignment: Left
+SortIncludes: 'false'
+SpaceAfterCStyleCast: 'true'
+SpaceInEmptyParentheses: 'false'
+TabWidth: '4'
+UseTab: Never
+
+...

@@ -35,4 +35,4 @@ public:
     }
 };
 
-}  // namespace seasocks
+} // namespace seasocks
