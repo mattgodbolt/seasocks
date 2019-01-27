@@ -623,7 +623,7 @@ void Server::checkThread() const {
 }
 
 std::shared_ptr<Response> Server::handle(const Request& request) {
-    for (auto handler : _pageHandlers) {
+    for (const auto& handler : _pageHandlers) {
         auto result = handler->handle(request);
         if (result != Response::unhandled())
             return result;

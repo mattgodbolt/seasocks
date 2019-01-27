@@ -124,7 +124,7 @@ const std::unordered_map<std::string, std::string> contentTypes = {
 
 std::string getExt(const std::string& path) {
     auto lastDot = path.find_last_of('.');
-    if (lastDot != path.npos) {
+    if (lastDot != std::string::npos) {
         return path.substr(lastDot + 1);
     }
     return "";
@@ -392,7 +392,7 @@ bool Connection::flush() {
         return false;
     }
     _outBuf.erase(_outBuf.begin(), _outBuf.begin() + numSent);
-    if (_outBuf.size() > 0 && !_registeredForWriteEvents) {
+    if (!_outBuf.empty() && !_registeredForWriteEvents) {
         if (!_server.subscribeToWriteEvents(this)) {
             return false;
         }

@@ -76,7 +76,7 @@ CrackedUri::CrackedUri(const std::string& uri) {
     auto endOfPath = uri.find('?');
     std::string path;
     std::string remainder;
-    if (endOfPath == uri.npos) {
+    if (endOfPath == std::string::npos) {
         path = uri.substr(1);
     } else {
         path = uri.substr(1, endOfPath - 1);
