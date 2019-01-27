@@ -51,7 +51,7 @@ int main(int argc, char* const argv[]) {
                 verbose = true;
                 break;
             case 'p':
-                port = atoi(optarg);
+                port = std::stoi(optarg);
                 break;
             default:
                 fprintf(stderr, usage, argv[0]);

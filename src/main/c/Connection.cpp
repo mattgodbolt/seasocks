@@ -918,7 +918,7 @@ bool Connection::handlePageRequest() {
     auto uri = _request->getRequestUri();
     if (!response && _request->verb() == Request::Verb::WebSocket) {
         _webSocketHandler = _server.getWebSocketHandler(uri.c_str());
-        auto webSocketVersion = atoi(_request->getHeader("Sec-WebSocket-Version").c_str());
+        const auto webSocketVersion = std::stoi(_request->getHeader("Sec-WebSocket-Version").c_str());
         if (!_webSocketHandler) {
             LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
             return send404();
@@ -1082,15 +1082,15 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     }
     if (minusPos == 0) {
         // A range like "-500" means 500 bytes from end of file to end.
-        range.start = atoi(rangeStr.c_str());
+        range.start = std::stoi(rangeStr.c_str());
         range.end = std::numeric_limits<long>::max();
         return true;
     } else {
-        range.start = atoi(rangeStr.substr(0, minusPos).c_str());
+        range.start = std::stoi(rangeStr.substr(0, minusPos).c_str());
         if (minusPos == rangeStr.size() - 1) {
             range.end = std::numeric_limits<long>::max();
         } else {
-            range.end = atoi(rangeStr.substr(minusPos + 1).c_str());
+            range.end = std::stoi(rangeStr.substr(minusPos + 1).c_str());
         }
         return true;
     }

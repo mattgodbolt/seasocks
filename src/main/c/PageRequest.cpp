@@ -61,7 +61,7 @@ size_t PageRequest::getUintHeader(const std::string& name) const {
     auto iter = _headers.find(name);
     if (iter == _headers.end())
         return 0u;
-    auto val = atoi(iter->second.c_str());
+    const auto val = std::stoi(iter->second.c_str());
     if (val < 0)
         return 0u;
     return static_cast<size_t>(val);

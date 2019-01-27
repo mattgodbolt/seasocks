@@ -79,7 +79,7 @@ public:
             return;
         }
 
-        int value = atoi(data) + 1;
+        const int value = std::stoi(data) + 1;
         if (value > _currentValue) {
             setValue(value);
             for (auto c : _connections) {
