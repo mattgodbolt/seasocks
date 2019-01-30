@@ -108,6 +108,10 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
 
 void replace(std::string& string, const std::string& find,
              const std::string& replace) {
+    if (find.empty()) {
+        return;
+    }
+
     size_t pos = 0;
     const size_t findLen = find.length();
     const size_t replaceLen = replace.length();

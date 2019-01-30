@@ -36,3 +36,34 @@ TEST_CASE("case insensitive string comparison", "[ToStringTests]") {
     CHECK(caseInsensitiveSame("123", "123") == true);
     CHECK(caseInsensitiveSame(" ", " ") == true);
 }
+
+TEST_CASE("replace replaces match if found", "[ToStringTests]") {
+    std::string str = "x-?-z";
+    replace(str, "-?-", "y");
+    CHECK(str == "xyz");
+}
+
+TEST_CASE("replace replaces all matches", "[ToStringTests]") {
+    std::string str = "1xx2 xx34xxxx";
+    replace(str, "xx", "---");
+    CHECK(str == "1---2 ---34------");
+}
+
+TEST_CASE("replace does nothing if no match", "[ToStringTests]") {
+    std::string str = "no match in here";
+    replace(str, "xx", "no!");
+    CHECK(str == "no match in here");
+}
+
+TEST_CASE("replace is safe to empty strings", "[ToStringTests]") {
+    std::string empty{};
+    replace(empty, "a", "b");
+    CHECK(empty == "");
+
+    std::string str = "input text";
+    replace(str, "", "aaa");
+    CHECK(str == "input text");
+
+    replace(str, " text", "");
+    CHECK(str == "input");
+}
