@@ -67,3 +67,32 @@ TEST_CASE("replace is safe to empty strings", "[ToStringTests]") {
     replace(str, " text", "");
     CHECK(str == "input");
 }
+
+TEST_CASE("split splits input if delimeter found", "[ToStringTests]") {
+    using Catch::Matchers::Equals;
+
+    const auto result = split("123-456-789-0", '-');
+    CHECK_THAT(result, Equals<std::string>({"123", "456", "789", "0"}));
+}
+
+TEST_CASE("split returns input if delimeter not found", "[ToStringTests]") {
+    using Catch::Matchers::Equals;
+
+    const auto result = split("1-2 3-4", 'x');
+    CHECK_THAT(result, Equals<std::string>({"1-2 3-4"}));
+}
+
+TEST_CASE("split is safe to empty strings", "[ToStringTests]") {
+    using Catch::Matchers::Equals;
+
+    const auto result = split("", '-');
+    CHECK_THAT(result, Equals<std::string>({}));
+}
+
+TEST_CASE("split returns empty strings if input is delimeter", "[ToStringTests]") {
+    using Catch::Matchers::Equals;
+
+    const auto result = split("-", '-');
+    CHECK_THAT(result, Equals<std::string>({"", ""}));
+}
+
