@@ -76,8 +76,7 @@ std::string trimWhitespace(const std::string& str) {
 
 std::string getLastError() {
     char errbuf[1024];
-    strerror_r(errno, errbuf, sizeof(errbuf));
-    return errbuf;
+    return strerror_r(errno, errbuf, sizeof(errbuf));
 }
 
 std::string formatAddress(const sockaddr_in& address) {
