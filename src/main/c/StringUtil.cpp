@@ -73,10 +73,11 @@ std::string trimWhitespace(const std::string& str) {
     return std::string(start, end - start + 1);
 }
 
-
 std::string getLastError() {
     char errbuf[1024];
-    return strerror_r(errno, errbuf, sizeof(errbuf));
+    const auto ignore = strerror_r(errno, errbuf, sizeof(errbuf));
+    static_cast<void>(ignore);
+    return errbuf;
 }
 
 std::string formatAddress(const sockaddr_in& address) {
