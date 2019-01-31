@@ -128,7 +128,7 @@ install:
 
 before_script:
     - cmake --version
-    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=On ${EXTRA_CMAKE}
+    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=On ${EXTRA_CMAKE}
     - cmake --build build -- -j${JOBS}
 
 script:
