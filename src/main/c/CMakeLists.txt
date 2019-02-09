@@ -68,12 +68,18 @@ else()
 endif()
 
 add_library(seasocks_obj OBJECT ${SEASOCKS_SOURCE_FILES})
-target_include_directories(seasocks_obj PUBLIC .)
+target_include_directories(seasocks_obj PUBLIC
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+)
 set_property(TARGET seasocks_obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
 add_library(seasocks STATIC $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
 add_library(Seasocks::seasocks ALIAS seasocks)
-target_include_directories(seasocks PUBLIC .)
+target_include_directories(seasocks PUBLIC
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+)
 target_link_libraries(seasocks PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 if (DEFLATE_SUPPORT)
     target_link_libraries(seasocks PRIVATE "${ZLIB_LIBRARIES}")
@@ -81,13 +87,16 @@ endif()
 
 add_library(seasocks_so SHARED $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
 add_library(Seasocks::seasocks_so ALIAS seasocks_so)
-target_include_directories(seasocks_so PUBLIC ${ZLIB_INCLUDE_DIRS} .)
+target_include_directories(seasocks_so PUBLIC ${ZLIB_INCLUDE_DIRS} 
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+)
 if (DEFLATE_SUPPORT)
     target_link_libraries(seasocks_so PRIVATE ${CMAKE_THREAD_LIBS_INIT} "${ZLIB_LIBRARIES}")
 endif()
 set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks VERSION ${PROJECT_VERSION})
 
-install(TARGETS seasocks seasocks_so
+install(TARGETS seasocks seasocks_so EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -96,8 +105,16 @@ install(DIRECTORY seasocks
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         FILES_MATCHING PATTERN "*.h"
         )
+# export for build tree.
 export(
     TARGETS seasocks seasocks_so
     NAMESPACE ${PROJECT_NAME}::
     FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+)
+# export for install.
+install(
+  EXPORT ${PROJECT_NAME}Config
+  FILE ${PROJECT_NAME}Config.cmake
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
 )
