@@ -68,14 +68,14 @@ TEST_CASE("replace is safe to empty strings", "[ToStringTests]") {
     CHECK(str == "input");
 }
 
-TEST_CASE("split splits input if delimeter found", "[ToStringTests]") {
+TEST_CASE("split splits input if delimiter found", "[ToStringTests]") {
     using Catch::Matchers::Equals;
 
     const auto result = split("123-456-789-0", '-');
     CHECK_THAT(result, Equals<std::string>({"123", "456", "789", "0"}));
 }
 
-TEST_CASE("split returns input if delimeter not found", "[ToStringTests]") {
+TEST_CASE("split returns input if delimiter not found", "[ToStringTests]") {
     using Catch::Matchers::Equals;
 
     const auto result = split("1-2 3-4", 'x');
@@ -89,10 +89,29 @@ TEST_CASE("split is safe to empty strings", "[ToStringTests]") {
     CHECK_THAT(result, Equals<std::string>({}));
 }
 
-TEST_CASE("split returns empty strings if input is delimeter", "[ToStringTests]") {
+TEST_CASE("split returns empty strings if input is delimiter", "[ToStringTests]") {
     using Catch::Matchers::Equals;
 
     const auto result = split("-", '-');
     CHECK_THAT(result, Equals<std::string>({"", ""}));
 }
 
+TEST_CASE("trim whitespace removes whitespace on both ends", "[ToStringTests]") {
+    const auto result = trimWhitespace(" abc def   ");
+    CHECK(result == "abc def");
+}
+
+TEST_CASE("trim whitespace removes whitespace escape sequences", "[ToStringTests]") {
+    const auto result = trimWhitespace("\t xyz\n");
+    CHECK(result == "xyz");
+}
+
+TEST_CASE("trim whitespace is safe to empty string", "[ToStringTests]") {
+    const auto result = trimWhitespace("");
+    CHECK(result == "");
+}
+
+TEST_CASE("trim whitespace returns empty string if only whitespace", "[ToStringTests]") {
+    const auto result = trimWhitespace(" \n \t   ");
+    CHECK(result == "");
+}
