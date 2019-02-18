@@ -207,7 +207,7 @@ bool Server::startListening(int port) {
     return startListening(INADDR_ANY, port);
 }
 
-bool Server::startListening(uint32_t hostAddr, int port) {
+bool Server::startListening(uint32_t ipInHostOrder, int port) {
     if (_epollFd == -1 || _eventFd == -1) {
         LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
         return false;
@@ -229,7 +229,7 @@ bool Server::startListening(uint32_t hostAddr, int port) {
     sockaddr_in sock;
     memset(&sock, 0, sizeof(sock));
     sock.sin_port = htons(port16);
-    sock.sin_addr.s_addr = htonl(hostAddr);
+    sock.sin_addr.s_addr = htonl(ipInHostOrder);
     sock.sin_family = AF_INET;
     if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
         LS_ERROR(_logger, "Unable to bind socket: " << getLastError());
