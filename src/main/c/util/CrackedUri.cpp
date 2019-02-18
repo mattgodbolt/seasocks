@@ -88,8 +88,9 @@ CrackedUri::CrackedUri(const std::string& uri) {
 
     auto splitRemainder = split(remainder, '&');
     for (const auto& iter : splitRemainder) {
-        if (iter.empty())
+        if (iter.empty()) {
             continue;
+        }
         auto split = seasocks::split(iter, '=');
         std::transform(split.begin(), split.end(), split.begin(), unescape);
         if (split.size() == 1) {
@@ -113,8 +114,9 @@ std::string CrackedUri::queryParam(const std::string& param, const std::string& 
 
 std::vector<std::string> CrackedUri::allQueryParams(const std::string& param) const {
     std::vector<std::string> params;
-    for (auto iter = _queryParams.find(param); iter != _queryParams.end() && iter->first == param; ++iter)
+    for (auto iter = _queryParams.find(param); iter != _queryParams.end() && iter->first == param; ++iter) {
         params.push_back(iter->second);
+    }
     return params;
 }
 
