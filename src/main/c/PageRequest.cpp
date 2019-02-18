@@ -46,8 +46,9 @@ PageRequest::PageRequest(
 }
 
 bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
-    if (buffer.size() < _contentLength)
+    if (buffer.size() < _contentLength) {
         return false;
+    }
     if (buffer.size() == _contentLength) {
         _content.swap(buffer);
     } else {
@@ -58,12 +59,14 @@ bool PageRequest::consumeContent(std::vector<uint8_t>& buffer) {
 }
 
 size_t PageRequest::getUintHeader(const std::string& name) const {
-    auto iter = _headers.find(name);
-    if (iter == _headers.end())
+    const auto iter = _headers.find(name);
+    if (iter == _headers.end()) {
         return 0u;
+    }
     const auto val = std::stoi(iter->second);
-    if (val < 0)
+    if (val < 0) {
         return 0u;
+    }
     return static_cast<size_t>(val);
 }
 
