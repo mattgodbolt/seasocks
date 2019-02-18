@@ -1164,19 +1164,19 @@ bool Connection::sendStaticData() {
     }
 
     RaiiFd input{::open(path.c_str(), O_RDONLY)};
-    struct stat stat;
-    if (!input.ok() || ::fstat(input, &stat) == -1) {
+    struct stat fileStat;
+    if (!input.ok() || ::fstat(input, &fileStat) == -1) {
         return send404();
     }
     std::list<Range> ranges;
     if (!rangeHeader.empty() && !parseRanges(rangeHeader, ranges)) {
         return sendBadRequest("Bad range header");
     }
-    ranges = processRangesForStaticData(ranges, stat.st_size);
+    ranges = processRangesForStaticData(ranges, fileStat.st_size);
     bufferLine("Content-Type: " + getContentType(path));
     bufferLine("Connection: keep-alive");
     bufferLine("Accept-Ranges: bytes");
-    bufferLine("Last-Modified: " + webtime(stat.st_mtime));
+    bufferLine("Last-Modified: " + webtime(fileStat.st_mtime));
     if (!isCacheable(path)) {
         bufferLine("Cache-Control: no-store");
         bufferLine("Pragma: no-cache");

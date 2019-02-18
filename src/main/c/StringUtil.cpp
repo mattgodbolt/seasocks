@@ -126,11 +126,11 @@ bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
 }
 
 std::string webtime(time_t time) {
-    struct tm tm;
-    gmtime_r(&time, &tm);
+    struct tm timeValue;
+    gmtime_r(&time, &timeValue);
     char buf[1024];
     // Wed, 20 Apr 2011 17:31:28 GMT
-    strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+    strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S %Z", &timeValue);
     return buf;
 }
 
