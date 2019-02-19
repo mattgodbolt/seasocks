@@ -569,7 +569,7 @@ void Connection::send(const char* webSocketResponse) {
              reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
 }
 
-void Connection::send(const uint8_t* data, size_t length) {
+void Connection::send(const uint8_t* webSocketResponse, size_t length) {
     _server.checkThread();
     if (_shutdown) {
         if (_shutdownByUser) {
@@ -581,8 +581,7 @@ void Connection::send(const uint8_t* data, size_t length) {
         LS_ERROR(_logger, "Hixie does not support binary");
         return;
     }
-    sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Binary),
-             data, length);
+    sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Binary), webSocketResponse, length);
 }
 
 void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size_t messageLength) {
@@ -1063,8 +1062,9 @@ bool Connection::handleHybiHandshake(
 
 void Connection::parsePerMessageDeflateHeader(const std::string& header) {
     for (auto& extField : seasocks::split(header, ';')) {
-        while (!extField.empty() && isspace(extField[0]))
+        while (!extField.empty() && isspace(extField[0])) {
             extField = extField.substr(1);
+        }
 
         if (seasocks::caseInsensitiveSame(extField, "permessage-deflate")) {
             LS_INFO(_logger, "Enabling per-message deflate");
@@ -1086,7 +1086,7 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
         range.end = std::numeric_limits<long>::max();
         return true;
     } else {
-        range.start = std::stoi(rangeStr.substr(0, minusPos).c_str());
+        range.start = std::stoi(rangeStr.substr(0, minusPos));
         if (minusPos == rangeStr.size() - 1) {
             range.end = std::numeric_limits<long>::max();
         } else {
@@ -1156,7 +1156,7 @@ bool Connection::sendStaticData() {
     auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
     size_t queryPos = path.find('?');
-    if (queryPos != path.npos) {
+    if (queryPos != std::string::npos) {
         path.resize(queryPos);
     }
     if (*path.rbegin() == '/') {
