@@ -43,7 +43,6 @@
 #include <string>
 
 using namespace seasocks;
-using namespace std;
 
 class MyHandler : public WebSocket::Handler {
 public:
@@ -55,9 +54,9 @@ public:
     virtual void onConnect(WebSocket* connection) override {
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
-        cout << "Connected: " << connection->getRequestUri()
-             << " : " << formatAddress(connection->getRemoteAddress())
-             << "\nCredentials: " << *(connection->credentials()) << "\n";
+        std::cout << "Connected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress())
+                  << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
     virtual void onData(WebSocket* connection, const char* data) override {
@@ -66,9 +65,9 @@ public:
             return;
         }
         if (0 == strcmp("close", data)) {
-            cout << "Closing..\n";
+            std::cout << "Closing..\n";
             connection->close();
-            cout << "Closed.\n";
+            std::cout << "Closed.\n";
             return;
         }
 
@@ -83,15 +82,15 @@ public:
 
     virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
-        cout << "Disconnected: " << connection->getRequestUri()
-             << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
+        std::cout << "Disconnected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
     }
 
 private:
-    set<WebSocket*> _connections;
+    std::set<WebSocket*> _connections;
     Server* _server;
     int _currentValue;
-    string _currentSetValue;
+    std::string _currentSetValue;
 
     void setValue(int value) {
         _currentValue = value;

@@ -49,7 +49,6 @@
 #include <sys/epoll.h>
 
 using namespace seasocks;
-using namespace std;
 
 class MyHandler : public WebSocket::Handler {
 public:
@@ -61,9 +60,9 @@ public:
     virtual void onConnect(WebSocket* connection) override {
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
-        cout << "Connected: " << connection->getRequestUri()
-             << " : " << formatAddress(connection->getRemoteAddress())
-             << "\nCredentials: " << *(connection->credentials()) << "\n";
+        std::cout << "Connected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress())
+                  << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
     virtual void onData(WebSocket* connection, const char* data) override {
@@ -72,9 +71,9 @@ public:
             return;
         }
         if (0 == strcmp("close", data)) {
-            cout << "Closing..\n";
+            std::cout << "Closing..\n";
             connection->close();
-            cout << "Closed.\n";
+            std::cout << "Closed.\n";
             return;
         }
 
@@ -89,15 +88,15 @@ public:
 
     virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
-        cout << "Disconnected: " << connection->getRequestUri()
-             << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
+        std::cout << "Disconnected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
     }
 
 private:
-    set<WebSocket*> _connections;
+    std::set<WebSocket*> _connections;
     Server* _server;
     int _currentValue;
-    string _currentSetValue;
+    std::string _currentSetValue;
 
     void setValue(int value) {
         _currentValue = value;
@@ -114,7 +113,7 @@ int main(int /*argc*/, const char* /*argv*/[]) {
     server.addWebSocketHandler("/ws", handler);
     server.setStaticPath("src/ws_test_web");
     if (!server.startListening(9090)) {
-        cerr << "couldn't start listening\n";
+        std::cerr << "couldn't start listening\n";
         return 1;
     }
     int myEpoll = epoll_create(10);
@@ -127,13 +126,13 @@ int main(int /*argc*/, const char* /*argv*/[]) {
     auto prevFlags = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
 
-    cout << "Will echo anything typed in stdin: " << flush;
+    std::cout << "Will echo anything typed in stdin: " << std::flush;
     while (true) {
         constexpr auto maxEvents = 2;
         epoll_event events[maxEvents];
         auto res = epoll_wait(myEpoll, events, maxEvents, -1);
         if (res < 0) {
-            cerr << "epoll returned an error\n";
+            std::cerr << "epoll returned an error\n";
             return 1;
         }
         for (auto i = 0; i < res; ++i) {
@@ -150,17 +149,17 @@ int main(int /*argc*/, const char* /*argv*/[]) {
                     auto numRead = ::read(STDIN_FILENO, buf, sizeof(buf));
                     if (numRead < 0) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                            cerr << "Error reading stdin\n";
+                            std::cerr << "Error reading stdin\n";
                             return 1;
                         }
                         break;
                     } else if (numRead > 0) {
                         auto written = write(STDOUT_FILENO, buf, numRead);
                         if (written != numRead) {
-                            cerr << "Truncated write\n";
+                            std::cerr << "Truncated write\n";
                         }
                     } else if (numRead == 0) {
-                        cerr << "EOF on stdin\n";
+                        std::cerr << "EOF on stdin\n";
                         return 0;
                     }
                 }

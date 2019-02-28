@@ -29,40 +29,39 @@
 #include <catch2/catch.hpp>
 
 using namespace seasocks;
-using namespace std;
 
 namespace {
 
 TEST_CASE("shouldHandleRoot", "[CrackedUriTests]") {
     CrackedUri uri("/");
-    CHECK(uri.path() == vector<string>());
+    CHECK(uri.path() == std::vector<std::string>());
     CHECK(uri.queryParams().empty());
 }
 
 TEST_CASE("shouldHandleTopLevel", "[CrackedUriTests]") {
     CrackedUri uri("/monkey");
-    vector<string> expected = {"monkey"};
+    std::vector<std::string> expected = {"monkey"};
     CHECK(uri.path() == expected);
     CHECK(uri.queryParams().empty());
 }
 
 TEST_CASE("shouldHandleSimplePaths", "[CrackedUriTests]") {
     CrackedUri uri("/foo/bar/baz/bungo");
-    vector<string> expected = {"foo", "bar", "baz", "bungo"};
+    std::vector<std::string> expected = {"foo", "bar", "baz", "bungo"};
     CHECK(uri.path() == expected);
     CHECK(uri.queryParams().empty());
 }
 
 TEST_CASE("shouldTreatTrailingSlashAsNewPage", "[CrackedUriTests]") {
     CrackedUri uri("/ooh/a/directory/");
-    vector<string> expected = {"ooh", "a", "directory", ""};
+    std::vector<std::string> expected = {"ooh", "a", "directory", ""};
     CHECK(uri.path() == expected);
     CHECK(uri.queryParams().empty());
 }
 
 TEST_CASE("shouldHandleRootWithQuery", "[CrackedUriTests]") {
     CrackedUri uri("/?a=spotch");
-    CHECK(uri.path() == vector<string>());
+    CHECK(uri.path() == std::vector<std::string>());
     REQUIRE_FALSE(uri.queryParams().empty());
     CHECK(uri.hasParam("a"));
     CHECK(uri.queryParam("a") == "spotch");
@@ -82,7 +81,7 @@ TEST_CASE("shouldHandleEmptyParams", "[CrackedUriTests]") {
 
 TEST_CASE("shouldHandleDuplicateParams", "[CrackedUriTests]") {
     CrackedUri uri("/?a=a&q=10&q=5&z=yibble&q=100&q=blam");
-    vector<string> expected = {"10", "5", "100", "blam"};
+    std::vector<std::string> expected = {"10", "5", "100", "blam"};
     sort(expected.begin(), expected.end());
     auto params = uri.allQueryParams("q");
     sort(params.begin(), params.end());
@@ -92,7 +91,7 @@ TEST_CASE("shouldHandleDuplicateParams", "[CrackedUriTests]") {
 
 TEST_CASE("shouldHandlePathWithQuery", "[CrackedUriTests]") {
     CrackedUri uri("/badger/badger/badger/mushroom?q=snake");
-    vector<string> expected = {"badger", "badger", "badger", "mushroom"};
+    std::vector<std::string> expected = {"badger", "badger", "badger", "mushroom"};
     CHECK(uri.path() == expected);
     REQUIRE_FALSE(uri.queryParams().empty());
     CHECK(uri.hasParam("q"));
@@ -101,7 +100,7 @@ TEST_CASE("shouldHandlePathWithQuery", "[CrackedUriTests]") {
 
 TEST_CASE("shouldUnescapePaths", "[CrackedUriTests]") {
     CrackedUri uri("/foo+bar/baz%2f/%40%4F");
-    vector<string> expected = {"foo bar", "baz/", "@O"};
+    std::vector<std::string> expected = {"foo bar", "baz/", "@O"};
     CHECK(uri.path() == expected);
 }
 
@@ -125,19 +124,19 @@ TEST_CASE("shouldThrowOnRubbish", "[CrackedUriTests]") {
 
 TEST_CASE("shouldShift", "[CrackedUriTests]") {
     CrackedUri uri("/a/b/c.html");
-    vector<string> expected1 = {"a", "b", "c.html"};
+    std::vector<std::string> expected1 = {"a", "b", "c.html"};
     CHECK(uri.path() == expected1);
 
     uri = uri.shift();
-    vector<string> expected2 = {"b", "c.html"};
+    std::vector<std::string> expected2 = {"b", "c.html"};
     CHECK(uri.path() == expected2);
 
     uri = uri.shift();
-    vector<string> expected3 = {"c.html"};
+    std::vector<std::string> expected3 = {"c.html"};
     CHECK(uri.path() == expected3);
 
     uri = uri.shift();
-    vector<string> expected4 = {""};
+    std::vector<std::string> expected4 = {""};
     CHECK(uri.path() == expected4);
 
     uri = uri.shift();

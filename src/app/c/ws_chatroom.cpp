@@ -35,13 +35,12 @@
 
 // Simple chatroom server, showing how one might use authentication.
 
-using namespace std;
 using namespace seasocks;
 
 namespace {
 
 struct Handler : WebSocket::Handler {
-    set<WebSocket*> _cons;
+    std::set<WebSocket*> _cons;
 
     void onConnect(WebSocket* con) override {
         _cons.insert(con);
@@ -56,7 +55,7 @@ struct Handler : WebSocket::Handler {
         send(con->credentials()->username + ": " + data);
     }
 
-    void send(const string& msg) {
+    void send(const std::string& msg) {
         for (auto* con : _cons) {
             con->send(msg);
         }
@@ -64,7 +63,7 @@ struct Handler : WebSocket::Handler {
 };
 
 struct MyAuthHandler : PageHandler {
-    shared_ptr<Response> handle(const Request& request) override {
+    std::shared_ptr<Response> handle(const Request& request) override {
         // Here one would handle one's authentication system, for example;
         // * check to see if the user has a trusted cookie: if so, accept it.
         // * if not, redirect to a login handler page, and await a redirection
@@ -80,9 +79,9 @@ struct MyAuthHandler : PageHandler {
 }
 
 int main(int /*argc*/, const char* /*argv*/[]) {
-    Server server(make_shared<PrintfLogger>());
-    server.addPageHandler(make_shared<MyAuthHandler>());
-    server.addWebSocketHandler("/chat", make_shared<Handler>());
+    Server server(std::make_shared<PrintfLogger>());
+    server.addPageHandler(std::make_shared<MyAuthHandler>());
+    server.addWebSocketHandler("/chat", std::make_shared<Handler>());
     server.serve("src/ws_chatroom_web", 9000);
     return 0;
 }

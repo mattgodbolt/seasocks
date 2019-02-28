@@ -44,7 +44,6 @@
 #include <unistd.h>
 
 using namespace seasocks;
-using namespace std;
 
 // The AsyncResponse does some long-lived "work" (in this case a big sleep...)
 // before responding to the ResponseWriter, in chunks. It uses a new thread to
@@ -63,11 +62,11 @@ struct AsyncResponse : Response {
     }
 
     // From Response:
-    virtual void handle(shared_ptr<ResponseWriter> writer) override {
+    virtual void handle(std::shared_ptr<ResponseWriter> writer) override {
         auto& server = _server;
-        thread t([&server, writer]() mutable {
+        std::thread t([&server, writer]() mutable {
             usleep(1000000); // A long database query...
-            string response = "some kind of response...beginning<br>";
+            std::string response = "some kind of response...beginning<br>";
             server.execute([response, writer] {
                 writer->begin(ResponseCode::Ok, TransferEncoding::Chunked);
                 writer->header("Content-type", "application/html");
@@ -99,7 +98,7 @@ struct AsyncResponse : Response {
 struct DataHandler : CrackedUriPageHandler {
     virtual std::shared_ptr<Response> handle(
         const CrackedUri& /*uri*/, const Request& request) override {
-        return make_shared<AsyncResponse>(request.server());
+        return std::make_shared<AsyncResponse>(request.server());
     }
 };
 
@@ -107,8 +106,8 @@ int main(int /*argc*/, const char* /*argv*/[]) {
     auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);
-    auto root = make_shared<RootPageHandler>();
-    auto pathHandler = make_shared<PathHandler>("data", make_shared<DataHandler>());
+    auto root = std::make_shared<RootPageHandler>();
+    auto pathHandler = std::make_shared<PathHandler>("data", std::make_shared<DataHandler>());
     root->add(pathHandler);
     server.addPageHandler(root);
 
