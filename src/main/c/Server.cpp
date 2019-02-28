@@ -573,7 +573,7 @@ void Server::execute(std::function<void()> toExecute) {
 
 std::string Server::getStatsDocument() const {
     std::ostringstream doc;
-    doc << "clear();" << std::endl;
+    doc << "clear();\n";
     for (auto _connection : _connections) {
         doc << "connection({";
         auto connection = _connection.first;
@@ -588,7 +588,7 @@ std::string Server::getStatsDocument() const {
                             "read", connection->bytesReceived(),
                             "output", connection->outputBufferSize(),
                             "written", connection->bytesSent());
-        doc << "});" << std::endl;
+        doc << "});\n";
     }
     return doc.str();
 }

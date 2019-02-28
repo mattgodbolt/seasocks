@@ -57,8 +57,7 @@ public:
         connection->send(_currentSetValue.c_str());
         cout << "Connected: " << connection->getRequestUri()
              << " : " << formatAddress(connection->getRemoteAddress())
-             << endl;
-        cout << "Credentials: " << *(connection->credentials()) << endl;
+             << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
     virtual void onData(WebSocket* connection, const char* data) override {
@@ -67,9 +66,9 @@ public:
             return;
         }
         if (0 == strcmp("close", data)) {
-            cout << "Closing.." << endl;
+            cout << "Closing..\n";
             connection->close();
-            cout << "Closed." << endl;
+            cout << "Closed.\n";
             return;
         }
 
@@ -85,8 +84,7 @@ public:
     virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
         cout << "Disconnected: " << connection->getRequestUri()
-             << " : " << formatAddress(connection->getRemoteAddress())
-             << endl;
+             << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
     }
 
 private:

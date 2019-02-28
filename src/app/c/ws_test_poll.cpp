@@ -63,8 +63,7 @@ public:
         connection->send(_currentSetValue.c_str());
         cout << "Connected: " << connection->getRequestUri()
              << " : " << formatAddress(connection->getRemoteAddress())
-             << endl;
-        cout << "Credentials: " << *(connection->credentials()) << endl;
+             << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
     virtual void onData(WebSocket* connection, const char* data) override {
@@ -73,9 +72,9 @@ public:
             return;
         }
         if (0 == strcmp("close", data)) {
-            cout << "Closing.." << endl;
+            cout << "Closing..\n";
             connection->close();
-            cout << "Closed." << endl;
+            cout << "Closed.\n";
             return;
         }
 
@@ -91,8 +90,7 @@ public:
     virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
         cout << "Disconnected: " << connection->getRequestUri()
-             << " : " << formatAddress(connection->getRemoteAddress())
-             << endl;
+             << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
     }
 
 private:
@@ -116,7 +114,7 @@ int main(int /*argc*/, const char* /*argv*/[]) {
     server.addWebSocketHandler("/ws", handler);
     server.setStaticPath("src/ws_test_web");
     if (!server.startListening(9090)) {
-        cerr << "couldn't start listening" << endl;
+        cerr << "couldn't start listening\n";
         return 1;
     }
     int myEpoll = epoll_create(10);
@@ -135,7 +133,7 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         epoll_event events[maxEvents];
         auto res = epoll_wait(myEpoll, events, maxEvents, -1);
         if (res < 0) {
-            cerr << "epoll returned an error" << endl;
+            cerr << "epoll returned an error\n";
             return 1;
         }
         for (auto i = 0; i < res; ++i) {
@@ -152,17 +150,17 @@ int main(int /*argc*/, const char* /*argv*/[]) {
                     auto numRead = ::read(STDIN_FILENO, buf, sizeof(buf));
                     if (numRead < 0) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                            cerr << "Error reading stdin" << endl;
+                            cerr << "Error reading stdin\n";
                             return 1;
                         }
                         break;
                     } else if (numRead > 0) {
                         auto written = write(STDOUT_FILENO, buf, numRead);
                         if (written != numRead) {
-                            cerr << "Truncated write" << endl;
+                            cerr << "Truncated write\n";
                         }
                     } else if (numRead == 0) {
-                        cerr << "EOF on stdin" << endl;
+                        cerr << "EOF on stdin\n";
                         return 0;
                     }
                 }
