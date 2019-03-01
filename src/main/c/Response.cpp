@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "internal/ConcreteResponse.h"
+#include "seasocks/util/FileResponse.h"
 
 #include "seasocks/Response.h"
 
@@ -67,6 +68,10 @@ std::shared_ptr<Response> Response::htmlResponse(const std::string& response) {
         ResponseCode::Ok, response,
         "text/html",
         SynchronousResponse::Headers(), true);
+}
+
+std::shared_ptr<Response> Response::fileResponse(const Request &request, const std::string &filePath, const std::string &contentType, bool allowCompression, bool allowCaching) {
+    return std::make_shared<FileResponse>(request, filePath, contentType, allowCompression, allowCaching);
 }
 
 }

@@ -48,6 +48,8 @@ void replace(std::string& string, const std::string& find, const std::string& re
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs);
 
 std::string webtime(time_t time);
+// Returns -1 on error
+time_t webtime(std::string time);
 
 std::string now();
 

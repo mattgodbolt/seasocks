@@ -56,6 +56,7 @@ set(SEASOCKS_SOURCE_FILES
         sha1/sha1.h
         StringUtil.cpp
         util/CrackedUri.cpp
+        util/FileResponse.cpp
         util/Json.cpp
         util/PathHandler.cpp
         util/RootPageHandler.cpp
