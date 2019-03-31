@@ -13,6 +13,7 @@ matrix:
           sources: &sources
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty
+            - llvm-toolchain-xenial-8
             - llvm-toolchain-xenial-7
             - llvm-toolchain-xenial-6.0
             - llvm-toolchain-xenial-5.0
@@ -54,6 +55,15 @@ matrix:
         apt:
           packages:
             - g++-4.9
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-8 CC=clang-8
+      addons:
+        apt:
+          packages:
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
             - valgrind
           sources: *sources
     - env: CXX=clang++-7 CC=clang-7
