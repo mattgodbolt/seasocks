@@ -1,7 +1,10 @@
 
 add_subdirectory("main/c")
 add_subdirectory("main/web")
-add_subdirectory("app/c")
+
+if (SEASOCKS_EXAMPLE_APP)
+  add_subdirectory("app/c")
+endif ()
 
 if (UNITTESTS)
     find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
