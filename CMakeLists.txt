@@ -7,7 +7,9 @@ project(Seasocks VERSION 1.4.1)
 
 option(UNITTESTS "Build unittests." ON)
 option(COVERAGE "Build with code coverage enabled" OFF)
+option(SEASOCKS_EXAMPLE_APP "Build the example applications." ON) 
 option(DEFLATE_SUPPORT "Include support for deflate (requires zlib)." ON)
+
 if (DEFLATE_SUPPORT)
     set(DEFLATE_SUPPORT_BOOL "true")
 else ()
