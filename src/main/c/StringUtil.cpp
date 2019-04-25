@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 namespace seasocks {
 
@@ -65,15 +66,11 @@ char* shift(char*& str) {
 }
 
 std::string trimWhitespace(const std::string& str) {
-    auto* start = str.c_str();
-    while (isspace(*start)) {
-        ++start;
-    }
-    auto* end = &str.back();
-    while (end >= start && isspace(*end)) {
-        --end;
-    }
-    return std::string(start, end - start + 1);
+    auto l = [](const auto& c) { return std::isspace(c); };
+    const auto start = std::find_if_not(str.begin(), str.end(), l);
+    const auto end = std::find_if_not(str.rbegin(), str.rend(), l).base();
+
+    return (start < end ? std::string(start, end) : "");
 }
 
 std::string getLastError() {
