@@ -34,8 +34,9 @@
 namespace seasocks {
 
 char* skipWhitespace(char* str) {
-    while (isspace(*str))
+    while (isspace(*str)) {
         ++str;
+    }
     return str;
 }
 
@@ -65,11 +66,13 @@ char* shift(char*& str) {
 
 std::string trimWhitespace(const std::string& str) {
     auto* start = str.c_str();
-    while (isspace(*start))
+    while (isspace(*start)) {
         ++start;
+    }
     auto* end = &str.back();
-    while (end >= start && isspace(*end))
+    while (end >= start && isspace(*end)) {
         --end;
+    }
     return std::string(start, end - start + 1);
 }
 
@@ -93,8 +96,10 @@ std::string formatAddress(const sockaddr_in& address) {
 }
 
 std::vector<std::string> split(const std::string& input, char splitChar) {
-    if (input.empty())
-        return std::vector<std::string>();
+    if (input.empty()) {
+        return {};
+    }
+
     std::vector<std::string> result;
     size_t pos = 0;
     size_t newPos;
@@ -106,8 +111,7 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
     return result;
 }
 
-void replace(std::string& string, const std::string& find,
-             const std::string& replace) {
+void replace(std::string& string, const std::string& find, const std::string& replace) {
     if (find.empty()) {
         return;
     }
