@@ -8,17 +8,18 @@ Seasocks - A tiny embeddable C++ HTTP and WebSocket server
 
 Features
 --------
-*   Simple C++ API
-*   Serves static content from disk
-*   API for building WebSocket servers
-*   Simple command line binary for quick serving of static files only
-*   Supports newer Hybi-10 and Hybi-16 WebSockets as well as the older Hixie style.
+* Simple C++ API
+* Serves static content from disk
+* API for building WebSocket servers
+* Simple command line binary for quick serving of static files only
+* Supports newer Hybi-10 and Hybi-16 WebSockets as well as the older Hixie style.
 
 Stuff it doesn't do
 -------------------
-It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
-It provides only limited support for custom content generation (e.g. Servlets).
-It has been designed for WebSocket based control.
+* It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
+* It provides only limited support for custom content generation (e.g. Servlets).
+* It has been designed for WebSocket based control.
+* It's Linux focused and probably wont work on other systems (however patches to support other systems are welcome)
 
 Getting started
 ---------------
