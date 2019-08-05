@@ -86,17 +86,27 @@ struct ZlibContext::Impl {
         deflateStream.next_in = (unsigned char*) input;
         deflateStream.avail_in = inputLen;
 
-        do {
+        if (inputLen > 0) do {
             deflateStream.next_out = buffer;
             deflateStream.avail_out = sizeof(buffer);
 
-            (void) ::deflate(&deflateStream, Z_SYNC_FLUSH);
+            int ret = ::deflate(&deflateStream, Z_SYNC_FLUSH);
+
+            if (ret != Z_OK && ret != Z_BUF_ERROR) {
+                throw std::runtime_error("error deflating message");
+            }
 
             output.insert(output.end(), buffer, buffer + sizeof(buffer) - deflateStream.avail_out);
         } while (deflateStream.avail_out == 0);
 
-        // Remove 4-byte tail end prior to transmission (see RFC 7692, section 7.2.1)
-        output.resize(output.size() - 4);
+        // Add an empty uncompressed block if not present, then
+        // remove 4-byte tail end prior to transmission (see RFC 7692, section 7.2.1)
+        uint8_t tail_end[4] = {0x00, 0x00, 0xff, 0xff};
+        if (output.size() < 5 || !std::equal(output.end() - 4, output.end(), tail_end)) {
+            output.push_back(0x00);
+        } else {
+            output.resize(output.size() - 4);
+        }
     }
 
     bool inflate(std::vector<uint8_t>& input, std::vector<uint8_t>& output, int& zlibError) {
@@ -113,7 +123,7 @@ struct ZlibContext::Impl {
 
             int ret = ::inflate(&inflateStream, Z_SYNC_FLUSH);
 
-            if (ret != Z_OK && ret != Z_STREAM_END) {
+            if (ret != Z_OK && ret != Z_STREAM_END && ret != Z_BUF_ERROR) {
                 zlibError = ret;
                 return false;
             }
