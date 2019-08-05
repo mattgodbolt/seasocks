@@ -92,7 +92,7 @@ struct ZlibContext::Impl {
 
             int ret = ::deflate(&deflateStream, Z_SYNC_FLUSH);
 
-            if (ret != Z_OK) {
+            if (ret != Z_OK && ret != Z_BUF_ERROR) {
                 throw std::runtime_error("error deflating message");
             }
 
@@ -123,7 +123,7 @@ struct ZlibContext::Impl {
 
             int ret = ::inflate(&inflateStream, Z_SYNC_FLUSH);
 
-            if (ret != Z_OK && ret != Z_STREAM_END) {
+            if (ret != Z_OK && ret != Z_STREAM_END && ret != Z_BUF_ERROR) {
                 zlibError = ret;
                 return false;
             }
