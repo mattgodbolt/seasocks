@@ -70,8 +70,8 @@ public:
     virtual void send(const char* webSocketResponse) override;
     virtual void send(const uint8_t* webSocketResponse, size_t length) override;
     virtual void close() override;
-    virtual void setUserdata(std::shared_ptr<void> udata) { _userdata = udata; }
-    virtual std::shared_ptr<void> getUserdata() const { return _userdata; }
+    virtual void setUserdata(std::shared_ptr<void> udata) override { _userdata = udata; }
+    virtual std::shared_ptr<void> getUserdata() const override { return _userdata; }
 
     // From Request.
     virtual std::shared_ptr<Credentials> credentials() const override;
