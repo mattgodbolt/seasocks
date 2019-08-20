@@ -70,6 +70,8 @@ public:
     virtual void send(const char* webSocketResponse) override;
     virtual void send(const uint8_t* webSocketResponse, size_t length) override;
     virtual void close() override;
+    virtual void setUserdata(std::shared_ptr<void> udata) { _userdata = udata; }
+    virtual std::shared_ptr<void> getUserdata() const { return _userdata; }
 
     // From Request.
     virtual std::shared_ptr<Credentials> credentials() const override;
@@ -226,6 +228,8 @@ private:
         SENDING_RESPONSE_BODY
     };
     State _state;
+
+    std::shared_ptr<void> _userdata;
 
     void writeChunkHeader(size_t size);
 };

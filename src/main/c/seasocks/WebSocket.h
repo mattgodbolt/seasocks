@@ -95,6 +95,16 @@ public:
         }
     };
 
+    /**
+     * Set a userdata associated with this connection.
+     */
+    virtual void setUserdata(std::shared_ptr<void> udata) = 0;
+    /**
+     * Get the userdata stored in this connection.
+     */
+    virtual std::shared_ptr<void> getUserdata() const = 0;
+
+
 protected:
     // To delete a WebSocket, just close it. It is owned by the Server, and
     // the server will delete it when it's finished.
