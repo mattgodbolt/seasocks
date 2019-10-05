@@ -38,7 +38,7 @@ endif ()
 find_package(Threads)
 
 
-find_program(PYTHON_BIN python DOC "Python executable")
+find_program(PYTHON_BIN NAMES python python3 DOC "Python executable")
 
 if (NOT PYTHON_BIN)
     message(SEND_ERROR "Python not found")
