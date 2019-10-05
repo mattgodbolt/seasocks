@@ -45,6 +45,8 @@ const char* Request::name(Verb v) {
             return "Delete";
         case Verb::Head:
             return "Head";
+        case Verb::Options:
+            return "Options";
         default:
             return "???";
     }
@@ -61,6 +63,8 @@ Request::Verb Request::verb(const char* verb) {
         return Request::Verb::Delete;
     if (std::strcmp(verb, "HEAD") == 0)
         return Request::Verb::Head;
+    if (std::strcmp(verb, "OPTIONS") == 0)
+        return Request::Verb::Options;
     return Request::Verb::Invalid;
 }
 

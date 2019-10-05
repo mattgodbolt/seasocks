@@ -48,6 +48,7 @@ public:
         Post,
         Delete,
         Head,
+        Options,
     };
 
     virtual Server& server() const = 0;
