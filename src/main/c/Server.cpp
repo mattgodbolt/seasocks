@@ -90,13 +90,14 @@ std::ostream& operator<<(std::ostream& o, const EventBits& b) {
 
 constexpr int EpollTimeoutMillis = 500; // Twice a second is ample.
 constexpr int DefaultLameConnectionTimeoutSeconds = 10;
-pid_t gettid() {
-    return static_cast<pid_t>(syscall(SYS_gettid));
-}
 
 }
 
 namespace seasocks {
+
+pid_t gettid() {
+    return static_cast<pid_t>(syscall(SYS_gettid));
+}
 
 constexpr size_t Server::DefaultClientBufferSize;
 
