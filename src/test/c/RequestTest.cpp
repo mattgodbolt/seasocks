@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2017, Matt Godbolt
+// Copyright (c) 2019, offa
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -23,57 +23,36 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#include <catch2/catch.hpp>
+#include "seasocks/Request.h"
 
-#include "seasocks/Credentials.h"
+using seasocks::Request;
 
-#include <netinet/in.h>
+TEST_CASE("request verb to name", "[RequestTest]") {
+    using Catch::Matchers::Equals;
+    using V = Request::Verb;
 
-#include <cstdint>
-#include <memory>
+    CHECK_THAT(Request::name(V::Invalid), Equals("Invalid"));
+    CHECK_THAT(Request::name(V::WebSocket), Equals("WebSocket"));
+    CHECK_THAT(Request::name(V::Get), Equals("Get"));
+    CHECK_THAT(Request::name(V::Put), Equals("Put"));
+    CHECK_THAT(Request::name(V::Post), Equals("Post"));
+    CHECK_THAT(Request::name(V::Delete), Equals("Delete"));
+    CHECK_THAT(Request::name(V::Head), Equals("Head"));
+    CHECK_THAT(Request::name(V::Options), Equals("Options"));
+}
 
-namespace seasocks {
+TEST_CASE("request verb from string", "[RequestTest]") {
+    using V = Request::Verb;
 
-class Server;
+    CHECK(Request::verb("GET") == V::Get);
+    CHECK(Request::verb("PUT") == V::Put);
+    CHECK(Request::verb("POST") == V::Post);
+    CHECK(Request::verb("DELETE") == V::Delete);
+    CHECK(Request::verb("HEAD") == V::Head);
+    CHECK(Request::verb("OPTIONS") == V::Options);
 
-class Request {
-public:
-    virtual ~Request() = default;
-
-    enum class Verb {
-        Invalid,
-        WebSocket,
-        Get,
-        Put,
-        Post,
-        Delete,
-        Head,
-        Options
-    };
-
-    virtual Server& server() const = 0;
-
-    virtual Verb verb() const = 0;
-
-    static const char* name(Verb v);
-    static Verb verb(const char* verb);
-
-    /**
-     * Returns the credentials associated with this request.
-     */
-    virtual std::shared_ptr<Credentials> credentials() const = 0;
-
-    virtual const sockaddr_in& getRemoteAddress() const = 0;
-
-    virtual const std::string& getRequestUri() const = 0;
-
-    virtual size_t contentLength() const = 0;
-
-    virtual const uint8_t* content() const = 0;
-
-    virtual bool hasHeader(const std::string& name) const = 0;
-
-    virtual std::string getHeader(const std::string& name) const = 0;
-};
-
-} // namespace seasocks
+    CHECK(Request::verb("") == V::Invalid);
+    CHECK(Request::verb("invalid") == V::Invalid);
+    CHECK(Request::verb("abc") == V::Invalid);
+}

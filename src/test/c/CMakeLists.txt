@@ -18,6 +18,7 @@ add_executable(AllTests
         ResponseBuilderTests.cpp
         ResponseTests.cpp
         StringUtilTests.cpp
+        RequestTest.cpp
         )
 
 add_test(NAME ${TESTS} COMMAND ${TESTS})
