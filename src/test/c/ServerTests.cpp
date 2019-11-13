@@ -30,7 +30,7 @@
 #include <catch2/catch.hpp>
 
 #include <thread>
-#include <unistd.h>
+#include <chrono>
 
 using namespace seasocks;
 
@@ -57,16 +57,18 @@ TEST_CASE("Server tests", "[ServerTests]") {
     }
 
     SECTION("many executes") {
+        using namespace std::literals::chrono_literals;
+
         std::atomic<bool> latch(false);
         for (auto i = 0; i < 100; ++i) {
             for (auto j = 0; j < 100; ++j) {
                 server.execute([&] { test++; });
             }
-            usleep(10);
+            std::this_thread::sleep_for(10us);
         }
         server.execute([&] { latch = true; });
         for (int i = 0; i < 1000; ++i) {
-            usleep(1000);
+            std::this_thread::sleep_for(1ms);
             if (latch)
                 break;
         }

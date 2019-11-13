@@ -41,7 +41,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
-#include <unistd.h>
+#include <chrono>
 
 using namespace seasocks;
 
@@ -65,7 +65,9 @@ struct AsyncResponse : Response {
     virtual void handle(std::shared_ptr<ResponseWriter> writer) override {
         auto& server = _server;
         std::thread t([&server, writer]() mutable {
-            usleep(1000000); // A long database query...
+            using namespace std::literals::chrono_literals;
+
+            std::this_thread::sleep_for(1s); // A long database query...
             std::string response = "some kind of response...beginning<br>";
             server.execute([response, writer] {
                 writer->begin(ResponseCode::Ok, TransferEncoding::Chunked);
@@ -74,13 +76,13 @@ struct AsyncResponse : Response {
             });
             response = "more data...<br>";
             for (auto i = 0; i < 5; ++i) {
-                usleep(1000000); // more data
+                std::this_thread::sleep_for(1s); // more data
                 server.execute([response, writer] {
                     writer->payload(response.data(), response.length());
                 });
             }
             response = "Done!";
-            usleep(100000); // final data
+            std::this_thread::sleep_for(100ms); // final data
             server.execute([response, writer] {
                 writer->payload(response.data(), response.length());
                 writer->finish(true);
