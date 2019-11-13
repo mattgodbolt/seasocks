@@ -86,18 +86,20 @@ struct ZlibContext::Impl {
         deflateStream.next_in = (unsigned char*) input;
         deflateStream.avail_in = inputLen;
 
-        if (inputLen > 0) do {
-            deflateStream.next_out = buffer;
-            deflateStream.avail_out = sizeof(buffer);
+        if (inputLen > 0) {
+            do {
+                deflateStream.next_out = buffer;
+                deflateStream.avail_out = sizeof(buffer);
 
-            int ret = ::deflate(&deflateStream, Z_SYNC_FLUSH);
+                int ret = ::deflate(&deflateStream, Z_SYNC_FLUSH);
 
-            if (ret != Z_OK && ret != Z_BUF_ERROR) {
-                throw std::runtime_error("error deflating message");
-            }
+                if (ret != Z_OK && ret != Z_BUF_ERROR) {
+                    throw std::runtime_error("error deflating message");
+                }
 
-            output.insert(output.end(), buffer, buffer + sizeof(buffer) - deflateStream.avail_out);
-        } while (deflateStream.avail_out == 0);
+                output.insert(output.end(), buffer, buffer + sizeof(buffer) - deflateStream.avail_out);
+            } while (deflateStream.avail_out == 0);
+        }
 
         // Add an empty uncompressed block if not present, then
         // remove 4-byte tail end prior to transmission (see RFC 7692, section 7.2.1)

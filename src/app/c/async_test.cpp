@@ -62,7 +62,7 @@ struct AsyncResponse : Response {
     }
 
     // From Response:
-    virtual void handle(std::shared_ptr<ResponseWriter> writer) override {
+    void handle(std::shared_ptr<ResponseWriter> writer) override {
         auto& server = _server;
         std::thread t([&server, writer]() mutable {
             using namespace std::literals::chrono_literals;
@@ -90,7 +90,7 @@ struct AsyncResponse : Response {
         });
         t.detach();
     }
-    virtual void cancel() override {
+    void cancel() override {
         // If we could cancel the thread, we would do so here. There's no need
         // to invalidate the _writer; any writes to it after this will be
         // silently dropped.

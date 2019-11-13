@@ -163,7 +163,7 @@ public:
             : _prefix(prefix), _logger(logger) {
     }
 
-    virtual void log(Level level, const char* message) override {
+    void log(Level level, const char* message) override {
         _logger->log(level, (_prefix + message).c_str());
     }
 };

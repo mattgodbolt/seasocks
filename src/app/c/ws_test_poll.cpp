@@ -57,7 +57,7 @@ public:
         setValue(1);
     }
 
-    virtual void onConnect(WebSocket* connection) override {
+    void onConnect(WebSocket* connection) override {
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
         std::cout << "Connected: " << connection->getRequestUri()
@@ -65,7 +65,7 @@ public:
                   << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
-    virtual void onData(WebSocket* connection, const char* data) override {
+    void onData(WebSocket* connection, const char* data) override {
         if (0 == strcmp("die", data)) {
             _server->terminate();
             return;
@@ -86,7 +86,7 @@ public:
         }
     }
 
-    virtual void onDisconnect(WebSocket* connection) override {
+    void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
         std::cout << "Disconnected: " << connection->getRequestUri()
                   << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
