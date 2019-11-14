@@ -61,6 +61,8 @@ SEASOCKS_DEFINE_RESPONSECODE(403, Forbidden, "Forbidden")
 SEASOCKS_DEFINE_RESPONSECODE(404, NotFound, "Not Found")
 SEASOCKS_DEFINE_RESPONSECODE(405, MethodNotAllowed, "Method Not Allowed")
 // more here...
+SEASOCKS_DEFINE_RESPONSECODE(426, UpgradeRequired, "Upgrade Required")
+// more here...
 
 SEASOCKS_DEFINE_RESPONSECODE(500, InternalServerError, "Internal Server Error")
 SEASOCKS_DEFINE_RESPONSECODE(501, NotImplemented, "Not Implemented")
