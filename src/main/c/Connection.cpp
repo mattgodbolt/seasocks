@@ -917,7 +917,13 @@ bool Connection::handlePageRequest() {
     auto uri = _request->getRequestUri();
     if (!response && _request->verb() == Request::Verb::WebSocket) {
         _webSocketHandler = _server.getWebSocketHandler(uri.c_str());
-        const auto webSocketVersion = std::stoi(_request->getHeader("Sec-WebSocket-Version"));
+        int webSocketVersion{0};
+        try {
+            webSocketVersion = std::stoi(_request->getHeader("Sec-WebSocket-Version"));
+        } catch (const std::logic_error& ex) {
+            LS_WARNING(_logger, "Invalid Sec-WebSocket-Version '" << _request->getHeader("Sec-WebSocket-Version") << "'");
+            return sendError(ResponseCode::UpgradeRequired, "Invalid Sec-WebSocket-Version received");
+        }
         if (!_webSocketHandler) {
             LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
             return send404();
