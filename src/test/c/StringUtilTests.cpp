@@ -115,3 +115,11 @@ TEST_CASE("trim whitespace returns empty string if only whitespace", "[ToStringT
     const auto result = trimWhitespace(" \n \t   ");
     CHECK(result == "");
 }
+
+TEST_CASE("format address", "[ToStringTests]") {
+    sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_port = htons(12345);
+    address.sin_addr.s_addr = 0x100007f;
+    CHECK(formatAddress(address) == "127.0.0.1:12345");
+}
