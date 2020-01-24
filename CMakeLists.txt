@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(Seasocks VERSION 1.4.2)
+project(Seasocks VERSION 1.4.3)
 
 
 option(UNITTESTS "Build unittests." ON)
