@@ -7,7 +7,7 @@ project(Seasocks VERSION 1.4.3)
 
 option(UNITTESTS "Build unittests." ON)
 option(COVERAGE "Build with code coverage enabled" OFF)
-option(SEASOCKS_EXAMPLE_APP "Build the example applications." ON) 
+option(SEASOCKS_EXAMPLE_APP "Build the example applications." ON)
 option(DEFLATE_SUPPORT "Include support for deflate (requires zlib)." ON)
 
 if (DEFLATE_SUPPORT)
@@ -22,10 +22,12 @@ message(STATUS "Coverage: ${COVERAGE}")
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "")
 include(CTest)
-include(Compiler)
 include(GNUInstallDirs)
 include(ClangFormat)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -63,4 +65,3 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
 )
-
