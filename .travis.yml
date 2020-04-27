@@ -1,6 +1,6 @@
 language: generic
 
-dist: xenial
+dist: bionic
 
 jobs:
     include:
@@ -12,18 +12,8 @@ jobs:
             - valgrind
           sources: &sources
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty
-            - llvm-toolchain-xenial-9
-            - llvm-toolchain-xenial-8
-            - llvm-toolchain-xenial-7
-            - llvm-toolchain-xenial-6.0
-            - llvm-toolchain-xenial-5.0
-            - llvm-toolchain-trusty-4.0
-            - llvm-toolchain-trusty-3.9
-            - llvm-toolchain-precise-3.8
-            - llvm-toolchain-precise-3.7
-            - llvm-toolchain-precise-3.6
-            - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-10 main'
+            - llvm-toolchain-bionic-9
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main'
               key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
 
     - env: CXX=g++-8 CC=gcc-8
