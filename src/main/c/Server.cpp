@@ -42,6 +42,7 @@
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <sys/un.h>
+#include <sys/types.h>
 
 #include <memory>
 #include <stdexcept>
@@ -96,7 +97,11 @@ constexpr int DefaultLameConnectionTimeoutSeconds = 10;
 namespace seasocks {
 
 pid_t gettid() {
+#if __GLIBC_PREREQ(2, 30)
+    return ::gettid();
+#else
     return static_cast<pid_t>(syscall(SYS_gettid));
+#endif /* GLIBC 2.30 */
 }
 
 constexpr size_t Server::DefaultClientBufferSize;
