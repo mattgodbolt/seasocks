@@ -1,31 +1,27 @@
 language: generic
 
-dist: xenial
+dist: bionic
 
 jobs:
     include:
+    - env: CXX=g++-10 CC=gcc-10
+      addons:
+        apt:
+          packages:
+            - g++-10
+            - valgrind
+          sources: &sources
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-bionic-9
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     - env: CXX=g++-9 CC=gcc-9
       addons:
         apt:
           packages:
             - g++-9
             - valgrind
-          sources: &sources
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty
-            - llvm-toolchain-xenial-9
-            - llvm-toolchain-xenial-8
-            - llvm-toolchain-xenial-7
-            - llvm-toolchain-xenial-6.0
-            - llvm-toolchain-xenial-5.0
-            - llvm-toolchain-trusty-4.0
-            - llvm-toolchain-trusty-3.9
-            - llvm-toolchain-precise-3.8
-            - llvm-toolchain-precise-3.7
-            - llvm-toolchain-precise-3.6
-            - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-10 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-
+          sources: *sources
     - env: CXX=g++-8 CC=gcc-8
       addons:
         apt:
@@ -59,13 +55,6 @@ jobs:
         apt:
           packages:
             - g++-5
-            - valgrind
-          sources: *sources
-    - env: CXX=g++-4.9 CC=gcc-4.9
-      addons:
-        apt:
-          packages:
-            - g++-4.9
             - valgrind
           sources: *sources
     - env: CXX=clang++-10 CC=clang-10
@@ -102,62 +91,6 @@ jobs:
             - clang-7
             - libc++-7-dev
             - libc++abi-7-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-6.0 CC=clang-6.0
-      addons:
-        apt:
-          packages:
-            - clang-6.0
-            - libc++-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-5.0 CC=clang-5.0
-      addons:
-        apt:
-          packages:
-            - clang-5.0
-            - libc++-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-4.0 CC=clang-4.0
-      addons:
-        apt:
-          packages:
-            - clang-4.0
-            - libc++-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-3.9 CC=clang-3.9 EXTRA_CMAKE=-DCOVERAGE=Off
-      addons:
-        apt:
-          packages:
-            - clang-3.9
-            - libc++-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-3.8 CC=clang-3.8
-      addons:
-        apt:
-          packages:
-            - clang-3.8
-            - libc++-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-3.7 CC=clang-3.7
-      addons:
-        apt:
-          packages:
-            - clang-3.7
-            - libc++-dev
-            - valgrind
-          sources: *sources
-    - env: CXX=clang++-3.6 CC=clang-3.6
-      addons:
-        apt:
-          packages:
-            - clang-3.6
-            - libc++-dev
             - valgrind
           sources: *sources
 
