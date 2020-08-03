@@ -5,6 +5,3 @@ build*
 /build
 gdb.txt
 /cmake-*
-.idea
-.project
-.cproject
