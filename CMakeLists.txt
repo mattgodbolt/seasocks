@@ -56,7 +56,7 @@ if (DEFLATE_SUPPORT)
     find_package(ZLIB REQUIRED)
 endif ()
 
-add_subdirectory("src")
+add_subdirectory(src)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(cmake/SeasocksConfig.cmake.in ${PROJECT_NAME}Config.cmake

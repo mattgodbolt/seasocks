@@ -12,6 +12,6 @@ endif()
 if (UNITTESTS)
     find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
     enable_testing()
-    add_subdirectory("test/c")
+    add_subdirectory(test/c)
 endif ()
 
