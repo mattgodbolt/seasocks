@@ -107,7 +107,7 @@ if (SEASOCKS_SHARED)
 endif ()
 
 if (SEASOCKS_STATIC)
-    if (CMAKE_POSITION_INDEPENDENT_CODE)
+    if (CMAKE_POSITION_INDEPENDENT_CODE OR WIN32)
         add_library(seasocks_obj ALIAS seasocks_pic_obj)
     else ()
         add_seasocks_obj_library(seasocks_obj)
