@@ -1,7 +1,7 @@
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE "catch")
 
-add_executable(AllTests
+add_seasocks_executable(AllTests
     test_main.cpp
     ConnectionTests.cpp
     CrackedUriTests.cpp
@@ -19,10 +19,11 @@ add_executable(AllTests
     RequestTest.cpp
 )
 
-add_test(NAME AllTests COMMAND AllTests)
-target_link_libraries(AllTests PRIVATE seasocks Catch)
+seasocks_link_libraries(AllTests PRIVATE Catch)
 
-add_custom_target(unittest AllTests
-    COMMENT "Running unittests\n\n"
-    VERBATIM
-)
+if (TARGET AllTests)
+    add_test(NAME AllTests COMMAND AllTests)
+endif ()
+if (TARGET AllTests_so)
+    add_test(NAME AllTests_so COMMAND AllTests_so)
+endif ()

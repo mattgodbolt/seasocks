@@ -15,10 +15,7 @@ option(SEASOCKS_EXAMPLE_APP "Build the example applications." ON)
 option(DEFLATE_SUPPORT "Include support for deflate (requires zlib)." ON)
 
 if (NOT SEASOCKS_SHARED AND NOT SEASOCKS_STATIC)
-    message(FATAL_ERROR "SEASOCKS_SHARED and SEASOCKS_STATIC cannot both be false=.")
-endif ()
-if (NOT SEASOCKS_SHARED AND (UNITTESTS OR SEASOCKS_EXAMPLE_APP))
-    message(FATAL_ERROR "SEASOCKS_SHARED is required for building unittests and example application.")
+    message(FATAL_ERROR "SEASOCKS_SHARED and SEASOCKS_STATIC cannot both be false.")
 endif ()
 
 if (DEFLATE_SUPPORT)
