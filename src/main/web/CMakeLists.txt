@@ -13,9 +13,10 @@ set(EMBEDDED_FILES
 
 
 add_custom_command(OUTPUT Embedded.cpp
-                        COMMAND ${PYTHON_BIN} ${SCRIPT} -o Embedded.cpp -f ${EMBEDDED_FILES}
-                        COMMENT "Generating embedded content"
-                        )
+    COMMAND "${PYTHON_EXECUTABLE}" "${SCRIPT}" -o Embedded.cpp -f ${EMBEDDED_FILES}
+    COMMENT "Generating embedded content"
+    DEPENDS "${SCRIPT}"
+)
 add_library(embedded OBJECT Embedded.cpp)
 target_include_directories(embedded PUBLIC $<TARGET_PROPERTY:seasocks,INTERFACE_INCLUDE_DIRECTORIES>)
 set_property(TARGET embedded PROPERTY POSITION_INDEPENDENT_CODE TRUE)

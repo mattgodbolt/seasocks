@@ -38,14 +38,12 @@ if (COVERAGE)
 endif ()
 
 find_package(Threads)
+find_package(PythonInterp)
 
-
-find_program(PYTHON_BIN NAMES python python3 DOC "Python executable")
-
-if (NOT PYTHON_BIN)
+if (NOT PYTHONINTERP_FOUND)
     message(SEND_ERROR "Python not found")
 else()
-    message(STATUS "Using Python: '${PYTHON_BIN}'")
+    message(STATUS "Using Python: '${PYTHON_EXECUTABLE}'")
 endif ()
 
 if (DEFLATE_SUPPORT)
