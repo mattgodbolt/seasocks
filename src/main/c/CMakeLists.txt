@@ -71,9 +71,13 @@ function(add_seasocks_obj_library NAME)
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
-        PRIVATE
-            $<BUILD_INTERFACE:$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_INCLUDE_DIRECTORIES>>
     )
+    if (DEFLATE_SUPPORT)
+        target_include_directories(${NAME}
+            PRIVATE
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_INCLUDE_DIRECTORIES>>
+        )
+    endif ()
 endfunction()
 
 if (SEASOCKS_SHARED OR CMAKE_POSITION_INDEPENDENT_CODE)
