@@ -1,3 +1,4 @@
+build*
 *.swp
 *~
 .gdb_history
