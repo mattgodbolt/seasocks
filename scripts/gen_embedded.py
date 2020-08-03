@@ -28,6 +28,12 @@ const EmbeddedContent* findEmbeddedContent(const std::string& name) {
 
 MAX_SLICE = 16
 
+def as_byte(data):
+    if sys.version_info < (3,):
+        return ord(data)
+    else:
+        return data
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Embedded content generator")
@@ -41,7 +47,7 @@ def create_file_byte(name, file_bytes):
     output.append('    const char %s[%d] = {\n' % (name, len(file_bytes) + 1))
 
     for start in range(0, len(file_bytes), MAX_SLICE):
-        output.append("        " + "".join("'\\x{:02x}',".format(ord(x)) for x in file_bytes[start:start+MAX_SLICE]) + "\n")
+        output.append("        " + "".join("'\\x{:02x}',".format(as_byte(x)) for x in file_bytes[start:start+MAX_SLICE]) + "\n")
     output.append('        0x00,\n')
     output.append('    };\n')
     return ''.join(output)
