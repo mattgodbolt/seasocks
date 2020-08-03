@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
-
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 project(Seasocks VERSION 1.4.3)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(SEASOCKS_SHARED "Build shared Seasocks library" ON)
 option(SEASOCKS_STATIC "Build static Seasocks library" ON)
