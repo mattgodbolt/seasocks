@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.3)
 project(Seasocks VERSION 1.4.3)
 
+if(WIN32)
+    message(FATAL_ERROR "${PROJECT_NAME} does not support Windows")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(SEASOCKS_SHARED "Build shared Seasocks library" ON)
@@ -37,9 +41,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h @ONLY)
-if(NOT MSVC)
-    add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
-endif()
+add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
 if (COVERAGE)
     add_compile_options(--coverage -O0)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
