@@ -18,7 +18,7 @@ class SeasocksConan(ConanFile):
     topics = ("seasocks", "embeddable", "webserver",  "websockets")
     homepage = "https://github.com/mattgodbolt/seasocks"
     url = "https://github.com/mattgodbolt/seasocks"
-    license = "MIT"
+    license = "BSD-2-Clause"
     settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
