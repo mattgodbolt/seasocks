@@ -62,12 +62,14 @@ class SeasocksConan(ConanFile):
         tools.save(os.path.join(self.build_folder, "CMakeLists.txt"), textwrap.dedent("""\
             cmake_minimum_required(VERSION 3.0)
             project(cmake_wrapper)
-            
+
             include("{install_folder}/conanbuildinfo.cmake")
             conan_basic_setup(TARGETS)
-            
+
             add_subdirectory("{source_folder}" seasocks)
-        """).format(source_folder=self.source_folder, install_folder=self.install_folder))
+        """).format(
+            source_folder=self.source_folder.replace("\\", "/"),
+            install_folder=self.install_folder.replace("\\", "/")))
         cmake = CMake(self)
         cmake.definitions["SEASOCKS_SHARED"] = self.options.shared
         cmake.definitions["SEASOCKS_STATIC"] = self.options.static
