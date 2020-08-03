@@ -68,9 +68,7 @@ function(add_seasocks_obj_library NAME)
     endif ()
     target_include_directories(${NAME}
         PUBLIC
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
+            $<TARGET_PROPERTY:seasocks_headers,INTERFACE_INCLUDE_DIRECTORIES>
     )
     if (DEFLATE_SUPPORT)
         target_include_directories(${NAME}
@@ -80,6 +78,14 @@ function(add_seasocks_obj_library NAME)
     endif ()
 endfunction()
 
+add_library(seasocks_headers INTERFACE)
+target_include_directories(seasocks_headers
+    INTERFACE
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/.>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
+)
+
 if (SEASOCKS_SHARED OR CMAKE_POSITION_INDEPENDENT_CODE)
     add_seasocks_obj_library(seasocks_pic_obj)
     set_property(TARGET seasocks_pic_obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
@@ -88,13 +94,7 @@ endif ()
 if (SEASOCKS_SHARED)
     add_library(seasocks_so SHARED $<TARGET_OBJECTS:seasocks_pic_obj> $<TARGET_OBJECTS:embedded>)
     add_library(Seasocks::seasocks_so ALIAS seasocks_so)
-    target_include_directories(seasocks_so
-        PUBLIC
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
-    )
-    target_link_libraries(seasocks_so PRIVATE Threads::Threads)
+    target_link_libraries(seasocks_so PRIVATE $<BUILD_INTERFACE:seasocks_headers> Threads::Threads)
     if (DEFLATE_SUPPORT)
         target_link_libraries(seasocks_so PRIVATE ZLIB::ZLIB)
     endif ()
@@ -115,13 +115,7 @@ if (SEASOCKS_STATIC)
 
     add_library(seasocks STATIC $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
     add_library(Seasocks::seasocks ALIAS seasocks)
-    target_include_directories(seasocks
-        PUBLIC
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
-    )
-    target_link_libraries(seasocks PRIVATE Threads::Threads)
+    target_link_libraries(seasocks PRIVATE $<BUILD_INTERFACE:seasocks_headers> Threads::Threads)
     if (DEFLATE_SUPPORT)
         target_link_libraries(seasocks PRIVATE ZLIB::ZLIB)
     endif ()
