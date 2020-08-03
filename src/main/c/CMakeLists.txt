@@ -137,8 +137,8 @@ install(FILES "${PROJECT_BINARY_DIR}/internal/Config.h"
 
 # export targets for install.
 install(
-  EXPORT ${PROJECT_NAME}
-  FILE ${PROJECT_NAME}Config.cmake
-  NAMESPACE ${PROJECT_NAME}::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
+    EXPORT ${PROJECT_NAME}
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
 )

@@ -1,6 +1,6 @@
 macro(add_app _NAME)
     add_executable(${_NAME} ${_NAME}.cpp)
-    target_link_libraries(${_NAME} seasocks "${ZLIB_LIBRARIES}")
+    target_link_libraries(${_NAME} PRIVATE seasocks)
 endmacro()
 
 add_app(ph_test)
