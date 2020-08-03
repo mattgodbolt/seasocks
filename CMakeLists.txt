@@ -5,10 +5,19 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(Seasocks VERSION 1.4.3)
 
 
+option(SEASOCKS_SHARED "Build shared Seasocks library" ON)
+option(SEASOCKS_STATIC "Build static Seasocks library" ON)
 option(UNITTESTS "Build unittests." ON)
 option(COVERAGE "Build with code coverage enabled" OFF)
 option(SEASOCKS_EXAMPLE_APP "Build the example applications." ON)
 option(DEFLATE_SUPPORT "Include support for deflate (requires zlib)." ON)
+
+if (NOT SEASOCKS_SHARED AND NOT SEASOCKS_STATIC)
+    message(FATAL_ERROR "SEASOCKS_SHARED and SEASOCKS_STATIC cannot be false both.")
+endif ()
+if (NOT SEASOCKS_SHARED AND (UNITTESTS OR SEASOCKS_EXAMPLE_APP))
+    message(FATAL_ERROR "SEASOCKS_SHARED is required for building unittests and example application.")
+endif ()
 
 if (DEFLATE_SUPPORT)
     set(DEFLATE_SUPPORT_BOOL "true")
