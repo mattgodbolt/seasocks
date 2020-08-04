@@ -86,7 +86,7 @@ target_include_directories(seasocks_headers
 
 
 add_library(Seasocks::seasocks ALIAS seasocks)
-target_link_libraries(seasocks PUBLIC $<BUILD_INTERFACE:seasocks_headers> Threads::Threads)
+target_link_libraries(seasocks PRIVATE Threads::Threads)
 if (DEFLATE_SUPPORT)
     target_link_libraries(seasocks PRIVATE ZLIB::ZLIB)
 endif ()
