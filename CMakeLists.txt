@@ -4,6 +4,9 @@ project(Seasocks VERSION 1.4.3)
 if(WIN32)
     message(FATAL_ERROR "${PROJECT_NAME} does not support Windows")
 endif()
+if(APPLE)
+    message(FATAL_ERROR "${PROJECT_NAME} does not support Apple platforms")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
