@@ -1,26 +1,13 @@
-
 add_subdirectory(main/c)
 add_subdirectory(main/web)
 
 macro(add_seasocks_executable _name)
-    add_library(${_name}_objs OBJECT ${ARGN})
-    target_link_libraries(${_name}_objs PRIVATE seasocks_headers)
-    if (TARGET seasocks)
-        add_executable(${_name} $<TARGET_OBJECTS:${_name}_objs>)
-        target_link_libraries(${_name} PRIVATE seasocks)
-    endif ()
-    if (TARGET seasocks_so)
-        add_executable(${_name}_so $<TARGET_OBJECTS:${_name}_objs>)
-        target_link_libraries(${_name}_so PRIVATE seasocks_so)
-    endif ()
-endmacro()
-
-macro(seasocks_link_libraries _name)
-    target_link_libraries(${_name}_objs ${ARGN})
+    add_executable(${_name} ${ARGN})
+    target_link_libraries(${_name} PRIVATE seasocks)
 endmacro()
 
 if (SEASOCKS_EXAMPLE_APP)
-  add_subdirectory(app/c)
+    add_subdirectory(app/c)
 endif ()
 
 if (UNITTESTS)

@@ -12,18 +12,10 @@ add_app(async_test)
 add_app(streaming_test)
 
 function(copy_directory_post_build TARGET SUBDIRECTORY)
-    set(name)
-    if (TARGET ${TARGET})
-        set(name ${TARGET})
-    elseif(TARGET ${TARGET}_so)
-        set(name ${TARGET}_so)
-    endif()
-    if (name)
-        add_custom_command(TARGET ${name} POST_BUILD
+    add_custom_command(TARGET ${TARGET} POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E copy_directory
-                "${PROJECT_SOURCE_DIR}/${SUBDIRECTORY}" "$<TARGET_FILE_DIR:${name}>/${SUBDIRECTORY}"
-        )
-    endif ()
+            "${PROJECT_SOURCE_DIR}/${SUBDIRECTORY}" "$<TARGET_FILE_DIR:${TARGET}>/${SUBDIRECTORY}"
+            )
 endfunction()
 
 copy_directory_post_build(ws_test src/ws_test_web)

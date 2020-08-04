@@ -22,13 +22,11 @@ class SeasocksConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
-        "static": [True, False],
         "fPIC": [True, False],
         "with_zlib": [True, False],
     }
     default_options = {
         "shared": True,
-        "static": True,
         "fPIC": True,
         "with_zlib": True,
     }
@@ -42,15 +40,9 @@ class SeasocksConan(ConanFile):
         shutil.copy("CMakeLists.txt", self.export_sources_folder)
         shutil.copy("LICENSE", self.export_sources_folder)
 
-    def config_options(self):
-        if self.settings.os == "Windows":
-            del self.options.fPIC
-
     def configure(self):
-        if not self.options.static:
+        if self.options.shared:
             del self.options.fPIC
-        if not any((self.options.shared, self.options.static)):
-            raise ConanInvalidConfiguration("Need to build a shared and/or static library")
 
     def requirements(self):
         if self.options.with_zlib:
@@ -71,8 +63,6 @@ class SeasocksConan(ConanFile):
             source_folder=self.source_folder.replace("\\", "/"),
             install_folder=self.install_folder.replace("\\", "/")))
         cmake = CMake(self)
-        cmake.definitions["SEASOCKS_SHARED"] = self.options.shared
-        cmake.definitions["SEASOCKS_STATIC"] = self.options.static
         cmake.definitions["DEFLATE_SUPPORT"] = self.options.with_zlib
         cmake.configure(source_folder=self.build_folder)
         cmake.build()
