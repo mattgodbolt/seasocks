@@ -72,18 +72,11 @@ if (DEFLATE_SUPPORT)
 else ()
     target_sources(seasocks PRIVATE seasocks/ZlibContextDisabled.cpp)
 endif ()
-target_include_directories(seasocks
-        PUBLIC
-        )
-
-add_library(seasocks_headers INTERFACE)
-target_include_directories(seasocks_headers
-        INTERFACE
+target_include_directories(seasocks PUBLIC
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/.>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
         )
-
 
 add_library(Seasocks::seasocks ALIAS seasocks)
 target_link_libraries(seasocks PRIVATE Threads::Threads)
@@ -105,13 +98,9 @@ install(FILES "${PROJECT_BINARY_DIR}/internal/Config.h"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/seasocks/internal"
         )
 
-# TODO: no idea why this doesn't work
-# fails with:
-# CMake Error: install(EXPORT "Seasocks" ...) includes target "seasocks" which requires target "seasocks_headers" that is not in any export set.
-# export targets for install.
-#install(
-#        EXPORT ${PROJECT_NAME}
-#        FILE ${PROJECT_NAME}Targets.cmake
-#        NAMESPACE ${PROJECT_NAME}::
-#        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
-#)
+install(
+        EXPORT ${PROJECT_NAME}
+        FILE ${PROJECT_NAME}Targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
+)
