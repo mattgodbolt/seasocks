@@ -42,6 +42,7 @@ add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
 if (COVERAGE)
     add_compile_options(--coverage -O0)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    set(CMAKE_SHARED_LINKER_FLAGS "${SHARED_EXE_LINKER_FLAGS} --coverage")
 endif ()
 
 find_package(Threads)
