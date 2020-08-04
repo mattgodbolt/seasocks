@@ -76,9 +76,6 @@ target_include_directories(seasocks
         PUBLIC
         $<TARGET_PROPERTY:seasocks_headers,INTERFACE_INCLUDE_DIRECTORIES>
         )
-if (SEASOCKS_SHARED)
-    set_property(TARGET seasocks PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif ()
 
 add_library(seasocks_headers INTERFACE)
 target_include_directories(seasocks_headers
