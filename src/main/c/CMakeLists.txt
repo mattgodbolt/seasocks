@@ -76,12 +76,6 @@ target_include_directories(seasocks
         PUBLIC
         $<TARGET_PROPERTY:seasocks_headers,INTERFACE_INCLUDE_DIRECTORIES>
         )
-if (DEFLATE_SUPPORT)
-    target_include_directories(seasocks
-            PRIVATE
-            $<BUILD_INTERFACE:$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_INCLUDE_DIRECTORIES>>
-            )
-endif ()
 if (SEASOCKS_SHARED)
     set_property(TARGET seasocks PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif ()
