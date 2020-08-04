@@ -1,0 +1,14 @@
+set(SEASOCKS_SHARED @SEASOCKS_SHARED@)
+set(SEASOCKS_STATIC @SEASOCKS_STATIC@)
+set(SEASOCKS_DEFLATE_SUPPORT @DEFLATE_SUPPORT@)
+
+if(SEASOCKS_STATIC)
+    find_package(Threads REQUIRED)
+    if(SEASOCKS_DEFLATE_SUPPORT)
+        find_package(ZLIB REQUIRED)
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/SeasocksTargets.cmake")
+
+@PACKAGE_INIT@

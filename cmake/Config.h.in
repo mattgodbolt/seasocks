@@ -4,7 +4,7 @@ namespace seasocks {
 
     struct Config {
         static constexpr auto version = "@PROJECT_VERSION@";
-        static constexpr bool deflateEnabled = ${DEFLATE_SUPPORT_BOOL};
+        static constexpr bool deflateEnabled = @DEFLATE_SUPPORT_BOOL@;
     };
 
 }

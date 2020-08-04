@@ -1,4 +1,5 @@
-set(SEASOCKS_SOURCE_FILES
+function(add_seasocks_obj_library NAME)
+    add_library(${NAME} OBJECT
         Connection.cpp
         HybiAccept.cpp
         HybiPacketDecoder.cpp
@@ -59,62 +60,85 @@ set(SEASOCKS_SOURCE_FILES
         util/Json.cpp
         util/PathHandler.cpp
         util/RootPageHandler.cpp
+    )
+    if (DEFLATE_SUPPORT)
+        target_sources(${NAME} PRIVATE seasocks/ZlibContext.cpp)
+    else ()
+        target_sources(${NAME} PRIVATE seasocks/ZlibContextDisabled.cpp)
+    endif ()
+    target_include_directories(${NAME}
+        PUBLIC
+            $<TARGET_PROPERTY:seasocks_headers,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+    if (DEFLATE_SUPPORT)
+        target_include_directories(${NAME}
+            PRIVATE
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_INCLUDE_DIRECTORIES>>
         )
+    endif ()
+endfunction()
 
-if (DEFLATE_SUPPORT)
-    set(SEASOCKS_SOURCE_FILES ${SEASOCKS_SOURCE_FILES} seasocks/ZlibContext.cpp)
-else()
-    set(SEASOCKS_SOURCE_FILES ${SEASOCKS_SOURCE_FILES} seasocks/ZlibContextDisabled.cpp)
-endif()
-
-add_library(seasocks_obj OBJECT ${SEASOCKS_SOURCE_FILES})
-target_include_directories(seasocks_obj PUBLIC
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+add_library(seasocks_headers INTERFACE)
+target_include_directories(seasocks_headers
+    INTERFACE
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/.>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/.>
 )
-set_property(TARGET seasocks_obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
-add_library(seasocks STATIC $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
-add_library(Seasocks::seasocks ALIAS seasocks)
-target_include_directories(seasocks PUBLIC
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-)
-target_link_libraries(seasocks PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-if (DEFLATE_SUPPORT)
-    target_link_libraries(seasocks PRIVATE "${ZLIB_LIBRARIES}")
-endif()
+if (SEASOCKS_SHARED OR CMAKE_POSITION_INDEPENDENT_CODE)
+    add_seasocks_obj_library(seasocks_pic_obj)
+    set_property(TARGET seasocks_pic_obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+endif ()
 
-add_library(seasocks_so SHARED $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
-add_library(Seasocks::seasocks_so ALIAS seasocks_so)
-target_include_directories(seasocks_so PUBLIC ${ZLIB_INCLUDE_DIRS} 
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-)
-if (DEFLATE_SUPPORT)
-    target_link_libraries(seasocks_so PRIVATE ${CMAKE_THREAD_LIBS_INIT} "${ZLIB_LIBRARIES}")
-endif()
-set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks VERSION ${PROJECT_VERSION})
-
-install(TARGETS seasocks seasocks_so EXPORT ${PROJECT_NAME}Config
+if (SEASOCKS_SHARED)
+    add_library(seasocks_so SHARED $<TARGET_OBJECTS:seasocks_pic_obj> $<TARGET_OBJECTS:embedded>)
+    add_library(Seasocks::seasocks_so ALIAS seasocks_so)
+    target_link_libraries(seasocks_so PUBLIC $<BUILD_INTERFACE:seasocks_headers> Threads::Threads)
+    if (DEFLATE_SUPPORT)
+        target_link_libraries(seasocks_so PRIVATE ZLIB::ZLIB)
+    endif ()
+    set_target_properties(seasocks_so PROPERTIES OUTPUT_NAME seasocks VERSION ${PROJECT_VERSION})
+    install(TARGETS seasocks_so EXPORT ${PROJECT_NAME}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        )
+    )
+endif ()
+
+if (SEASOCKS_STATIC)
+    if (CMAKE_POSITION_INDEPENDENT_CODE OR WIN32)
+        add_library(seasocks_obj ALIAS seasocks_pic_obj)
+    else ()
+        add_seasocks_obj_library(seasocks_obj)
+    endif()
+
+    add_library(seasocks STATIC $<TARGET_OBJECTS:seasocks_obj> $<TARGET_OBJECTS:embedded>)
+    add_library(Seasocks::seasocks ALIAS seasocks)
+    target_link_libraries(seasocks PUBLIC $<BUILD_INTERFACE:seasocks_headers> Threads::Threads)
+    if (DEFLATE_SUPPORT)
+        target_link_libraries(seasocks PRIVATE ZLIB::ZLIB)
+    endif ()
+    install(TARGETS seasocks EXPORT ${PROJECT_NAME}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif ()
+
 install(DIRECTORY seasocks
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        FILES_MATCHING PATTERN "*.h"
-        )
-# export for build tree.
-export(
-    TARGETS seasocks seasocks_so
-    NAMESPACE ${PROJECT_NAME}::
-    FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
 )
-# export for install.
+
+install(FILES "${PROJECT_BINARY_DIR}/internal/Config.h"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/seasocks/Internal"
+)
+
+# export targets for install.
 install(
-  EXPORT ${PROJECT_NAME}Config
-  FILE ${PROJECT_NAME}Config.cmake
-  NAMESPACE ${PROJECT_NAME}::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
+    EXPORT ${PROJECT_NAME}
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/
 )

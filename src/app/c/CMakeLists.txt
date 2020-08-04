@@ -1,6 +1,5 @@
-macro(add_app _NAME)
-    add_executable(${_NAME} ${_NAME}.cpp)
-    target_link_libraries(${_NAME} seasocks "${ZLIB_LIBRARIES}")
+macro(add_app NAME)
+    add_seasocks_executable(${NAME} ${NAME}.cpp)
 endmacro()
 
 add_app(ph_test)
@@ -12,14 +11,21 @@ add_app(ws_test_poll)
 add_app(async_test)
 add_app(streaming_test)
 
-add_custom_command(TARGET ws_test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/src/ws_test_web $<TARGET_FILE_DIR:ws_test>/src/ws_test_web)
+function(copy_directory_post_build TARGET SUBDIRECTORY)
+    set(name)
+    if (TARGET ${TARGET})
+        set(name ${TARGET})
+    elseif(TARGET ${TARGET}_so)
+        set(name ${TARGET}_so)
+    endif()
+    if (name)
+        add_custom_command(TARGET ${name} POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory
+                "${PROJECT_SOURCE_DIR}/${SUBDIRECTORY}" "$<TARGET_FILE_DIR:${name}>/${SUBDIRECTORY}"
+        )
+    endif ()
+endfunction()
 
-add_custom_command(TARGET async_test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/src/async_test_web $<TARGET_FILE_DIR:async_test>/src/async_test_web)
-
-add_custom_command(TARGET ws_chatroom POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/src/ws_chatroom_web $<TARGET_FILE_DIR:ws_chatroom>/src/ws_chatroom_web)
+copy_directory_post_build(ws_test src/ws_test_web)
+copy_directory_post_build(async_test src/async_test_web)
+copy_directory_post_build(ws_chatroom src/ws_chatroom_web)
