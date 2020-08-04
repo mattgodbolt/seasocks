@@ -74,7 +74,6 @@ else ()
 endif ()
 target_include_directories(seasocks
         PUBLIC
-        $<TARGET_PROPERTY:seasocks_headers,INTERFACE_INCLUDE_DIRECTORIES>
         )
 
 add_library(seasocks_headers INTERFACE)
