@@ -9,6 +9,7 @@ add_app(ws_echo)
 add_app(ws_test)
 add_app(ws_test_poll)
 add_app(async_test)
+target_link_libraries(async_test PRIVATE Threads::Threads)
 add_app(streaming_test)
 
 function(copy_directory_post_build TARGET SUBDIRECTORY)
