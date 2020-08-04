@@ -4,7 +4,7 @@ else ()
     set(SEASOCKS_LIBTYPE "STATIC")
 endif ()
 
-add_library(seasocks ${SEASOCK_LIBTYPE}
+add_library(seasocks ${SEASOCKS_LIBTYPE}
         Connection.cpp
         HybiAccept.cpp
         HybiPacketDecoder.cpp
