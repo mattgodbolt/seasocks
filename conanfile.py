@@ -8,6 +8,7 @@ import textwrap
 
 class SeasocksConan(ConanFile):
     name = "seasocks"
+
     def set_version(self):
         cmakelists = tools.load(os.path.join(self.recipe_folder, "CMakeLists.txt"))
         try:
@@ -15,7 +16,8 @@ class SeasocksConan(ConanFile):
         except StopIteration:
             raise ConanException("Cannot detect Seasocks version from CMakeLists.txt")
         self.version = m.group(1)
-    topics = ("seasocks", "embeddable", "webserver",  "websockets")
+
+    topics = ("seasocks", "embeddable", "webserver", "websockets")
     homepage = "https://github.com/mattgodbolt/seasocks"
     url = "https://github.com/mattgodbolt/seasocks"
     license = "BSD-2-Clause"
@@ -70,3 +72,14 @@ class SeasocksConan(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
+
+    def package_info(self):
+        # Set the name of the generated `FindSeasocks.cmake` and `SeasocksConfig.cmake` cmake scripts
+        self.cpp_info.names["cmake_find_package"] = "Seasocks"
+        self.cpp_info.names["cmake_find_package_multi"] = "Seasocks"
+        self.cpp_info.components["libseasocks"].libs = ["seasocks"]
+        # Set the name of the generated seasocks target: `Seasocks::seasocks`
+        self.cpp_info.components["libseasocks"].names["cmake_find_package"] = "seasocks"
+        self.cpp_info.components["libseasocks"].names["cmake_find_package_multi"] = "seasocks"
+        if self.options.with_zlib:
+            self.cpp_info.components["libseasocks"].requires = ["zlib::zlib"]
