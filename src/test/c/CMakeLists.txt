@@ -19,6 +19,6 @@ add_seasocks_executable(AllTests
         RequestTest.cpp
         )
 
-target_link_libraries(AllTests PRIVATE Catch)
+target_link_libraries(AllTests PRIVATE Catch Threads::Threads)
 
 add_test(NAME AllTests COMMAND AllTests)
