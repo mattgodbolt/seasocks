@@ -8,6 +8,7 @@ import textwrap
 
 class SeasocksConan(ConanFile):
     name = "seasocks"
+
     def set_version(self):
         cmakelists = tools.load(os.path.join(self.recipe_folder, "CMakeLists.txt"))
         try:
@@ -15,20 +16,19 @@ class SeasocksConan(ConanFile):
         except StopIteration:
             raise ConanException("Cannot detect Seasocks version from CMakeLists.txt")
         self.version = m.group(1)
-    topics = ("seasocks", "embeddable", "webserver",  "websockets")
+
+    topics = ("seasocks", "embeddable", "webserver", "websockets")
     homepage = "https://github.com/mattgodbolt/seasocks"
     url = "https://github.com/mattgodbolt/seasocks"
     license = "BSD-2-Clause"
     settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
-        "static": [True, False],
         "fPIC": [True, False],
         "with_zlib": [True, False],
     }
     default_options = {
         "shared": True,
-        "static": True,
         "fPIC": True,
         "with_zlib": True,
     }
@@ -42,15 +42,9 @@ class SeasocksConan(ConanFile):
         shutil.copy("CMakeLists.txt", self.export_sources_folder)
         shutil.copy("LICENSE", self.export_sources_folder)
 
-    def config_options(self):
-        if self.settings.os == "Windows":
-            del self.options.fPIC
-
     def configure(self):
-        if not self.options.static:
+        if self.options.shared:
             del self.options.fPIC
-        if not any((self.options.shared, self.options.static)):
-            raise ConanInvalidConfiguration("Need to build a shared and/or static library")
 
     def requirements(self):
         if self.options.with_zlib:
@@ -71,8 +65,6 @@ class SeasocksConan(ConanFile):
             source_folder=self.source_folder.replace("\\", "/"),
             install_folder=self.install_folder.replace("\\", "/")))
         cmake = CMake(self)
-        cmake.definitions["SEASOCKS_SHARED"] = self.options.shared
-        cmake.definitions["SEASOCKS_STATIC"] = self.options.static
         cmake.definitions["DEFLATE_SUPPORT"] = self.options.with_zlib
         cmake.configure(source_folder=self.build_folder)
         cmake.build()
@@ -80,3 +72,14 @@ class SeasocksConan(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
+
+    def package_info(self):
+        # Set the name of the generated `FindSeasocks.cmake` and `SeasocksConfig.cmake` cmake scripts
+        self.cpp_info.names["cmake_find_package"] = "Seasocks"
+        self.cpp_info.names["cmake_find_package_multi"] = "Seasocks"
+        self.cpp_info.components["libseasocks"].libs = ["seasocks"]
+        # Set the name of the generated seasocks target: `Seasocks::seasocks`
+        self.cpp_info.components["libseasocks"].names["cmake_find_package"] = "seasocks"
+        self.cpp_info.components["libseasocks"].names["cmake_find_package_multi"] = "seasocks"
+        if self.options.with_zlib:
+            self.cpp_info.components["libseasocks"].requires = ["zlib::zlib"]

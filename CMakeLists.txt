@@ -4,19 +4,17 @@ project(Seasocks VERSION 1.4.3)
 if(WIN32)
     message(FATAL_ERROR "${PROJECT_NAME} does not support Windows")
 endif()
+if(APPLE)
+    message(FATAL_ERROR "${PROJECT_NAME} does not support Apple platforms")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-option(SEASOCKS_SHARED "Build shared Seasocks library" ON)
-option(SEASOCKS_STATIC "Build static Seasocks library" ON)
+option(SEASOCKS_SHARED "Build seasocks as a shared library" "${BUILD_SHARED_LIBS}}")
 option(UNITTESTS "Build unittests." ON)
 option(COVERAGE "Build with code coverage enabled" OFF)
 option(SEASOCKS_EXAMPLE_APP "Build the example applications." ON)
 option(DEFLATE_SUPPORT "Include support for deflate (requires zlib)." ON)
-
-if (NOT SEASOCKS_SHARED AND NOT SEASOCKS_STATIC)
-    message(FATAL_ERROR "SEASOCKS_SHARED and SEASOCKS_STATIC cannot both be false.")
-endif ()
 
 if (DEFLATE_SUPPORT)
     set(DEFLATE_SUPPORT_BOOL "true")
@@ -26,6 +24,7 @@ endif ()
 message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 message(STATUS "Unittests: ${UNITTESTS}")
 message(STATUS "Coverage: ${COVERAGE}")
+message(STATUS "Building shared: ${SEASOCKS_SHARED}")
 
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "")
