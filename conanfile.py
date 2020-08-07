@@ -78,6 +78,7 @@ class SeasocksConan(ConanFile):
         self.cpp_info.names["cmake_find_package"] = "Seasocks"
         self.cpp_info.names["cmake_find_package_multi"] = "Seasocks"
         self.cpp_info.components["libseasocks"].libs = ["seasocks"]
+        self.cpp_info.components["libseasocks"].system_libs = ["pthread"]
         # Set the name of the generated seasocks target: `Seasocks::seasocks`
         self.cpp_info.components["libseasocks"].names["cmake_find_package"] = "seasocks"
         self.cpp_info.components["libseasocks"].names["cmake_find_package_multi"] = "seasocks"
