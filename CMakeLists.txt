@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(Seasocks VERSION 1.4.3)
+project(Seasocks VERSION 1.4.4)
 
 if(WIN32)
     message(FATAL_ERROR "${PROJECT_NAME} does not support Windows")
