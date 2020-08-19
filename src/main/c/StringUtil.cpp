@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <system_error>
 
 namespace seasocks {
 
@@ -74,7 +75,8 @@ std::string trimWhitespace(const std::string& str) {
 }
 
 std::string getLastError() {
-    return strerror(errno);
+    const auto error = std::generic_category().default_error_condition(errno);
+    return "(" + std::to_string(error.value()) + ") " + error.message();
 }
 
 std::string formatAddress(const sockaddr_in& address) {
