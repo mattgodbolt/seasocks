@@ -175,9 +175,15 @@ bool Server::configureSocket(int fd) const {
     }
     const int yesPlease = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
-        LS_ERROR(_logger, "Unable to set reuse socket option: " << getLastError());
+        LS_ERROR(_logger, "Unable to set reuse address socket option: " << getLastError());
         return false;
     }
+#ifdef SO_REUSEPORT
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &yesPlease, sizeof(yesPlease)) == -1) {
+        LS_ERROR(_logger, "Unable to set reuse port socket option: " << getLastError());
+        return false;
+    }
+#endif
     if (_maxKeepAliveDrops > 0) {
         if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yesPlease, sizeof(yesPlease)) == -1) {
             LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
