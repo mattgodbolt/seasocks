@@ -1,0 +1,47 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        build_config:
+          - { cc: gcc, cxx: g++, version: 10 }
+          - { cc: gcc, cxx: g++, version: 9 }
+          - { cc: gcc, cxx: g++, version: 8 }
+          - { cc: gcc, cxx: g++, version: 7 }
+          - { cc: clang, cxx: clang++, version: 11 }
+          - { cc: clang, cxx: clang++, version: 10 }
+          - { cc: clang, cxx: clang++, version: 9 }
+          - { cc: gcc, cxx: g++, version: 10, args: "-DDEFLATE_SUPPORT=OFF" }
+    env:
+      CC: ${{ matrix.build_config.cc }}-${{ matrix.build_config.version }}
+      CXX: ${{ matrix.build_config.cxx }}-${{ matrix.build_config.version }}
+      JOBS: 2
+    name: "${{ matrix.build_config.cc }}-${{ matrix.build_config.version }} ${{ matrix.build_config.args }}"
+    steps:
+      - uses: actions/checkout@master
+      - name: Setup Compiler
+        if: matrix.build_config.cc == 'clang'
+        run: |
+          VERSION=${{ matrix.build_config.version }}
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${VERSION} main"
+          sudo apt update
+          sudo apt-get install -y clang-${VERSION} libc++-${VERSION}-dev libc++abi-${VERSION}-dev
+          echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
+      - name: Setup
+        run: sudo apt-get install -y valgrind
+      - name: Build
+        run: |
+          cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=ON ${{ matrix.build_config.args }}
+          cmake --build build -- -j${JOBS}
+      - name: Test
+        run: |
+          cd build
+          cmake --build . --target test
+          ctest -D ExperimentalBuild -j${JOBS}
+          ctest -D ExperimentalMemCheck -j${JOBS}
+          bash <(curl -s https://codecov.io/bash)
