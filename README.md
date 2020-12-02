@@ -1,7 +1,7 @@
 Seasocks - A tiny embeddable C++ HTTP and WebSocket server
 ==========================================================
 
-[![Build Status](https://travis-ci.org/mattgodbolt/seasocks.svg?branch=master)](https://travis-ci.org/mattgodbolt/seasocks)
+[![CI](https://github.com/mattgodbolt/seasocks/workflows/ci/badge.svg)](https://github.com/mattgodbolt/seasocks/actions)
 [![codecov](https://codecov.io/gh/mattgodbolt/seasocks/branch/master/graph/badge.svg)](https://codecov.io/gh/mattgodbolt/seasocks)
 [![GitHub release](https://img.shields.io/github/release/mattgodbolt/seasocks.svg)](https://github.com/mattgodbolt/seasocks/releases)
 [![License](https://img.shields.io/badge/license-BSD-yellow.svg)](LICENSE)
