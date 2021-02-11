@@ -5,7 +5,7 @@ Seasocks - A tiny embeddable C++ HTTP and WebSocket server for Linux
 [![codecov](https://codecov.io/gh/mattgodbolt/seasocks/branch/master/graph/badge.svg)](https://codecov.io/gh/mattgodbolt/seasocks)
 [![GitHub release](https://img.shields.io/github/release/mattgodbolt/seasocks.svg)](https://github.com/mattgodbolt/seasocks/releases)
 [![License](https://img.shields.io/badge/license-BSD-yellow.svg)](LICENSE)
-[![ConanCenter package](https://repology.org/badge/version-for-repo/conancenter/seasocks.svg)](https://repology.org/project/seasocks/versions)
+[![ConanCenter package](https://repology.org/badge/version-for-repo/conancenter/seasocks.svg)](https://conan.io/center/seasocks)
 
 Features
 --------
