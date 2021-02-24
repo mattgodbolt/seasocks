@@ -80,14 +80,16 @@ std::string getLastError() {
 }
 
 std::string formatAddress(const sockaddr_in& address) {
-    char ipBuffer[24];
-    sprintf(ipBuffer,
-            "%d.%d.%d.%d:%d",
-            (address.sin_addr.s_addr >> 0) & 0xff,
-            (address.sin_addr.s_addr >> 8) & 0xff,
-            (address.sin_addr.s_addr >> 16) & 0xff,
-            (address.sin_addr.s_addr >> 24) & 0xff,
-            htons(address.sin_port));
+    constexpr std::size_t bufferSize{24};
+    char ipBuffer[bufferSize];
+    std::snprintf(ipBuffer,
+                  bufferSize,
+                  "%d.%d.%d.%d:%d",
+                  (address.sin_addr.s_addr >> 0) & 0xff,
+                  (address.sin_addr.s_addr >> 8) & 0xff,
+                  (address.sin_addr.s_addr >> 16) & 0xff,
+                  (address.sin_addr.s_addr >> 24) & 0xff,
+                  htons(address.sin_port));
     return ipBuffer;
 }
 
