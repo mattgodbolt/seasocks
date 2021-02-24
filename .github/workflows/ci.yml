@@ -26,11 +26,7 @@ jobs:
       - name: Setup Compiler
         if: matrix.build_config.cc == 'clang'
         run: |
-          VERSION=${{ matrix.build_config.version }}
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${VERSION} main"
-          sudo apt update
-          sudo apt-get install -y clang-${VERSION} libc++-${VERSION}-dev libc++abi-${VERSION}-dev
+          sudo scripts/ci_setup_clang.sh ${{ matrix.build_config.version }}
           echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
       - name: Setup
         run: sudo apt-get install -y valgrind
