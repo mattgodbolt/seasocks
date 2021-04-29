@@ -8,10 +8,12 @@ jobs:
     strategy:
       matrix:
         build_config:
+          - { cc: gcc, cxx: g++, version: 11 }
           - { cc: gcc, cxx: g++, version: 10 }
           - { cc: gcc, cxx: g++, version: 9 }
           - { cc: gcc, cxx: g++, version: 8 }
           - { cc: gcc, cxx: g++, version: 7 }
+          - { cc: clang, cxx: clang++, version: 12 }
           - { cc: clang, cxx: clang++, version: 11 }
           - { cc: clang, cxx: clang++, version: 10 }
           - { cc: clang, cxx: clang++, version: 9 }
@@ -23,11 +25,16 @@ jobs:
     name: "${{ matrix.build_config.cc }}-${{ matrix.build_config.version }} ${{ matrix.build_config.args }}"
     steps:
       - uses: actions/checkout@master
-      - name: Setup Compiler
+      - name: Setup Clang
         if: matrix.build_config.cc == 'clang'
         run: |
           sudo scripts/ci_setup_clang.sh ${{ matrix.build_config.version }}
           echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
+      - name: Setup GCC
+        if: matrix.build_config.cc == 'gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-${{ matrix.build_config.version }} g++-${{ matrix.build_config.version }}
       - name: Setup
         run: sudo apt-get install -y valgrind
       - name: Build
