@@ -67,6 +67,13 @@ add_library(seasocks ${SEASOCKS_LIBTYPE}
         util/RootPageHandler.cpp
         $<TARGET_OBJECTS:embedded>
         )
+
+set_target_properties(
+    seasocks
+    PROPERTIES
+        VERSION ${Seasocks_VERSION}
+)
+
 if (DEFLATE_SUPPORT)
     target_sources(seasocks PRIVATE seasocks/ZlibContext.cpp)
 else ()
