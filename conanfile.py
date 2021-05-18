@@ -65,6 +65,7 @@ class SeasocksConan(ConanFile):
             source_folder=self.source_folder.replace("\\", "/"),
             install_folder=self.install_folder.replace("\\", "/")))
         cmake = CMake(self)
+        cmake.definitions["SEASOCKS_SHARED"] = self.options.shared
         cmake.definitions["DEFLATE_SUPPORT"] = self.options.with_zlib
         cmake.configure(source_folder=self.build_folder)
         cmake.build()
