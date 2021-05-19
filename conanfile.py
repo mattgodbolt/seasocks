@@ -71,6 +71,7 @@ class SeasocksConan(ConanFile):
         cmake.build()
 
     def package(self):
+        self.copy("LICENSE", dst="licenses")
         cmake = CMake(self)
         cmake.install()
 
