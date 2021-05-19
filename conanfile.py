@@ -28,7 +28,7 @@ class SeasocksConan(ConanFile):
         "with_zlib": [True, False],
     }
     default_options = {
-        "shared": True,
+        "shared": False,
         "fPIC": True,
         "with_zlib": True,
     }
