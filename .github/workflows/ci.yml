@@ -24,7 +24,7 @@ jobs:
       JOBS: 2
     name: "${{ matrix.build_config.cc }}-${{ matrix.build_config.version }} ${{ matrix.build_config.args }}"
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
       - name: Setup Clang
         if: matrix.build_config.cc == 'clang'
         run: |
