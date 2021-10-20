@@ -13,6 +13,8 @@ jobs:
           - { cc: gcc, cxx: g++, version: 9 }
           - { cc: gcc, cxx: g++, version: 8 }
           - { cc: gcc, cxx: g++, version: 7 }
+          - { cc: clang, cxx: clang++, version: 14 }
+          - { cc: clang, cxx: clang++, version: 13 }
           - { cc: clang, cxx: clang++, version: 12 }
           - { cc: clang, cxx: clang++, version: 11 }
           - { cc: clang, cxx: clang++, version: 10 }
