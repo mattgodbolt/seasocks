@@ -67,7 +67,6 @@ jobs:
         run: |
             cd build
             cmake --build . --target test --config ${{ matrix.build_config.config }}
-            ctest -D ExperimentalBuild -C ${{ matrix.build_config.config }} --rerun-failed --output-on-failure
-            ctest -D ExperimentalMemCheck -C ${{ matrix.build_config.config }} --rerun-failed --output-on-failure
-			
-            # FIXME: use github actions for coverage: https://github.com/marketplace/actions/codecov
+            ctest -D ExperimentalBuild -C ${{ matrix.build_config.config }}
+            ctest -D ExperimentalMemCheck -C ${{ matrix.build_config.config }}
+			# FIXME: use github actions for coverage: https://github.com/marketplace/actions/codecov
