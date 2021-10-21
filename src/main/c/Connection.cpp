@@ -52,6 +52,7 @@
 #include <winsock2.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #endif
 
 #include <algorithm>
