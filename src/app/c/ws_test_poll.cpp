@@ -46,8 +46,7 @@
 #include <string>
 #include <fcntl.h>
 #ifdef _WIN32
-#include "../../../win32/win_unistd.h"
-#include "../../../win32/wepoll.h"
+#error "This sample is not to be built under Windows"
 #else
 
 #include <unistd.h>
@@ -112,12 +111,7 @@ private:
 
 int main(int /*argc*/, const char* /*argv*/[]) {
 
-#ifdef _WIN32
-    std::cerr << "This example does not work in windows" << std::endl;
-    return 0;
-#endif
     auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
-
     Server server(logger);
 
     auto handler = std::make_shared<MyHandler>(&server);
