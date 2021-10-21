@@ -4,10 +4,7 @@ add_subdirectory(main/web)
 macro(add_seasocks_executable _name)
     add_executable(${_name} ${ARGN})
     target_link_libraries(${_name} PRIVATE seasocks)
-
 endmacro()
-
-
 
 if (SEASOCKS_EXAMPLE_APP)
     add_subdirectory(app/c)
