@@ -48,3 +48,26 @@ jobs:
           ctest -D ExperimentalBuild -j${JOBS}
           ctest -D ExperimentalMemCheck -j${JOBS}
           bash <(curl -s https://codecov.io/bash)
+		  
+	build_msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_config:
+          - {args: "-DDEFLATE_SUPPORT=OFF", config: "Debug"}
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Build
+        run: |
+            cmake . -Bbuild ${{ matrix.build_config.args }}
+            cmake --build build --parallel --config ${{ matrix.build_config.config }}
+      - name: Test
+        run: |
+            cd build
+            cmake --build . --target test --config ${{ matrix.build_config.config }}
+            ctest -D ExperimentalBuild -C ${{ matrix.build_config.config }}
+            ctest -D ExperimentalMemCheck -C ${{ matrix.build_config.config }}
+            # FIXME: use github actions for coverage: https://github.com/marketplace/actions/codecov
