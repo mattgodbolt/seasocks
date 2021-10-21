@@ -445,7 +445,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         } else if (events[i].data.ptr == &_eventFd) {
 // This is never true in windows
 #ifdef _WIN32
-            assert("Win32 uses a seperate, native wake-up HANDLE as an event" == 0);
+            throw std::exception("Win32 uses a seperate, native wake-up HANDLE as an event");
 #endif
             if (events[i].events & ~EPOLLIN) {
                 LS_SEVERE(_logger, "Got unexpected event on management pipe ("
