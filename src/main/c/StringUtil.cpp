@@ -137,7 +137,7 @@ std::string webtime(time_t time) {
     struct tm timeValue;
 #ifdef _WIN32
     gmtime_s(&timeValue, &time);
-    #else
+#else
     gmtime_r(&time, &timeValue);
 #endif
 
