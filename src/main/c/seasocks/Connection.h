@@ -59,7 +59,7 @@ public:
     Connection(
         std::shared_ptr<Logger> logger,
         ServerImpl& server,
-        NATIVE_SOCKET_TYPE fd,
+        NativeSocketType fd,
         const sockaddr_in& address);
     virtual ~Connection();
 
@@ -67,7 +67,7 @@ public:
     void handleDataReadyForRead();
     void handleDataReadyForWrite();
 
-    NATIVE_SOCKET_TYPE getFd() const {
+    NativeSocketType getFd() const {
         return _fd;
     }
 
@@ -195,7 +195,7 @@ private:
 
     std::shared_ptr<Logger> _logger;
     ServerImpl& _server;
-    NATIVE_SOCKET_TYPE _fd;
+    NativeSocketType _fd;
     bool _shutdown;
     bool _hadSendError;
     bool _closeOnEmpty;

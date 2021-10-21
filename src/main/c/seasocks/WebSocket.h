@@ -35,9 +35,9 @@
 #endif
 
 #ifdef _WIN32
-#define NATIVE_SOCKET_TYPE SOCKET
+using NativeSocketType = SOCKET;
 #else
-#define NATIVE_SOCKET_TYPE int
+using NativeSocketType = int;
 #endif
 
 namespace seasocks {

@@ -220,7 +220,7 @@ void Server::shutdown() {
     }
 }
 
-bool Server::makeNonBlocking(NATIVE_SOCKET_TYPE fd) const {
+bool Server::makeNonBlocking(NativeSocketType fd) const {
     int yesPlease = 1;
 #ifndef _WIN32
     if (ioctl(fd, FIONBIO, &yesPlease) != 0) {
@@ -238,7 +238,7 @@ bool Server::makeNonBlocking(NATIVE_SOCKET_TYPE fd) const {
 #endif
 }
 
-bool Server::configureSocket(NATIVE_SOCKET_TYPE fd) const {
+bool Server::configureSocket(NativeSocketType fd) const {
     if (!makeNonBlocking(fd)) {
         return false;
     }
@@ -583,9 +583,9 @@ void Server::runExecutables() {
 void Server::handleAccept() {
     sockaddr_in address;
     socklen_t addrLen = sizeof(address);
-    NATIVE_SOCKET_TYPE fd = ::accept(_listenSock,
-                                     reinterpret_cast<sockaddr*>(&address),
-                                     &addrLen);
+    NativeSocketType fd = ::accept(_listenSock,
+                                   reinterpret_cast<sockaddr*>(&address),
+                                   &addrLen);
     if (fd == -1) {
         LS_ERROR(_logger, "Unable to accept: " << getLastError());
         return;

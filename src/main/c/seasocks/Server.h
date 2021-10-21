@@ -47,7 +47,6 @@ using pid_t = DWORD;
 #endif
 
 
-
 #ifdef _WIN32
 #define EPOLL_HANDLE HANDLE
 #define EPOLL_BAD_HANDLE NULL
@@ -176,8 +175,8 @@ private:
         return *this;
     }
 
-    bool makeNonBlocking(NATIVE_SOCKET_TYPE fd) const;
-    bool configureSocket(NATIVE_SOCKET_TYPE fd) const;
+    bool makeNonBlocking(NativeSocketType fd) const;
+    bool configureSocket(NativeSocketType fd) const;
     void handleAccept();
     void processEventQueue();
     void runExecutables();
@@ -194,7 +193,7 @@ private:
     // Connections, mapped to initial connection time.
     std::map<Connection*, time_t> _connections;
     std::shared_ptr<Logger> _logger;
-    NATIVE_SOCKET_TYPE _listenSock;
+    NativeSocketType _listenSock;
     EPOLL_HANDLE _epollFd;
     EPOLL_HANDLE _eventFd;
     int _maxKeepAliveDrops;

@@ -232,7 +232,7 @@ struct Connection::Writer : ResponseWriter {
 Connection::Connection(
     std::shared_ptr<Logger> logger,
     ServerImpl& server,
-    NATIVE_SOCKET_TYPE fd,
+    NativeSocketType fd,
     const sockaddr_in& address)
         : _logger(std::make_shared<PrefixWrapper>(formatAddress(address) + " : ", logger)),
           _server(server),
@@ -312,7 +312,8 @@ ssize_t Connection::safeSend(const void* data, size_t size) {
 #ifndef WIN32
     auto sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
 #else
-    auto sendResult = ::send(_fd, (const char*) data, (int) size, MSG_NOSIGNAL);
+    auto sendResult = ::send(_fd, static_cast<const char*>(data),
+                             static_cast<int>(size), MSG_NOSIGNAL);
 #endif
     if (sendResult == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
