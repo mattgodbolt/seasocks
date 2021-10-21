@@ -143,7 +143,7 @@ static inline void init_winsock() {
 constexpr size_t Server::DefaultClientBufferSize;
 
 Server::Server(std::shared_ptr<Logger> logger)
-        : _logger(logger), _listenSock(-1), _epollFd(EPOLL_BAD_HANDLE), _eventFd(EPOLL_BAD_HANDLE),
+        : _logger(logger), _listenSock(INVALID_SOCKET), _epollFd(EPOLL_BAD_HANDLE), _eventFd(EPOLL_BAD_HANDLE),
           _maxKeepAliveDrops(0),
           _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
           _clientBufferSize(DefaultClientBufferSize),
@@ -207,7 +207,7 @@ void Server::shutdown() {
 #else
         close(_listenSock);
 #endif
-        _listenSock = -1;
+        _listenSock = INVALID_SOCKET;
     }
     // Disconnect and close any current connections.
     while (!_connections.empty()) {
@@ -276,8 +276,9 @@ bool Server::configureSocket(NativeSocketType fd) const {
 void Server::terminate() {
     _expectedTerminate = true;
     _terminate = true;
-    uint64_t one = 1;
+
 #ifndef _WIN32
+    uint64_t one = 1;
     if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
         LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
     }
@@ -446,7 +447,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
 // This is never true in windows
 #ifdef _WIN32
             throw std::exception("Win32 uses a seperate, native wake-up HANDLE as an event");
-#endif
+#else
             if (events[i].events & ~EPOLLIN) {
                 LS_SEVERE(_logger, "Got unexpected event on management pipe ("
                                        << EventBits(events[i].events) << ") - terminating");
@@ -454,6 +455,9 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
                 break;
             }
             handlePipe();
+#endif
+
+
         } else {
             auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
             if (handleConnectionEvents(connection, events[i].events) == NewState::Close) {

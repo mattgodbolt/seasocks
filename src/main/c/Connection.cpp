@@ -48,11 +48,15 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#define INVALID_SOCKET -1
 #else
 #include <winsock2.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
+#include <fcntl.h> // O_BINARY
+#ifndef O_BINARY
+#define O_BINARY 0x8000 // is this needed sometimes (mingw?)
+#endif
 #endif
 
 #include <algorithm>
@@ -302,7 +306,7 @@ void Connection::finalise() {
         ::closesocket(_fd);
 #endif
     }
-    _fd = -1;
+    _fd = INVALID_SOCKET;
 }
 
 ssize_t Connection::safeSend(const void* data, size_t size) {
@@ -1106,6 +1110,9 @@ void Connection::parsePerMessageDeflateHeader(const std::string& header) {
     }
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4702) // unreachable code
+#endif
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     size_t minusPos = rangeStr.find('-');
     if (minusPos == std::string::npos) {
@@ -1128,6 +1135,9 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     }
     return false;
 }
+#ifdef _MSC_VER
+#pragma warning(default : 4702) // unreachable code
+#endif
 
 bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges) const {
     static const std::string expectedPrefix = "bytes=";

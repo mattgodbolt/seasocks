@@ -40,7 +40,7 @@
 namespace {
 
 char fromHex(char c) {
-    c = tolower(c);
+    c = static_cast<char>(tolower(c));
     return c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10;
 }
 
@@ -59,7 +59,7 @@ std::string unescape(std::string uri) {
             THROW("Bad digit in uri: '" << uri << "'");
         }
         auto hex = (fromHex(uri[pos + 1]) << 4) | fromHex(uri[pos + 2]);
-        uri = uri.substr(0, pos) + std::string(1, hex) + uri.substr(pos + 3);
+        uri = uri.substr(0, pos) + std::string(1, static_cast<char>(hex)) + uri.substr(pos + 3);
         ++pos;
     }
     return uri;

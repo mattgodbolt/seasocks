@@ -332,8 +332,8 @@ int afd_create_device_handle(HANDLE iocp_handle,
     NTSTATUS status;
 
     /* By opening \Device\Afd without specifying any extended attributes, we'll
-   * get a handle that lets us talk to the AFD driver, but that doesn't have an
-   * associated endpoint (so it's not a socket). */
+     * get a handle that lets us talk to the AFD driver, but that doesn't have an
+     * associated endpoint (so it's not a socket). */
     status = NtCreateFile(&afd_device_handle,
                           SYNCHRONIZE,
                           &afd__device_attributes,
@@ -397,7 +397,7 @@ int afd_cancel_poll(HANDLE afd_device_handle,
     IO_STATUS_BLOCK cancel_iosb;
 
     /* If the poll operation has already completed or has been cancelled earlier,
-   * there's nothing left for us to do. */
+     * there's nothing left for us to do. */
     if (io_status_block->Status != STATUS_PENDING)
         return 0;
 
@@ -405,7 +405,7 @@ int afd_cancel_poll(HANDLE afd_device_handle,
         NtCancelIoFileEx(afd_device_handle, io_status_block, &cancel_iosb);
 
     /* NtCancelIoFileEx() may return STATUS_NOT_FOUND if the operation completed
-   * just before calling NtCancelIoFileEx(). This is not an error. */
+     * just before calling NtCancelIoFileEx(). This is not an error. */
     if (cancel_status == STATUS_SUCCESS || cancel_status == STATUS_NOT_FOUND)
         return 0;
     else
@@ -639,7 +639,7 @@ int epoll_ctl(HANDLE ephnd, int op, SOCKET sock, struct epoll_event* ev) {
 
 err:
     /* On Linux, in the case of epoll_ctl(), EBADF takes priority over other
-   * errors. Wepoll mimics this behavior. */
+     * errors. Wepoll mimics this behavior. */
     err_check_handle(ephnd);
     err_check_handle((HANDLE) sock);
     return -1;
@@ -809,7 +809,7 @@ int err_check_handle(HANDLE handle) {
     DWORD flags;
 
     /* GetHandleInformation() succeeds when passed INVALID_HANDLE_VALUE, so check
-   * for this condition explicitly. */
+     * for this condition explicitly. */
     if (handle == INVALID_HANDLE_VALUE)
         return_set_error(-1, ERROR_INVALID_HANDLE);
 
@@ -859,9 +859,9 @@ int init(void) {
     if (!init__done &&
         !InitOnceExecuteOnce(&init__once, init__once_callback, NULL, NULL))
         /* `InitOnceExecuteOnce()` itself is infallible, and it doesn't set any
-     * error code when the once-callback returns FALSE. We return -1 here to
-     * indicate that global initialization failed; the failing init function is
-     * resposible for setting `errno` and calling `SetLastError()`. */
+         * error code when the once-callback returns FALSE. We return -1 here to
+         * indicate that global initialization failed; the failing init function is
+         * resposible for setting `errno` and calling `SetLastError()`. */
         return -1;
 
     return 0;
@@ -896,7 +896,7 @@ int nt_global_init(void) {
     fn_ptr = GetProcAddress(ntdll, #name);           \
     if (fn_ptr == NULL)                              \
         return -1;                                   \
-    name = (return_type(attributes*) parameters) (nt__fn_ptr_cast_t) fn_ptr;
+    name = (return_type(attributes*) parameters)(nt__fn_ptr_cast_t) fn_ptr;
     NT_NTDLL_IMPORT_LIST(X)
 #undef X
 
@@ -1169,7 +1169,7 @@ static int port__update_events(port_state_t* port_state) {
     queue_t* sock_update_queue = &port_state->sock_update_queue;
 
     /* Walk the queue, submitting new poll requests for every socket that needs
-   * it. */
+     * it. */
     while (!queue_is_empty(sock_update_queue)) {
         queue_node_t* queue_node = queue_first(sock_update_queue);
         sock_state_t* sock_state = sock_state_from_queue_node(queue_node);
@@ -1253,7 +1253,7 @@ int port_wait(port_state_t* port_state,
         return_set_error(-1, ERROR_INVALID_PARAMETER);
 
     /* Decide whether the IOCP completion list can live on the stack, or allocate
-   * memory for it on the heap. */
+     * memory for it on the heap. */
     if ((size_t) maxevents <= array_count(stack_iocp_events)) {
         iocp_events = stack_iocp_events;
     } else if ((iocp_events =
@@ -1263,7 +1263,7 @@ int port_wait(port_state_t* port_state,
     }
 
     /* Compute the timeout for GetQueuedCompletionStatus, and the wait end
-   * time, if the user specified a timeout other than zero or infinite. */
+     * time, if the user specified a timeout other than zero or infinite. */
     if (timeout > 0) {
         due = GetTickCount64() + (uint64_t) timeout;
         gqcs_timeout = (DWORD) timeout;
@@ -1276,7 +1276,7 @@ int port_wait(port_state_t* port_state,
     EnterCriticalSection(&port_state->lock);
 
     /* Dequeue completion packets until either at least one interesting event
-   * has been discovered, or the timeout is reached. */
+     * has been discovered, or the timeout is reached. */
     for (;;) {
         uint64_t now;
 
@@ -1687,8 +1687,8 @@ static int sock__delete(port_state_t* port_state,
     }
 
     /* If the poll request still needs to complete, the sock_state object can't
-   * be free()d yet. `sock_feed_event()` or `port_close()` will take care
-   * of this later. */
+     * be free()d yet. `sock_feed_event()` or `port_close()` will take care
+     * of this later. */
     if (force || sock_state->poll_status == SOCK__POLL_IDLE) {
         /* Free the sock_state now. */
         port_remove_deleted_socket(port_state, sock_state);
@@ -1714,8 +1714,8 @@ int sock_set_event(port_state_t* port_state,
                    sock_state_t* sock_state,
                    const struct epoll_event* ev) {
     /* EPOLLERR and EPOLLHUP are always reported, even when not requested by the
-   * caller. However they are disabled after a event has been reported for a
-   * socket for which the EPOLLONESHOT flag was set. */
+     * caller. However they are disabled after a event has been reported for a
+     * socket for which the EPOLLONESHOT flag was set. */
     uint32_t events = ev->events | EPOLLERR | EPOLLHUP;
 
     sock_state->user_events = events;
@@ -1729,7 +1729,7 @@ int sock_set_event(port_state_t* port_state,
 
 static inline DWORD sock__epoll_events_to_afd_events(uint32_t epoll_events) {
     /* Always monitor for AFD_POLL_LOCAL_CLOSE, which is triggered when the
-   * socket is closed with closesocket() or CloseHandle(). */
+     * socket is closed with closesocket() or CloseHandle(). */
     DWORD afd_events = AFD_POLL_LOCAL_CLOSE;
 
     if (epoll_events & (EPOLLIN | EPOLLRDNORM))
@@ -1776,21 +1776,21 @@ int sock_update(port_state_t* port_state, sock_state_t* sock_state) {
         (sock_state->user_events & SOCK__KNOWN_EPOLL_EVENTS &
          ~sock_state->pending_events) == 0) {
         /* All the events the user is interested in are already being monitored by
-     * the pending poll operation. It might spuriously complete because of an
-     * event that we're no longer interested in; when that happens we'll submit
-     * a new poll operation with the updated event mask. */
+         * the pending poll operation. It might spuriously complete because of an
+         * event that we're no longer interested in; when that happens we'll submit
+         * a new poll operation with the updated event mask. */
 
     } else if (sock_state->poll_status == SOCK__POLL_PENDING) {
         /* A poll operation is already pending, but it's not monitoring for all the
-     * events that the user is interested in. Therefore, cancel the pending
-     * poll operation; when we receive it's completion package, a new poll
-     * operation will be submitted with the correct event mask. */
+         * events that the user is interested in. Therefore, cancel the pending
+         * poll operation; when we receive it's completion package, a new poll
+         * operation will be submitted with the correct event mask. */
         if (sock__cancel_poll(sock_state) < 0)
             return -1;
 
     } else if (sock_state->poll_status == SOCK__POLL_CANCELLED) {
         /* The poll operation has already been cancelled, we're still waiting for
-     * it to return. For now, there's nothing that needs to be done. */
+         * it to return. For now, there's nothing that needs to be done. */
 
     } else if (sock_state->poll_status == SOCK__POLL_IDLE) {
         /* No poll operation is pending; start one. */
@@ -1877,7 +1877,7 @@ int sock_feed_event(port_state_t* port_state,
         return 0;
 
     /* If the the socket has the EPOLLONESHOT flag set, unmonitor all events,
-   * even EPOLLERR and EPOLLHUP. But always keep looking for closed sockets. */
+     * even EPOLLERR and EPOLLHUP. But always keep looking for closed sockets. */
     if (sock_state->user_events & EPOLLONESHOT)
         sock_state->user_events = 0;
 
@@ -2153,10 +2153,12 @@ void tree_del(tree_t* tree, tree_node_t* node) {
     do {
         if (node == tree->root)
             break;
-        if (node == parent->left) {
-            TREE__REBALANCE_AFTER_REMOVE(left, right)
-        } else {
-            TREE__REBALANCE_AFTER_REMOVE(right, left)
+        if (right && left) {
+            if (node == parent->left) {
+                TREE__REBALANCE_AFTER_REMOVE(left, right)
+            } else {
+                TREE__REBALANCE_AFTER_REMOVE(right, left)
+            }
         }
         node = parent;
         parent = parent->parent;
@@ -2234,16 +2236,16 @@ SOCKET ws_get_base_socket(SOCKET socket) {
             return_set_error(INVALID_SOCKET, error);
 
         /* Even though Microsoft documentation clearly states that LSPs should
-     * never intercept the `SIO_BASE_HANDLE` ioctl [1], Komodia based LSPs do
-     * so anyway, breaking it, with the apparent intention of preventing LSP
-     * bypass [2]. Fortunately they don't handle `SIO_BSP_HANDLE_POLL`, which
-     * will at least let us obtain the socket associated with the next winsock
-     * protocol chain entry. If this succeeds, loop around and call
-     * `SIO_BASE_HANDLE` again with the returned BSP socket, to make sure that
-     * we unwrap all layers and retrieve the actual base socket.
-     *  [1] https://docs.microsoft.com/en-us/windows/win32/winsock/winsock-ioctls
-     *  [2] https://www.komodia.com/newwiki/index.php?title=Komodia%27s_Redirector_bug_fixes#Version_2.2.2.6
-     */
+         * never intercept the `SIO_BASE_HANDLE` ioctl [1], Komodia based LSPs do
+         * so anyway, breaking it, with the apparent intention of preventing LSP
+         * bypass [2]. Fortunately they don't handle `SIO_BSP_HANDLE_POLL`, which
+         * will at least let us obtain the socket associated with the next winsock
+         * protocol chain entry. If this succeeds, loop around and call
+         * `SIO_BASE_HANDLE` again with the returned BSP socket, to make sure that
+         * we unwrap all layers and retrieve the actual base socket.
+         *  [1] https://docs.microsoft.com/en-us/windows/win32/winsock/winsock-ioctls
+         *  [2] https://www.komodia.com/newwiki/index.php?title=Komodia%27s_Redirector_bug_fixes#Version_2.2.2.6
+         */
         base_socket = ws__ioctl_get_bsp_socket(socket, SIO_BSP_HANDLE_POLL);
         if (base_socket != INVALID_SOCKET && base_socket != socket)
             socket = base_socket;
