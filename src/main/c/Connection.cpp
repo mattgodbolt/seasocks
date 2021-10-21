@@ -48,7 +48,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#define INVALID_SOCKET -1
 #else
 #include <winsock2.h>
 #include <sys/stat.h>
