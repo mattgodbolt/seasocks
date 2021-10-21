@@ -112,10 +112,10 @@ private:
 
 int main(int /*argc*/, const char* /*argv*/[]) {
 
-    #ifdef _WIN32
-    std::cerr<< "This example does not work in windows" << std::endl;
+#ifdef _WIN32
+    std::cerr << "This example does not work in windows" << std::endl;
     return 0;
-    #endif
+#endif
     auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);
@@ -130,16 +130,16 @@ int main(int /*argc*/, const char* /*argv*/[]) {
     EPOLL_HANDLE myEpoll = epoll_create(10);
 #ifndef _WIN32
     epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
-    
+
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
-    #else
-     // nothing to do for windows
-    #endif
+#else
+    // nothing to do for windows
+#endif
 
     // Also poll stdin
     epoll_event wakeStdin = {EPOLLIN, {nullptr}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
-    auto prevFlags = -1;//  fcntl(STDIN_FILENO, F_GETFL, 0);
+    auto prevFlags = -1; //  fcntl(STDIN_FILENO, F_GETFL, 0);
     // fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
     // ^^ fixme: you'd need some CreateFile with overlapping flags, but seems pointless to implement
 

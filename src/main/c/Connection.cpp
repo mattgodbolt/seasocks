@@ -52,6 +52,9 @@
 #include <Winsock2.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 #endif
 
 #include <algorithm>
@@ -1193,11 +1196,10 @@ bool Connection::sendStaticData() {
         path += "index.html";
     }
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
     RaiiFd input{::open(path.c_str(), O_RDONLY | O_BINARY)};
+    // This took a while to find! Linux opens all files in binary mode by default,
+    // Windows does not. So let's be explicit about this.
+
     struct stat fileStat;
     if (!input.ok() || ::fstat(input, &fileStat) == -1) {
         return send404();
