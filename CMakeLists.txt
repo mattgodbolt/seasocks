@@ -66,7 +66,7 @@ endif ()
 
 add_subdirectory(src)
 if (WIN32)
-add_subdirectory(win32)
+    add_subdirectory(win32)
 endif()
 
 include(CMakePackageConfigHelpers)
