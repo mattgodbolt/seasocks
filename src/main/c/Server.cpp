@@ -176,8 +176,6 @@ Server::Server(std::shared_ptr<Logger> logger)
         LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
         return;
     }
-#else
-
 #endif
 }
 
