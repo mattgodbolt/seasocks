@@ -134,8 +134,7 @@ int main(int /*argc*/, const char* /*argv*/[]) {
     epoll_event wakeStdin = {EPOLLIN, {nullptr}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
     auto prevFlags = -1; //  fcntl(STDIN_FILENO, F_GETFL, 0);
-    // fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
-    // ^^ fixme: you'd need some CreateFile with overlapping flags, but seems pointless to implement
+    fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
 
     std::cout << "Will echo anything typed in stdin: " << std::flush;
     while (true) {
