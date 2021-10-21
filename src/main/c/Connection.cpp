@@ -384,7 +384,7 @@ void Connection::handleDataReadyForRead() {
 #ifndef _WIN32
     auto result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
 #else
-    auto result = ::recv(_fd, (char*) &_inBuf[curSize], ReadWriteBufferSize, 0);
+    auto result = ::recv(_fd, reinterpret_cast<char*>(&_inBuf[curSize]), ReadWriteBufferSize, 0);
 #endif
     if (result == -1) {
         LS_WARNING(_logger, "Unable to read from socket : " << getLastError());
