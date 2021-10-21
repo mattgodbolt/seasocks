@@ -44,9 +44,15 @@
 #include "seasocks/ResponseWriter.h"
 #include "seasocks/ZlibContext.h"
 
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#else
+#include <Winsock2.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 #include <algorithm>
 #include <cassert>
@@ -60,8 +66,13 @@
 #include <sstream>
 #include <cstdio>
 #include <cstring>
+#ifndef _WIN32
 #include <unistd.h>
 #include <byteswap.h>
+#else
+#include "../../../win32/win_unistd.h"
+#include "../../../win32/win_byteswap.h"
+#endif
 #include <unordered_map>
 #include <memory>
 
@@ -221,7 +232,7 @@ struct Connection::Writer : ResponseWriter {
 Connection::Connection(
     std::shared_ptr<Logger> logger,
     ServerImpl& server,
-    int fd,
+    NATIVE_SOCKET_TYPE fd,
     const sockaddr_in& address)
         : _logger(std::make_shared<PrefixWrapper>(formatAddress(address) + " : ", logger)),
           _server(server),
@@ -284,7 +295,11 @@ void Connection::finalise() {
     if (_fd != -1) {
         _server.remove(this);
         LS_DEBUG(_logger, "Closing socket");
+#ifndef _WIN32
         ::close(_fd);
+#else
+        ::closesocket(_fd);
+#endif
     }
     _fd = -1;
 }
@@ -294,7 +309,11 @@ ssize_t Connection::safeSend(const void* data, size_t size) {
         // Ignore further writes to the socket, it's already closed or has been shutdown
         return -1;
     }
+#ifndef WIN32
     auto sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
+#else
+    auto sendResult = ::send(_fd, (const char*) data, (int) size, MSG_NOSIGNAL);
+#endif
     if (sendResult == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // Treat this as if zero bytes were written.
@@ -361,7 +380,11 @@ void Connection::handleDataReadyForRead() {
     }
     size_t curSize = _inBuf.size();
     _inBuf.resize(curSize + ReadWriteBufferSize);
+#ifndef _WIN32
     auto result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
+#else
+    auto result = ::recv(_fd, (char*) &_inBuf[curSize], ReadWriteBufferSize, 0);
+#endif
     if (result == -1) {
         LS_WARNING(_logger, "Unable to read from socket : " << getLastError());
         return;
@@ -605,14 +628,14 @@ void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size
 
 void Connection::sendHybiData(const uint8_t* webSocketResponse, size_t messageLength) {
     if (messageLength < 126) {
-        uint8_t nextByte = messageLength; // No MASK bit set.
+        uint8_t nextByte = (uint8_t) messageLength; // No MASK bit set.
         if (!write(&nextByte, 1, false))
             return;
     } else if (messageLength < 65536) {
         uint8_t nextByte = 126; // No MASK bit set.
         if (!write(&nextByte, 1, false))
             return;
-        auto lengthBytes = htons(messageLength);
+        auto lengthBytes = htons((uint16_t) messageLength);
         if (!write(&lengthBytes, 2, false))
             return;
     } else {
@@ -921,6 +944,7 @@ bool Connection::handlePageRequest() {
         try {
             webSocketVersion = std::stoi(_request->getHeader("Sec-WebSocket-Version"));
         } catch (const std::logic_error& ex) {
+            (void) ex;
             LS_WARNING(_logger, "Invalid Sec-WebSocket-Version '" << _request->getHeader("Sec-WebSocket-Version") << "'");
             return sendError(ResponseCode::UpgradeRequired, "Invalid Sec-WebSocket-Version received");
         }
@@ -1089,12 +1113,12 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     if (minusPos == 0) {
         // A range like "-500" means 500 bytes from end of file to end.
         range.start = std::stoi(rangeStr);
-        range.end = std::numeric_limits<long>::max();
+        range.end = (std::numeric_limits<long>::max)();
         return true;
     } else {
         range.start = std::stoi(rangeStr.substr(0, minusPos));
         if (minusPos == rangeStr.size() - 1) {
-            range.end = std::numeric_limits<long>::max();
+            range.end = (std::numeric_limits<long>::max)();
         } else {
             range.end = std::stoi(rangeStr.substr(minusPos + 1));
         }
@@ -1132,7 +1156,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 
     // Partial content request.
     bufferResponseAndCommonHeaders(ResponseCode::PartialContent);
-    int contentLength = 0;
+    size_t contentLength = 0;
     std::ostringstream rangeLine;
     rangeLine << "Content-Range: bytes ";
     std::list<Range> sendRanges;
@@ -1169,7 +1193,11 @@ bool Connection::sendStaticData() {
         path += "index.html";
     }
 
-    RaiiFd input{::open(path.c_str(), O_RDONLY)};
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+    RaiiFd input{::open(path.c_str(), O_RDONLY | O_BINARY)};
     struct stat fileStat;
     if (!input.ok() || ::fstat(input, &fileStat) == -1) {
         return send404();
@@ -1201,7 +1229,7 @@ bool Connection::sendStaticData() {
         auto bytesLeft = range.length();
         while (bytesLeft) {
             char buf[ReadWriteBufferSize];
-            auto bytesRead = ::read(input, buf, std::min(sizeof(buf), bytesLeft));
+            auto bytesRead = ::read(input, buf, (unsigned int) (std::min)(sizeof(buf), (size_t) bytesLeft));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
                 LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));
@@ -1252,7 +1280,7 @@ void Connection::setLinger() {
     }
     const int secondsToLinger = 1;
     struct linger linger = {true, secondsToLinger};
-    if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
+    if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, (const char*) &linger, sizeof(linger)) == -1) {
         LS_INFO(_logger, "Unable to set linger on socket");
     }
 }

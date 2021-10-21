@@ -45,8 +45,14 @@
 #include <sstream>
 #include <string>
 #include <fcntl.h>
+#ifdef _WIN32
+#include "../../../win32/win_unistd.h"
+#include "../../../win32/wepoll.h"
+#else
+
 #include <unistd.h>
 #include <sys/epoll.h>
+#endif
 
 using namespace seasocks;
 
@@ -105,6 +111,11 @@ private:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
+
+    #ifdef _WIN32
+    std::cerr<< "This example does not work in windows" << std::endl;
+    return 0;
+    #endif
     auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);
@@ -116,15 +127,21 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         std::cerr << "couldn't start listening\n";
         return 1;
     }
-    int myEpoll = epoll_create(10);
+    EPOLL_HANDLE myEpoll = epoll_create(10);
+#ifndef _WIN32
     epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
+    
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
+    #else
+     // nothing to do for windows
+    #endif
 
     // Also poll stdin
     epoll_event wakeStdin = {EPOLLIN, {nullptr}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
-    auto prevFlags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
+    auto prevFlags = -1;//  fcntl(STDIN_FILENO, F_GETFL, 0);
+    // fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
+    // ^^ fixme: you'd need some CreateFile with overlapping flags, but seems pointless to implement
 
     std::cout << "Will echo anything typed in stdin: " << std::flush;
     while (true) {

@@ -32,6 +32,11 @@
 #include <cstring>
 #include <algorithm>
 #include <system_error>
+#ifdef _MSC_VER
+//not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 namespace seasocks {
 
@@ -127,9 +132,15 @@ bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
     return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
 }
 
+
 std::string webtime(time_t time) {
     struct tm timeValue;
+#ifdef _WIN32
+    gmtime_s(&timeValue, &time);
+    #else
     gmtime_r(&time, &timeValue);
+#endif
+
     char buf[1024];
     // Wed, 20 Apr 2011 17:31:28 GMT
     strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S %Z", &timeValue);

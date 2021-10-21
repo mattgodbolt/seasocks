@@ -36,7 +36,7 @@ struct ZlibContext::Impl {
     z_stream deflateStream;
     z_stream inflateStream;
     bool streamsInitialised = false;
-    uint8_t buffer[16384];
+    uint8_t buffer[16384] = {0};
 
     Impl(int deflateBits, int inflateBits, int memLevel) {
         int ret;
@@ -84,7 +84,7 @@ struct ZlibContext::Impl {
 
     void deflate(const uint8_t* input, size_t inputLen, std::vector<uint8_t>& output) {
         deflateStream.next_in = (unsigned char*) input;
-        deflateStream.avail_in = inputLen;
+        deflateStream.avail_in = (uInt) inputLen;
 
         if (inputLen > 0) {
             do {
@@ -117,7 +117,7 @@ struct ZlibContext::Impl {
         input.insert(input.end(), tail_end, tail_end + 4);
 
         inflateStream.next_in = input.data();
-        inflateStream.avail_in = input.size();
+        inflateStream.avail_in = (uInt) input.size();
 
         do {
             inflateStream.next_out = buffer;

@@ -27,7 +27,11 @@
 
 #include "seasocks/Credentials.h"
 
+#ifndef _WIN32
 #include <netinet/in.h>
+#else
+#include <Ws2tcpip.h>
+#endif
 
 #include <cstdint>
 #include <memory>

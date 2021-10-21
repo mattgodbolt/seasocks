@@ -31,9 +31,14 @@
 #include "seasocks/TransferEncoding.h"
 #include "seasocks/ZlibContext.h"
 
+#ifndef _WIN32
 #include <netinet/in.h>
-
 #include <sys/socket.h>
+#else
+#include <WinSock2.h>
+#define SHUT_RDWR SD_BOTH
+#define MSG_NOSIGNAL 0
+#endif
 
 #include <cinttypes>
 #include <list>
@@ -54,7 +59,7 @@ public:
     Connection(
         std::shared_ptr<Logger> logger,
         ServerImpl& server,
-        int fd,
+        NATIVE_SOCKET_TYPE fd,
         const sockaddr_in& address);
     virtual ~Connection();
 
@@ -62,7 +67,7 @@ public:
     void handleDataReadyForRead();
     void handleDataReadyForWrite();
 
-    int getFd() const {
+    NATIVE_SOCKET_TYPE getFd() const {
         return _fd;
     }
 
@@ -174,7 +179,7 @@ private:
         long start;
         long end;
         size_t length() const {
-            return end - start + 1;
+            return (size_t) ((size_t) end - size_t(start) + size_t(1));
         }
     };
 
@@ -190,7 +195,7 @@ private:
 
     std::shared_ptr<Logger> _logger;
     ServerImpl& _server;
-    int _fd;
+    NATIVE_SOCKET_TYPE _fd;
     bool _shutdown;
     bool _hadSendError;
     bool _closeOnEmpty;

@@ -72,7 +72,7 @@ TEST_CASE("Server tests", "[ServerTests]") {
             if (latch)
                 break;
         }
-        CHECK(latch == 1);
+        CHECK(latch == std::atomic<bool>(1));
         CHECK(test == 10000);
     }
 

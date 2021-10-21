@@ -4,6 +4,18 @@ else ()
     set(SEASOCKS_LIBTYPE "STATIC")
 endif ()
 
+if (WIN32)
+set(WIN_FILES
+        "${PROJECT_SOURCE_DIR}/win32/wepoll.c"
+        "${PROJECT_SOURCE_DIR}/win32/wepoll.h"
+        "${PROJECT_SOURCE_DIR}/win32/win_byteswap.h"
+        "${PROJECT_SOURCE_DIR}/win32/win_getopt.h"
+        "${PROJECT_SOURCE_DIR}/win32/win_unistd.h"
+        )
+else()
+        set (WIN_FILES "")
+endif()
+
 add_library(seasocks ${SEASOCKS_LIBTYPE}
         Connection.cpp
         HybiAccept.cpp
@@ -65,6 +77,7 @@ add_library(seasocks ${SEASOCKS_LIBTYPE}
         util/Json.cpp
         util/PathHandler.cpp
         util/RootPageHandler.cpp
+        ${WIN_FILES}
         $<TARGET_OBJECTS:embedded>
         )
 

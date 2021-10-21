@@ -29,6 +29,16 @@
 
 #include <string>
 #include <vector>
+#ifdef WIN32
+#include "../../../win32/win_unistd.h"
+#include <Winsock2.h>
+#endif
+
+#ifdef _WIN32
+#define NATIVE_SOCKET_TYPE SOCKET
+#else
+#define NATIVE_SOCKET_TYPE int
+#endif
 
 namespace seasocks {
 
