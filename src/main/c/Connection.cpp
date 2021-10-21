@@ -52,9 +52,6 @@
 #include <Winsock2.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 #endif
 
 #include <algorithm>
@@ -1183,6 +1180,9 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
     return sendRanges;
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable : 6262) // Function uses '16808' bytes of stack (wants us to use < 16384)
+#endif
 bool Connection::sendStaticData() {
     // TODO: fold this into the handler way of doing things.
     std::string path = _server.getStaticPath() + getRequestUri();
@@ -1246,6 +1246,10 @@ bool Connection::sendStaticData() {
     }
     return true;
 }
+
+#ifdef _MSC_VER
+#pragma warning(default : 6262) // re-enable this warning from here on in
+#endif
 
 bool Connection::sendHeader(const std::string& type, size_t size) {
     bufferResponseAndCommonHeaders(ResponseCode::Ok);
