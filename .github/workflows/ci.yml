@@ -48,7 +48,7 @@ jobs:
           ctest -D ExperimentalBuild -j${JOBS}
           ctest -D ExperimentalMemCheck -j${JOBS}
           bash <(curl -s https://codecov.io/bash)
-	build_msvc:
+  build_msvc:
     runs-on: windows-latest
     strategy:
       matrix:
