@@ -28,7 +28,7 @@
 
 #ifdef _WIN32
 #include <Winsock2.h>
-#include "../../../win32/win_byteswap.h"
+#include "win32/win_byteswap.h"
 #else
 #include <arpa/inet.h>
 #include <byteswap.h>
