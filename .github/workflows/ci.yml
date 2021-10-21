@@ -66,6 +66,6 @@ jobs:
       - name: Test
         run: |
             cd build
-            cmake --build . --target test --config ${{ matrix.build_config.config }}
+            ctest -C ${{ matrix.build_config.config }}
             ctest --rerun-failed --output-on-failure -D ExperimentalBuild -C ${{ matrix.build_config.config }}
             ctest --rerun-failed --output-on-failure -D ExperimentalMemCheck -C ${{ matrix.build_config.config }}
