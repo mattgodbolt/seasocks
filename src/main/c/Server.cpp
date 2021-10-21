@@ -373,7 +373,7 @@ bool Server::startListeningUnix(const char* socketPath) {
 }
 
 void Server::handlePipe() {
-
+    // Windows has nothing to do here as it's just a Windows Event that gets set
 #ifndef _WIN32
     uint64_t dummy;
     while (::read(_eventFd, &dummy, sizeof(dummy)) != -1) {
@@ -383,21 +383,8 @@ void Server::handlePipe() {
         LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
         _terminate = true;
     }
-#else
-
-    /*/
-    DWORD dw = WaitForSingleObject(_eventFd, 1000);
-    if (dw == WAIT_TIMEOUT) {
-        assert(0); // do we expect to timeout here, or what?
-        LS_ERROR(_logger, "Error from wakeFd read: " << " timed out");
-        _terminate = true;
-    }
-    /*/
-    // I don't think we need to do anything in here for windows, there
-    // is no socket to drain ...? (coz its an event HANDLE)
-
-
 #endif
+
     // It's a "wake up" event; this will just cause the epoll loop to wake up.
 }
 
