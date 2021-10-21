@@ -126,15 +126,15 @@ pid_t gettid() {
 
 #ifdef _WIN32
 static inline void init_winsock() {
-    WSAData Data;
-    static int iResult = -1;
+    WSAData data;
+    static int result = -1;
 
-    if (iResult != 0) {
-        // Initialize Winsock
-        iResult = WSAStartup(MAKEWORD(2, 2), &Data);
-        if (iResult != 0) {
-            printf("WSAStartup failed: %d\n", iResult);
-            throw std::runtime_error("Fatal : could not init Winsock2");
+    if (result != 0) {
+        // Initialise Winsock
+        result = WSAStartup(MAKEWORD(2, 2), &data);
+        if (result != 0) {
+            const std::string err = "FATAL: WSAStartup failed, with error: " + std::to_string(result);
+            throw std::runtime_error(err);
         }
     }
 }
