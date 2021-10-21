@@ -1207,7 +1207,9 @@ bool Connection::sendStaticData() {
     if (*path.rbegin() == '/') {
         path += "index.html";
     }
-
+#ifndef O_BINARY
+#define O_BINARY 0x8000 // is this needed sometimes (mingw?)
+#endif
     RaiiFd input{::open(path.c_str(), O_RDONLY | O_BINARY)};
     // This took a while to find! Linux opens all files in binary mode by default,
     // Windows does not. So let's be explicit about this.
