@@ -52,7 +52,7 @@ using EpollHandle = HANDLE;
 constexpr inline HANDLE EpollBadHandle = nullptr;
 #else
 using EpollHandle = int;
-constexpr inline HANDLE EpollBadHandle = -1;
+constexpr inline int EpollBadHandle = -1;
 
 #endif
 
