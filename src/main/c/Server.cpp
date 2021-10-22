@@ -143,7 +143,7 @@ static inline void init_winsock() {
 constexpr size_t Server::DefaultClientBufferSize;
 
 Server::Server(std::shared_ptr<Logger> logger)
-        : _logger(logger), _listenSock(INVALID_SOCKET), _epollFd(EPOLL_BAD_HANDLE), _eventFd(EPOLL_BAD_HANDLE),
+        : _logger(logger), _listenSock(INVALID_SOCKET), _epollFd(EpollBadHandle), _eventFd(EpollBadHandle),
           _maxKeepAliveDrops(0),
           _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
           _clientBufferSize(DefaultClientBufferSize),
@@ -155,7 +155,7 @@ Server::Server(std::shared_ptr<Logger> logger)
 #endif
 
     _epollFd = epoll_create(10);
-    if (_epollFd == EPOLL_BAD_HANDLE) {
+    if (_epollFd == EpollBadHandle) {
         LS_ERROR(_logger, "Unable to create epoll: " << getLastError());
         return;
     }
@@ -165,7 +165,7 @@ Server::Server(std::shared_ptr<Logger> logger)
 #else
     _eventFd = ::CreateEvent(0, 0, 0, 0);
 #endif
-    if (_eventFd == EPOLL_BAD_HANDLE) {
+    if (_eventFd == EpollBadHandle) {
         LS_ERROR(_logger, "Unable to create event FD: " << getLastError());
         return;
     }
@@ -190,7 +190,7 @@ Server::~Server() {
 #else
     CloseHandle(_eventFd);
 #endif
-    if (_epollFd != EPOLL_BAD_HANDLE) {
+    if (_epollFd != EpollBadHandle) {
 #ifndef _WIN32
         close(_epollFd);
 #else
@@ -255,23 +255,23 @@ bool Server::configureSocket(NativeSocketType fd) const {
 #endif
     if (_maxKeepAliveDrops > 0) {
         if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
-            reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
+                       reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
             LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
             return false;
         }
         const int oneSecond = 1;
         if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE,
-            reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
+                       reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
             LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
             return false;
         }
         if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL,
-            reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
+                       reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
             LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
             return false;
         }
         if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT,
-            reinterpret_cast<const char*>(& _maxKeepAliveDrops), sizeof(_maxKeepAliveDrops)) == -1) {
+                       reinterpret_cast<const char*>(&_maxKeepAliveDrops), sizeof(_maxKeepAliveDrops)) == -1) {
             LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
             return false;
         }
@@ -298,7 +298,7 @@ bool Server::startListening(int port) {
 }
 
 bool Server::startListening(uint32_t ipInHostOrder, int port) {
-    if (_epollFd == EPOLL_BAD_HANDLE || _eventFd == EPOLL_BAD_HANDLE) {
+    if (_epollFd == EpollBadHandle || _eventFd == EpollBadHandle) {
         LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
         return false;
     }

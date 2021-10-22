@@ -48,11 +48,12 @@ using pid_t = DWORD;
 
 
 #ifdef _WIN32
-#define EPOLL_HANDLE HANDLE
-#define EPOLL_BAD_HANDLE NULL
+using EpollHandle = HANDLE;
+constexpr inline HANDLE EpollBadHandle = nullptr;
 #else
-#define EPOLL_HANDLE int
-#define EPOLL_BAD_HANDLE -1
+using EpollHandle = int;
+constexpr inline HANDLE EpollBadHandle = -1;
+
 #endif
 
 #ifdef _MSC_VER
@@ -116,7 +117,7 @@ public:
     // Returns a file descriptor that can be polled for changes (e.g. by
     // placing it in an epoll set. The poll() method above only need be called
     // when this file descriptor is readable.
-    EPOLL_HANDLE fd() const {
+    EpollHandle fd() const {
         return _epollFd;
     }
 
@@ -194,8 +195,8 @@ private:
     std::map<Connection*, time_t> _connections;
     std::shared_ptr<Logger> _logger;
     NativeSocketType _listenSock;
-    EPOLL_HANDLE _epollFd;
-    EPOLL_HANDLE _eventFd;
+    EpollHandle _epollFd;
+    EpollHandle _eventFd;
     int _maxKeepAliveDrops;
     int _lameConnectionTimeoutSeconds;
     size_t _clientBufferSize;
