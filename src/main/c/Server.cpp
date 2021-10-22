@@ -143,7 +143,7 @@ static inline void init_winsock() {
 constexpr size_t Server::DefaultClientBufferSize;
 
 Server::Server(std::shared_ptr<Logger> logger)
-        : _logger(logger), _listenSock(INVALID_SOCKET), _epollFd(EpollBadHandle), _eventFd(EpollBadHandle),
+        : _logger(logger), _listenSock(InvalidSocket), _epollFd(EpollBadHandle), _eventFd(EpollBadHandle),
           _maxKeepAliveDrops(0),
           _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
           _clientBufferSize(DefaultClientBufferSize),

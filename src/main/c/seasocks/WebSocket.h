@@ -36,13 +36,11 @@
 
 #ifdef _WIN32
 using NativeSocketType = SOCKET;
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET (SOCKET)(~0)
-#endif
 #else
 using NativeSocketType = int;
-#define INVALID_SOCKET -1
 #endif
+
+static constexpr inline NativeSocketType InvalidSocket = static_cast<NativeSocketType>(-1);
 
 namespace seasocks {
 

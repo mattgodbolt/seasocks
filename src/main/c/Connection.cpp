@@ -305,7 +305,7 @@ void Connection::finalise() {
         ::closesocket(_fd);
 #endif
     }
-    _fd = INVALID_SOCKET;
+    _fd = InvalidSocket;
 }
 
 ssize_t Connection::safeSend(const void* data, size_t size) {

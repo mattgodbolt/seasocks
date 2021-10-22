@@ -36,7 +36,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h @ONLY)
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # anything higher than /W3 results in warnings from Catch2, standard libraries, etc 
-    add_compile_options(/W3 /WX)
+    add_compile_options(/W4 /WX)
 else()
     add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
 endif()
