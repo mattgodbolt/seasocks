@@ -83,8 +83,11 @@ struct ZlibContext::Impl {
     }
 
     void deflate(const uint8_t* input, size_t inputLen, std::vector<uint8_t>& output) {
-        deflateStream.next_in = (unsigned char*) input;
-        deflateStream.avail_in = (uInt) inputLen;
+
+        // These strange casts prevent compiler warnings, and therefore build failure
+        // on Windows. The odd-looking datatypes are those found in zlib.
+        deflateStream.next_in = const_cast<z_const Bytef*>(input);
+        deflateStream.avail_in = static_cast<uInt>(inputLen);
 
         if (inputLen > 0) {
             do {
@@ -117,7 +120,8 @@ struct ZlibContext::Impl {
         input.insert(input.end(), tail_end, tail_end + 4);
 
         inflateStream.next_in = input.data();
-        inflateStream.avail_in = (uInt) input.size();
+        // uInt is some zlib type.
+        inflateStream.avail_in = static_cast<uInt>(input.size());
 
         do {
             inflateStream.next_out = buffer;
