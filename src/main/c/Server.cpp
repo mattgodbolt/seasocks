@@ -207,7 +207,7 @@ void Server::shutdown() {
 #else
         close(_listenSock);
 #endif
-        _listenSock = INVALID_SOCKET;
+        _listenSock = InvalidSocket;
     }
     // Disconnect and close any current connections.
     while (!_connections.empty()) {

@@ -2093,6 +2093,10 @@ int tree_add(tree_t* tree, tree_node_t* node, uintptr_t key) {
     }                                                  \
     sibling->red = true;
 
+#ifdef _MSC_VER
+#pragma warning(disable : 28182)
+#pragma warning(disable : 6011)
+#endif
 void tree_del(tree_t* tree, tree_node_t* node) {
     tree_node_t* parent = node->parent;
     tree_node_t* left = node->left;
@@ -2167,6 +2171,10 @@ void tree_del(tree_t* tree, tree_node_t* node) {
     if (node)
         node->red = false;
 }
+#ifdef _MSC_VER
+#pragma warning(default : 28182)
+#pragma warning(default : 6011)
+#endif
 
 tree_node_t* tree_find(const tree_t* tree, uintptr_t key) {
     tree_node_t* node = tree->root;
