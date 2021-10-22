@@ -121,7 +121,7 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         std::cerr << "couldn't start listening\n";
         return 1;
     }
-    EPOLL_HANDLE myEpoll = epoll_create(10);
+    EpollHandle myEpoll = epoll_create(10);
 #ifndef _WIN32
     epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
 
