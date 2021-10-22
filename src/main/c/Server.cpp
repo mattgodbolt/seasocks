@@ -241,7 +241,9 @@ bool Server::configureSocket(NativeSocketType fd) const {
         return false;
     }
     const int yesPlease = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*) &yesPlease, sizeof(yesPlease)) == -1) {
+    // signature of ::setsockopt in Windows is:
+    // int setsockopt(SOCKET, int level, int optname, const char *optval, int optlen);
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
         LS_ERROR(_logger, "Unable to set reuse address socket option: " << getLastError());
         return false;
     }
@@ -252,20 +254,24 @@ bool Server::configureSocket(NativeSocketType fd) const {
     }
 #endif
     if (_maxKeepAliveDrops > 0) {
-        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (const char*) &yesPlease, sizeof(yesPlease)) == -1) {
+        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
+            reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
             LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
             return false;
         }
         const int oneSecond = 1;
-        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, (const char*) &oneSecond, sizeof(oneSecond)) == -1) {
+        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE,
+            reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
             LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
             return false;
         }
-        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, (const char*) &oneSecond, sizeof(oneSecond)) == -1) {
+        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL,
+            reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
             LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
             return false;
         }
-        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, (const char*) &_maxKeepAliveDrops, sizeof(_maxKeepAliveDrops)) == -1) {
+        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT,
+            reinterpret_cast<const char*>(& _maxKeepAliveDrops), sizeof(_maxKeepAliveDrops)) == -1) {
             LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
             return false;
         }

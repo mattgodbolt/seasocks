@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "seasocks/StringUtil.h"
+#include "seasocks/StrCompare.h"
 
 #include <cctype>
 #include <cerrno>
@@ -32,11 +33,6 @@
 #include <cstring>
 #include <algorithm>
 #include <system_error>
-#ifdef _MSC_VER
-//not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw
-#define strncasecmp _strnicmp
-#define strcasecmp _stricmp
-#endif
 
 namespace seasocks {
 
@@ -129,7 +125,7 @@ void replace(std::string& string, const std::string& find, const std::string& re
 }
 
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
-    return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
+    return compareCaseInsensitive(lhs, rhs); 
 }
 
 

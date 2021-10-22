@@ -5,7 +5,7 @@ else ()
 endif ()
 
 if (WIN32)
-set(WIN_FILES
+    set(WIN_FILES
         "${PROJECT_SOURCE_DIR}/win32/wepoll.c"
         "${PROJECT_SOURCE_DIR}/win32/wepoll.h"
         "${PROJECT_SOURCE_DIR}/win32/win_byteswap.h"
@@ -79,7 +79,7 @@ add_library(seasocks ${SEASOCKS_LIBTYPE}
         util/RootPageHandler.cpp
         ${WIN_FILES}
         $<TARGET_OBJECTS:embedded>
-        )
+         "seasocks/StrCompare.h")
 
 set_target_properties(
     seasocks
@@ -88,7 +88,7 @@ set_target_properties(
 )
 
 if (DEFLATE_SUPPORT)
-    target_sources(seasocks PRIVATE seasocks/ZlibContext.cpp)
+    target_sources(seasocks PRIVATE seasocks/ZlibContext.cpp "seasocks/StrCompare.h")
 else ()
     target_sources(seasocks PRIVATE seasocks/ZlibContextDisabled.cpp)
 endif ()

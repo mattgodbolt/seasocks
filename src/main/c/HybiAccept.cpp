@@ -43,7 +43,7 @@ const char* magicString = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 std::string getAcceptKey(const std::string& challenge) {
     auto fullString = challenge + magicString;
     SHA1 hasher;
-    hasher.Input(fullString.c_str(), (unsigned int) fullString.size());
+    hasher.Input(fullString.c_str(), static_cast<unsigned int>(fullString.size()));
     unsigned hash[5];
     hasher.Result(hash);
     for (unsigned int& i : hash) {

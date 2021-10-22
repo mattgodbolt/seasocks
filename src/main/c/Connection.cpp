@@ -633,21 +633,22 @@ void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size
 
 void Connection::sendHybiData(const uint8_t* webSocketResponse, size_t messageLength) {
     if (messageLength < 126) {
-        uint8_t nextByte = (uint8_t) messageLength; // No MASK bit set.
+        const auto nextByte = static_cast<uint8_t>(messageLength); // No MASK bit set.
         if (!write(&nextByte, 1, false))
             return;
     } else if (messageLength < 65536) {
-        uint8_t nextByte = 126; // No MASK bit set.
+        const uint8_t nextByte = 126; // No MASK bit set.
         if (!write(&nextByte, 1, false))
             return;
-        auto lengthBytes = htons((uint16_t) messageLength);
+        // htons in Windows takes a u_short
+        const auto lengthBytes = htons(static_cast<uint16_t>(messageLength));
         if (!write(&lengthBytes, 2, false))
             return;
     } else {
-        uint8_t nextByte = 127; // No MASK bit set.
+        const uint8_t nextByte = 127; // No MASK bit set.
         if (!write(&nextByte, 1, false))
             return;
-        uint64_t lengthBytes = __bswap_64(messageLength);
+        const uint64_t lengthBytes = __bswap_64(messageLength);
         if (!write(&lengthBytes, 8, false))
             return;
     }
@@ -1244,7 +1245,8 @@ bool Connection::sendStaticData() {
         auto bytesLeft = range.length();
         while (bytesLeft) {
             char buf[ReadWriteBufferSize];
-            auto bytesRead = ::read(input, buf, (unsigned int) (std::min)(sizeof(buf), (size_t) bytesLeft));
+            // Thanks, MS, for the minmax MACRO. So annoying!
+            auto bytesRead = ::read(input, buf, static_cast<unsigned int>((std::min)(sizeof(buf), (size_t) bytesLeft)));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
                 LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));
@@ -1299,7 +1301,9 @@ void Connection::setLinger() {
     }
     const int secondsToLinger = 1;
     struct linger linger = {true, secondsToLinger};
-    if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, (const char*) &linger, sizeof(linger)) == -1) {
+    // signature of ::setsockopt in Windows is:
+    // int setsockopt(SOCKET, int level, int optname, const char *optval, int optlen);
+    if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, reinterpret_cast<const char*>(&linger), sizeof(linger)) == -1) {
         LS_INFO(_logger, "Unable to set linger on socket");
     }
 }

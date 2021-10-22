@@ -25,16 +25,13 @@
 
 #pragma once
 
-#include <cctype>
+
 #include <cstring>
 #include <string>
 #include <unordered_map>
+#include "String"
+#include "seasocks/StrCompare.h"
 
-#ifdef _MSC_VER
-//not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw
-#define strncasecmp _strnicmp
-#define strcasecmp _stricmp
-#endif
 
 namespace seasocks {
 
@@ -50,7 +47,7 @@ struct CaseInsensitiveHash {
 
 struct CaseInsensitiveComparison {
     bool operator()(const std::string& lhs, const std::string& rhs) const {
-        return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
+        return compareCaseInsensitive(lhs, rhs);
     }
 };
 
