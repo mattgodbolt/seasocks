@@ -53,7 +53,6 @@ constexpr inline HANDLE EpollBadHandle = nullptr;
 #else
 using EpollHandle = int;
 constexpr inline int EpollBadHandle = -1;
-
 #endif
 
 #ifdef _MSC_VER

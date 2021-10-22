@@ -184,7 +184,7 @@ Server::~Server() {
     shutdown();
 // Only shut the eventfd and epoll at the very end
 #ifndef _WIN32
-    if (_eventFd != EPOLL_BAD_HANDLE) {
+    if (_eventFd != EpollBadHandle) {
         ::close(_eventFd);
     }
 #else
