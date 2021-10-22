@@ -122,18 +122,13 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         return 1;
     }
     EpollHandle myEpoll = epoll_create(10);
-#ifndef _WIN32
     epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
-
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
-#else
-    // nothing to do for windows
-#endif
 
     // Also poll stdin
     epoll_event wakeStdin = {EPOLLIN, {nullptr}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
-    auto prevFlags = -1; //  fcntl(STDIN_FILENO, F_GETFL, 0);
+    auto prevFlags = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
 
     std::cout << "Will echo anything typed in stdin: " << std::flush;
