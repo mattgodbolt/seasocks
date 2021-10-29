@@ -1158,7 +1158,7 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
 
 // Sends HTTP 200 or 206, content-length, and range info as needed. Returns the actual file ranges
 // needing sending.
-std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, size_t fileSize) {
+std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, long fileSize) {
     if (origRanges.empty()) {
         // Easy case: a non-range request.
         bufferResponseAndCommonHeaders(ResponseCode::Ok);
@@ -1247,7 +1247,7 @@ bool Connection::sendStaticData() {
             char buf[ReadWriteBufferSize];
 
             auto bytesRead = ::read(input, buf,
-                                    static_cast<unsigned int>(std::min(sizeof(buf), bytesLeft)));
+                                    static_cast<unsigned int>(std::min(static_cast<long>(sizeof(buf)), bytesLeft)));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
                 LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));
