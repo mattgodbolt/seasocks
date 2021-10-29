@@ -26,7 +26,7 @@
 #pragma once
 
 #ifdef _WIN32
-#include <Winsock2.h>
+#include "../../../win32/winsock_includes.h"
 #else
 #include <arpa/inet.h>
 #endif

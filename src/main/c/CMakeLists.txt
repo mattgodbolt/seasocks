@@ -11,6 +11,7 @@ if (WIN32)
         "${PROJECT_SOURCE_DIR}/win32/win_byteswap.h"
         "${PROJECT_SOURCE_DIR}/win32/win_getopt.h"
         "${PROJECT_SOURCE_DIR}/win32/win_unistd.h"
+		"${PROJECT_SOURCE_DIR}/win32/winsock_includes.h"
         )
 else()
         set (WIN_FILES "")

@@ -49,7 +49,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #else
-#include <winsock2.h>
+#include "../../../win32/winsock_includes.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h> // O_BINARY
@@ -1245,8 +1245,9 @@ bool Connection::sendStaticData() {
         auto bytesLeft = range.length();
         while (bytesLeft) {
             char buf[ReadWriteBufferSize];
-            // Thanks, MS, for the minmax MACRO. So annoying!
-            auto bytesRead = ::read(input, buf, static_cast<unsigned int>((std::min)(sizeof(buf), (size_t) bytesLeft)));
+
+            auto bytesRead = ::read(input, buf,
+                                    static_cast<unsigned int>(std::min(sizeof(buf), bytesLeft)));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
                 LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));

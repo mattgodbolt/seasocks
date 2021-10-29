@@ -34,7 +34,7 @@
 #include "seasocks/util/Json.h"
 #include <cassert>
 #ifdef _WIN32
-#include <winsock2.h>
+#include "../../../win32/winsock_includes.h"
 #else
 #include <netinet/tcp.h>
 #include <netinet/in.h>

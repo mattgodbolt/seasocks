@@ -40,7 +40,7 @@
 #include <string>
 #include <unordered_map>
 #ifdef _WIN32
-#include <Winsock2.h>
+#include "../../../win32/winsock_includes.h"
 #define ioctl ioctlsocket
 using pid_t = DWORD;
 #include <afunix.h> // windows has unix sockets -- who'da guessed?

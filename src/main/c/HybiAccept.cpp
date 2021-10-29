@@ -29,7 +29,7 @@
 #include "sha1/sha1.h"
 
 #ifdef _WIN32
-#include <winsock2.h>
+#include "../../../win32/winsock_includes.h"
 #else
 #include <arpa/inet.h>
 #endif

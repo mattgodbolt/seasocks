@@ -5,6 +5,10 @@ if(APPLE)
     message(FATAL_ERROR "${PROJECT_NAME} does not support Apple platforms")
 endif()
 
+if(MSVC)
+    add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(SEASOCKS_SHARED "Build seasocks as a shared library" "${BUILD_SHARED_LIBS}")

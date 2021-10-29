@@ -31,7 +31,7 @@
 #include <vector>
 #ifdef WIN32
 #include "../../../win32/win_unistd.h"
-#include <Winsock2.h>
+#include "../../../win32/winsock_includes.h"
 #endif
 
 #ifdef _WIN32
