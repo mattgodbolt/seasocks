@@ -1158,7 +1158,7 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
 
 // Sends HTTP 200 or 206, content-length, and range info as needed. Returns the actual file ranges
 // needing sending.
-std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, long fileSize) {
+std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, size_t fileSize) {
     if (origRanges.empty()) {
         // Easy case: a non-range request.
         bufferResponseAndCommonHeaders(ResponseCode::Ok);
@@ -1238,7 +1238,7 @@ bool Connection::sendStaticData() {
     }
 
     for (auto range : ranges) {
-        if (::lseek(input, range.start, SEEK_SET) == -1) {
+        if (::lseek(input, static_cast<long>(range.start), SEEK_SET) == -1) {
             // We've (probably) already sent data.
             return false;
         }

@@ -1,22 +1,35 @@
+// Copyright (c) 2013-2017, Matt Godbolt, contributed by Steve (sjk7)
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// Redistributions of source code must retain the above copyright notice, this
+// list of conditions and the following disclaimer.
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 #pragma once
-#if HAVE_BYTESWAP_H
-#include <byteswap.h>
-#else
-#include <intrin.h>
-#define bswap_16(value) \
-    ((((value) &0xff) << 8) | ((value) >> 8))
+#ifdef _WIN32
 
-#define bswap_32(value)                                          \
-    (((uint32_t) bswap_16((uint16_t) ((value) &0xffff)) << 16) | \
-     (uint32_t) bswap_16((uint16_t) ((value) >> 16)))
+#include <stdlib.h>
 
-#define bswap_64(value)                                     \
-    (((uint64_t) bswap_32((uint32_t) ((value) &0xffffffff)) \
-      << 32) |                                              \
-     (uint64_t) bswap_32((uint32_t) ((value) >> 32)))
-
-#ifndef __bswap_64
-#define __bswap_64 bswap_64
-#endif
+static inline uint64_t __bswap_64(const uint64_t val) noexcept {
+    return _byteswap_uint64(val);
+}
 
 #endif
