@@ -1211,6 +1211,11 @@ bool Connection::sendStaticData() {
 #define O_BINARY 0x8000 // is this needed sometimes (mingw?)
 #endif
     RaiiFd input{::open(path.c_str(), O_RDONLY | O_BINARY)};
+    if (!input.ok()) {
+        std::string s = seasocks::getLastError();
+        std::cout << s << std::endl;
+        std::cout << std::endl;
+    }
     // This took a while to find! Linux opens all files in binary mode by default,
     // Windows does not. So let's be explicit about this.
 

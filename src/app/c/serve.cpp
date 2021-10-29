@@ -47,6 +47,7 @@ const char usage[] = "Usage: %s [-p PORT] [-v] DIR\n"
 }
 
 int main(int argc, char* const argv[]) {
+
     int port = 80;
     bool verbose = false;
     int opt;

@@ -34,6 +34,15 @@
 #include <algorithm>
 #include <system_error>
 
+#ifdef _WIN32
+#include <direct.h>
+#ifndef getcwd
+#define getcwd _getcwd
+#endif
+#else
+#include <unistd.h>
+#endif
+
 namespace seasocks {
 
 char* skipWhitespace(char* str) {
@@ -125,7 +134,7 @@ void replace(std::string& string, const std::string& find, const std::string& re
 }
 
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
-    return compareCaseInsensitive(lhs, rhs); 
+    return compareCaseInsensitive(lhs, rhs);
 }
 
 
@@ -145,6 +154,22 @@ std::string webtime(time_t time) {
 
 std::string now() {
     return webtime(time(nullptr));
+}
+
+std::string getWorkingDir() {
+    std::string cwd_buf = std::string(255, '\0');
+    char* ptr = getcwd(&cwd_buf[0], 1024);
+    if (ptr) {
+        return std::string(ptr);
+    } else {
+        return std::string();
+    }
+}
+
+bool ends_with(const std::string& target, const std::string& endsWithWhat) {
+    if (endsWithWhat.size() > target.size())
+        return false;
+    return std::equal(endsWithWhat.rbegin(), endsWithWhat.rend(), target.rbegin());
 }
 
 }

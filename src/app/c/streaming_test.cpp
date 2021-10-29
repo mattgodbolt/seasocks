@@ -78,6 +78,7 @@ public:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
+
     auto logger = std::make_shared<PrintfLogger>(Logger::Level::Info);
 
     Server server(logger);

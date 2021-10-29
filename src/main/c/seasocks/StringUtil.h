@@ -55,5 +55,9 @@ std::string webtime(time_t time);
 
 std::string now();
 
+std::string getWorkingDir();
+
+bool ends_with(const std::string& target, const std::string& endsWithWhat);
+
 
 } // namespace seasocks
