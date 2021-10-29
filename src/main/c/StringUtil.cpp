@@ -166,7 +166,7 @@ std::string getWorkingDir() {
     }
 }
 
-bool ends_with(const std::string& target, const std::string& endsWithWhat) {
+bool endsWith(const std::string& target, const std::string& endsWithWhat) {
     if (endsWithWhat.size() > target.size())
         return false;
     return std::equal(endsWithWhat.rbegin(), endsWithWhat.rend(), target.rbegin());

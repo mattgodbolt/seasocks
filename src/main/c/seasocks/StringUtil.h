@@ -57,7 +57,7 @@ std::string now();
 
 std::string getWorkingDir();
 
-bool ends_with(const std::string& target, const std::string& endsWithWhat);
+bool endsWith(const std::string& target, const std::string& endsWithWhat);
 
 
 } // namespace seasocks

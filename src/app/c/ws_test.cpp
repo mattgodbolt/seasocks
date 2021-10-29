@@ -100,7 +100,7 @@ private:
 
 bool checkDir() {
     std::string dir = seasocks::getWorkingDir();
-    if (!seasocks::ends_with(dir, "seasocks")) {
+    if (!seasocks::endsWith(dir, "seasocks")) {
         std::cerr << "Samples must be run in the main seasocks directory" << std::endl;
         return false;
     }
