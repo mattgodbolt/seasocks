@@ -29,7 +29,12 @@
 
 #include <cstdio>
 #include <cstdlib>
+#ifdef _WIN32
+#include "../../../win32/win_getopt.h"
+#else
 #include <getopt.h>
+#endif
+
 #include <memory>
 
 using namespace seasocks;
@@ -42,6 +47,7 @@ const char usage[] = "Usage: %s [-p PORT] [-v] DIR\n"
 }
 
 int main(int argc, char* const argv[]) {
+
     int port = 80;
     bool verbose = false;
     int opt;

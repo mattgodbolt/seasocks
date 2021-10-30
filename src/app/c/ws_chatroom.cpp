@@ -78,7 +78,19 @@ struct MyAuthHandler : PageHandler {
 
 }
 
+bool checkDir() {
+    std::string dir = seasocks::getWorkingDir();
+    if (!seasocks::endsWith(dir, "seasocks")) {
+        std::cerr << "Samples must be run in the main seasocks directory" << std::endl;
+        return false;
+    }
+    return true;
+}
+
 int main(int /*argc*/, const char* /*argv*/[]) {
+    if (!checkDir()) {
+        return -1;
+    }
     Server server(std::make_shared<PrintfLogger>());
     server.addPageHandler(std::make_shared<MyAuthHandler>());
     server.addWebSocketHandler("/chat", std::make_shared<Handler>());

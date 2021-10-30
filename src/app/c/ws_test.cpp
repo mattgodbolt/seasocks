@@ -98,7 +98,19 @@ private:
     }
 };
 
+bool checkDir() {
+    std::string dir = seasocks::getWorkingDir();
+    if (!seasocks::endsWith(dir, "seasocks")) {
+        std::cerr << "Samples must be run in the main seasocks directory" << std::endl;
+        return false;
+    }
+    return true;
+}
+
 int main(int /*argc*/, const char* /*argv*/[]) {
+    if (!checkDir())
+        return -1;
+
     auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);

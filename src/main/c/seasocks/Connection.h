@@ -31,9 +31,14 @@
 #include "seasocks/TransferEncoding.h"
 #include "seasocks/ZlibContext.h"
 
+#ifndef _WIN32
 #include <netinet/in.h>
-
 #include <sys/socket.h>
+#else
+#include "../../../win32/winsock_includes.h"
+#define SHUT_RDWR SD_BOTH
+#define MSG_NOSIGNAL 0
+#endif
 
 #include <cinttypes>
 #include <list>
@@ -54,7 +59,7 @@ public:
     Connection(
         std::shared_ptr<Logger> logger,
         ServerImpl& server,
-        int fd,
+        NativeSocketType fd,
         const sockaddr_in& address);
     virtual ~Connection();
 
@@ -62,7 +67,7 @@ public:
     void handleDataReadyForRead();
     void handleDataReadyForWrite();
 
-    int getFd() const {
+    NativeSocketType getFd() const {
         return _fd;
     }
 
@@ -173,7 +178,7 @@ private:
     struct Range {
         long start;
         long end;
-        size_t length() const {
+        long length() const {
             return end - start + 1;
         }
     };
@@ -186,11 +191,12 @@ private:
 
     void bufferResponseAndCommonHeaders(ResponseCode code);
 
-    std::list<Range> processRangesForStaticData(const std::list<Range>& ranges, long fileSize);
+    std::list<Range> processRangesForStaticData(const std::list<Range>& ranges,
+                                                long fileSize);
 
     std::shared_ptr<Logger> _logger;
     ServerImpl& _server;
-    int _fd;
+    NativeSocketType _fd;
     bool _shutdown;
     bool _hadSendError;
     bool _closeOnEmpty;

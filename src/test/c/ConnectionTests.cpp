@@ -70,7 +70,7 @@ TEST_CASE("Connection tests", "[ConnectionTests]") {
     addr.sin_addr.s_addr = 0x01020304;
     auto logger = std::make_shared<IgnoringLogger>();
     MockServerImpl mockServer;
-    Connection connection(logger, mockServer, -1, addr);
+    Connection connection(logger, mockServer, InvalidSocket, addr);
 
     SECTION("should break hixie messages apart in same buffer") {
         connection.setHandler(std::make_shared<TestHandler>());

@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.3)
 project(Seasocks VERSION 1.4.4)
 
-if(WIN32)
-    message(FATAL_ERROR "${PROJECT_NAME} does not support Windows")
-endif()
 if(APPLE)
     message(FATAL_ERROR "${PROJECT_NAME} does not support Apple platforms")
+endif()
+
+if(MSVC)
+    add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -32,12 +33,17 @@ include(CTest)
 include(GNUInstallDirs)
 include(ClangFormat)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h @ONLY)
-add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    # anything higher than /W3 results in warnings from Catch2, standard libraries, etc 
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
+endif()
 if (COVERAGE)
     add_compile_options(--coverage -O0)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
@@ -58,6 +64,9 @@ if (DEFLATE_SUPPORT)
 endif ()
 
 add_subdirectory(src)
+if (WIN32)
+    add_subdirectory(win32)
+endif()
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(cmake/SeasocksConfig.cmake.in ${PROJECT_NAME}Config.cmake

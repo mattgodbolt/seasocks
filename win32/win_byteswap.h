@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2017, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt, contributed by Steve (sjk7)
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -24,40 +24,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
-
 #ifdef _WIN32
-#include "../../../win32/winsock_includes.h"
-#else
-#include <arpa/inet.h>
+
+#include <stdlib.h>
+
+static inline uint64_t __bswap_64(const uint64_t val) noexcept {
+    return _byteswap_uint64(val);
+}
+
 #endif
-
-#include <ctime>
-#include <string>
-#include <vector>
-
-namespace seasocks {
-
-char* skipWhitespace(char* str);
-char* skipNonWhitespace(char* str);
-char* shift(char*& str);
-std::string trimWhitespace(const std::string& str);
-
-std::string getLastError();
-std::string formatAddress(const sockaddr_in& address);
-
-std::vector<std::string> split(const std::string& input, char splitChar);
-
-void replace(std::string& string, const std::string& find, const std::string& replace);
-
-bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs);
-
-std::string webtime(time_t time);
-
-std::string now();
-
-std::string getWorkingDir();
-
-bool endsWith(const std::string& target, const std::string& endsWithWhat);
-
-
-} // namespace seasocks

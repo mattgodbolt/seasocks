@@ -39,6 +39,26 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#ifdef _WIN32
+#include "../../../win32/winsock_includes.h"
+#define ioctl ioctlsocket
+using pid_t = DWORD;
+#include <afunix.h> // windows has unix sockets -- who'da guessed?
+#endif
+
+
+#ifdef _WIN32
+using EpollHandle = HANDLE;
+constexpr inline HANDLE EpollBadHandle = nullptr;
+#else
+using EpollHandle = int;
+constexpr inline int EpollBadHandle = -1;
+#endif
+
+#ifdef _MSC_VER
+#pragma comment(lib, "ws2_32")
+#endif
+
 
 namespace seasocks {
 
@@ -96,7 +116,7 @@ public:
     // Returns a file descriptor that can be polled for changes (e.g. by
     // placing it in an epoll set. The poll() method above only need be called
     // when this file descriptor is readable.
-    int fd() const {
+    EpollHandle fd() const {
         return _epollFd;
     }
 
@@ -155,8 +175,8 @@ private:
         return *this;
     }
 
-    bool makeNonBlocking(int fd) const;
-    bool configureSocket(int fd) const;
+    bool makeNonBlocking(NativeSocketType fd) const;
+    bool configureSocket(NativeSocketType fd) const;
     void handleAccept();
     void processEventQueue();
     void runExecutables();
@@ -169,12 +189,13 @@ private:
                           Close };
     NewState handleConnectionEvents(Connection* connection, uint32_t events);
 
+
     // Connections, mapped to initial connection time.
     std::map<Connection*, time_t> _connections;
     std::shared_ptr<Logger> _logger;
-    int _listenSock;
-    int _epollFd;
-    int _eventFd;
+    NativeSocketType _listenSock;
+    EpollHandle _epollFd;
+    EpollHandle _eventFd;
     int _maxKeepAliveDrops;
     int _lameConnectionTimeoutSeconds;
     size_t _clientBufferSize;
@@ -185,7 +206,7 @@ private:
 
     struct WebSocketHandlerEntry {
         std::shared_ptr<WebSocket::Handler> handler;
-        bool allowCrossOrigin;
+        bool allowCrossOrigin = false;
     };
     typedef std::unordered_map<std::string, WebSocketHandlerEntry> WebSocketHandlerMap;
     WebSocketHandlerMap _webSocketHandlerMap;
@@ -194,6 +215,7 @@ private:
 
     std::mutex _pendingExecutableMutex;
     std::list<Executable> _pendingExecutables;
+
 
     pid_t _threadId;
 

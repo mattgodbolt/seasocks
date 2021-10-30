@@ -32,10 +32,17 @@
 #include "seasocks/PageHandler.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/util/Json.h"
-
-#include <netinet/in.h>
+#include <cassert>
+#ifdef _WIN32
+#include "../../../win32/winsock_includes.h"
+#else
 #include <netinet/tcp.h>
+#include <netinet/in.h>
+#endif
 
+#ifdef _WIN32
+#include "../../../win32/wepoll.h"
+#else
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/ioctl.h>
@@ -43,11 +50,17 @@
 #include <sys/syscall.h>
 #include <sys/un.h>
 #include <sys/types.h>
+#endif
 
 #include <memory>
 #include <stdexcept>
 #include <cstring>
+
+#ifdef _WIN32
+#include "../../../win32/win_unistd.h"
+#else
 #include <unistd.h>
+#endif
 
 namespace {
 
@@ -84,7 +97,9 @@ std::ostream& operator<<(std::ostream& o, const EventBits& b) {
     DO_BIT(EPOLLRDHUP);
 #endif
     DO_BIT(EPOLLONESHOT);
+#ifndef _WIN32
     DO_BIT(EPOLLET);
+#endif
 #undef DO_BIT
     return o;
 }
@@ -97,59 +112,102 @@ constexpr int DefaultLameConnectionTimeoutSeconds = 10;
 namespace seasocks {
 
 pid_t gettid() {
+
+#ifdef _WIN32
+    return ::GetCurrentThreadId();
+#else
 #if __GLIBC_PREREQ(2, 30)
     return ::gettid();
 #else
     return static_cast<pid_t>(syscall(SYS_gettid));
 #endif /* GLIBC 2.30 */
+#endif
 }
+
+#ifdef _WIN32
+static inline void init_winsock() {
+    WSAData data;
+    static int result = -1;
+
+    if (result != 0) {
+        // Initialise Winsock
+        result = WSAStartup(MAKEWORD(2, 2), &data);
+        if (result != 0) {
+            const std::string err = "FATAL: WSAStartup failed, with error: " + std::to_string(result);
+            throw std::runtime_error(err);
+        }
+    }
+}
+#endif
 
 constexpr size_t Server::DefaultClientBufferSize;
 
 Server::Server(std::shared_ptr<Logger> logger)
-        : _logger(logger), _listenSock(-1), _epollFd(-1), _eventFd(-1),
+        : _logger(logger), _listenSock(InvalidSocket), _epollFd(EpollBadHandle), _eventFd(EpollBadHandle),
           _maxKeepAliveDrops(0),
           _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
           _clientBufferSize(DefaultClientBufferSize),
           _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
           _expectedTerminate(false) {
 
+#ifdef _WIN32
+    init_winsock();
+#endif
+
     _epollFd = epoll_create(10);
-    if (_epollFd == -1) {
+    if (_epollFd == EpollBadHandle) {
         LS_ERROR(_logger, "Unable to create epoll: " << getLastError());
         return;
     }
 
+#ifndef _WIN32
     _eventFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    if (_eventFd == -1) {
+#else
+    _eventFd = ::CreateEvent(0, 0, 0, 0);
+#endif
+    if (_eventFd == EpollBadHandle) {
         LS_ERROR(_logger, "Unable to create event FD: " << getLastError());
         return;
     }
 
     epoll_event eventWake = {EPOLLIN, {&_eventFd}};
+#ifndef _WIN32
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _eventFd, &eventWake) == -1) {
         LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
         return;
     }
+#endif
 }
 
 Server::~Server() {
     LS_INFO(_logger, "Server destruction");
     shutdown();
-    // Only shut the eventfd and epoll at the very end
-    if (_eventFd != -1) {
-        close(_eventFd);
+// Only shut the eventfd and epoll at the very end
+#ifndef _WIN32
+    if (_eventFd != EpollBadHandle) {
+        ::close(_eventFd);
     }
-    if (_epollFd != -1) {
+#else
+    CloseHandle(_eventFd);
+#endif
+    if (_epollFd != EpollBadHandle) {
+#ifndef _WIN32
         close(_epollFd);
+#else
+        epoll_close(_epollFd);
+#endif
     }
 }
 
 void Server::shutdown() {
     // Stop listening to any further incoming connections.
     if (_listenSock != -1) {
+#ifdef _WIN32
+        ::closesocket(_listenSock);
+#else
         close(_listenSock);
-        _listenSock = -1;
+#endif
+        _listenSock = InvalidSocket;
     }
     // Disconnect and close any current connections.
     while (!_connections.empty()) {
@@ -160,21 +218,32 @@ void Server::shutdown() {
     }
 }
 
-bool Server::makeNonBlocking(int fd) const {
+bool Server::makeNonBlocking(NativeSocketType fd) const {
     int yesPlease = 1;
+#ifndef _WIN32
     if (ioctl(fd, FIONBIO, &yesPlease) != 0) {
         LS_ERROR(_logger, "Unable to make FD non-blocking: " << getLastError());
         return false;
     }
     return true;
+#else
+    u_long yp = yesPlease;
+    if (ioctl(fd, FIONBIO, &yp) != 0) {
+        LS_ERROR(_logger, "Unable to make FD non-blocking: " << getLastError());
+        return false;
+    }
+    return true;
+#endif
 }
 
-bool Server::configureSocket(int fd) const {
+bool Server::configureSocket(NativeSocketType fd) const {
     if (!makeNonBlocking(fd)) {
         return false;
     }
     const int yesPlease = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yesPlease, sizeof(yesPlease)) == -1) {
+    // signature of ::setsockopt in Windows is:
+    // int setsockopt(SOCKET, int level, int optname, const char *optval, int optlen);
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
         LS_ERROR(_logger, "Unable to set reuse address socket option: " << getLastError());
         return false;
     }
@@ -185,20 +254,24 @@ bool Server::configureSocket(int fd) const {
     }
 #endif
     if (_maxKeepAliveDrops > 0) {
-        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yesPlease, sizeof(yesPlease)) == -1) {
+        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
+                       reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
             LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
             return false;
         }
         const int oneSecond = 1;
-        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &oneSecond, sizeof(oneSecond)) == -1) {
+        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE,
+                       reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
             LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
             return false;
         }
-        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &oneSecond, sizeof(oneSecond)) == -1) {
+        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL,
+                       reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
             LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
             return false;
         }
-        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &_maxKeepAliveDrops, sizeof(_maxKeepAliveDrops)) == -1) {
+        if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT,
+                       reinterpret_cast<const char*>(&_maxKeepAliveDrops), sizeof(_maxKeepAliveDrops)) == -1) {
             LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
             return false;
         }
@@ -209,10 +282,15 @@ bool Server::configureSocket(int fd) const {
 void Server::terminate() {
     _expectedTerminate = true;
     _terminate = true;
+
+#ifndef _WIN32
     uint64_t one = 1;
     if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
         LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
     }
+#else
+    SetEvent(_eventFd);
+#endif
 }
 
 bool Server::startListening(int port) {
@@ -220,7 +298,7 @@ bool Server::startListening(int port) {
 }
 
 bool Server::startListening(uint32_t ipInHostOrder, int port) {
-    if (_epollFd == -1 || _eventFd == -1) {
+    if (_epollFd == EpollBadHandle || _eventFd == EpollBadHandle) {
         LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
         return false;
     }
@@ -302,6 +380,8 @@ bool Server::startListeningUnix(const char* socketPath) {
 }
 
 void Server::handlePipe() {
+    // Windows has nothing to do here as it's just a Windows Event that gets set
+#ifndef _WIN32
     uint64_t dummy;
     while (::read(_eventFd, &dummy, sizeof(dummy)) != -1) {
         // Spin, draining the pipe until it returns EWOULDBLOCK or similar.
@@ -310,6 +390,8 @@ void Server::handlePipe() {
         LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
         _terminate = true;
     }
+#endif
+
     // It's a "wake up" event; this will just cause the epoll loop to wake up.
 }
 
@@ -368,6 +450,10 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
             }
             handleAccept();
         } else if (events[i].data.ptr == &_eventFd) {
+// This is never true in windows
+#ifdef _WIN32
+            throw std::exception("Win32 uses a seperate, native wake-up HANDLE as an event");
+#else
             if (events[i].events & ~EPOLLIN) {
                 LS_SEVERE(_logger, "Got unexpected event on management pipe ("
                                        << EventBits(events[i].events) << ") - terminating");
@@ -375,6 +461,9 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
                 break;
             }
             handlePipe();
+#endif
+
+
         } else {
             auto connection = reinterpret_cast<Connection*>(events[i].data.ptr);
             if (handleConnectionEvents(connection, events[i].events) == NewState::Close) {
@@ -489,15 +578,19 @@ void Server::runExecutables() {
 void Server::handleAccept() {
     sockaddr_in address;
     socklen_t addrLen = sizeof(address);
-    int fd = ::accept(_listenSock,
-                      reinterpret_cast<sockaddr*>(&address),
-                      &addrLen);
+    NativeSocketType fd = ::accept(_listenSock,
+                                   reinterpret_cast<sockaddr*>(&address),
+                                   &addrLen);
     if (fd == -1) {
         LS_ERROR(_logger, "Unable to accept: " << getLastError());
         return;
     }
     if (!configureSocket(fd)) {
+#ifdef _WIN32
+        ::closesocket(fd);
+#else
         ::close(fd);
+#endif
         return;
     }
     LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
@@ -506,7 +599,11 @@ void Server::handleAccept() {
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
         LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
         delete newConnection;
+#ifdef _WIN32
+        closesocket(fd);
+#else
         ::close(fd);
+#endif
         return;
     }
     _connections.insert(std::make_pair(newConnection, time(nullptr)));
@@ -575,12 +672,19 @@ void Server::execute(std::function<void()> toExecute) {
     _pendingExecutables.emplace_back(std::move(toExecute));
     lock.unlock();
 
+#ifndef _WIN32
     uint64_t one = 1;
     if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
             LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
         }
     }
+#else
+    BOOL set = SetEvent(_eventFd);
+    if (set == FALSE) {
+        LS_ERROR(_logger, "Unable to post a wake event: " << GetLastError());
+    }
+#endif
 }
 
 std::string Server::getStatsDocument() const {

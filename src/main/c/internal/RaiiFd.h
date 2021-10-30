@@ -24,8 +24,11 @@
 // POSSIBILITY OF SUnamespace seasocks {
 
 #pragma once
-
+#ifndef _WIN32
 #include <unistd.h>
+#else
+#include "../../../win32/win_unistd.h"
+#endif
 
 namespace seasocks {
 

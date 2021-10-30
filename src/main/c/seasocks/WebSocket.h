@@ -29,6 +29,18 @@
 
 #include <string>
 #include <vector>
+#ifdef WIN32
+#include "../../../win32/win_unistd.h"
+#include "../../../win32/winsock_includes.h"
+#endif
+
+#ifdef _WIN32
+using NativeSocketType = SOCKET;
+#else
+using NativeSocketType = int;
+#endif
+
+static constexpr inline NativeSocketType InvalidSocket = static_cast<NativeSocketType>(-1);
 
 namespace seasocks {
 

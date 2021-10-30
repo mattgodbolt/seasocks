@@ -4,6 +4,19 @@ else ()
     set(SEASOCKS_LIBTYPE "STATIC")
 endif ()
 
+if (WIN32)
+    set(WIN_FILES
+        "${PROJECT_SOURCE_DIR}/win32/wepoll.c"
+        "${PROJECT_SOURCE_DIR}/win32/wepoll.h"
+        "${PROJECT_SOURCE_DIR}/win32/win_byteswap.h"
+        "${PROJECT_SOURCE_DIR}/win32/win_getopt.h"
+        "${PROJECT_SOURCE_DIR}/win32/win_unistd.h"
+		"${PROJECT_SOURCE_DIR}/win32/winsock_includes.h"
+        )
+else()
+        set (WIN_FILES "")
+endif()
+
 add_library(seasocks ${SEASOCKS_LIBTYPE}
         Connection.cpp
         HybiAccept.cpp
@@ -65,8 +78,9 @@ add_library(seasocks ${SEASOCKS_LIBTYPE}
         util/Json.cpp
         util/PathHandler.cpp
         util/RootPageHandler.cpp
+        ${WIN_FILES}
         $<TARGET_OBJECTS:embedded>
-        )
+         "seasocks/StrCompare.h")
 
 set_target_properties(
     seasocks
@@ -75,7 +89,7 @@ set_target_properties(
 )
 
 if (DEFLATE_SUPPORT)
-    target_sources(seasocks PRIVATE seasocks/ZlibContext.cpp)
+    target_sources(seasocks PRIVATE seasocks/ZlibContext.cpp "seasocks/StrCompare.h")
 else ()
     target_sources(seasocks PRIVATE seasocks/ZlibContextDisabled.cpp)
 endif ()

@@ -72,7 +72,7 @@ TEST_CASE("Server tests", "[ServerTests]") {
             if (latch)
                 break;
         }
-        CHECK(latch == 1);
+        CHECK(latch.load() == true);
         CHECK(test == 10000);
     }
 

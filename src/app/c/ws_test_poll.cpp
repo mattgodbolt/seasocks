@@ -45,8 +45,13 @@
 #include <sstream>
 #include <string>
 #include <fcntl.h>
+#ifdef _WIN32
+#error "This sample is not to be built under Windows"
+#else
+
 #include <unistd.h>
 #include <sys/epoll.h>
+#endif
 
 using namespace seasocks;
 
@@ -105,8 +110,8 @@ private:
 };
 
 int main(int /*argc*/, const char* /*argv*/[]) {
-    auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
+    auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
     Server server(logger);
 
     auto handler = std::make_shared<MyHandler>(&server);
@@ -116,7 +121,7 @@ int main(int /*argc*/, const char* /*argv*/[]) {
         std::cerr << "couldn't start listening\n";
         return 1;
     }
-    int myEpoll = epoll_create(10);
+    EpollHandle myEpoll = epoll_create(10);
     epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
 

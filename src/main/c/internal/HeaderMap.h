@@ -25,10 +25,12 @@
 
 #pragma once
 
-#include <cctype>
+
 #include <cstring>
 #include <string>
 #include <unordered_map>
+#include "seasocks/StrCompare.h"
+
 
 namespace seasocks {
 
@@ -44,7 +46,7 @@ struct CaseInsensitiveHash {
 
 struct CaseInsensitiveComparison {
     bool operator()(const std::string& lhs, const std::string& rhs) const {
-        return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
+        return compareCaseInsensitive(lhs, rhs);
     }
 };
 

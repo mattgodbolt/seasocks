@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "seasocks/StringUtil.h"
+#include "seasocks/StrCompare.h"
 
 #include <cctype>
 #include <cerrno>
@@ -32,6 +33,15 @@
 #include <cstring>
 #include <algorithm>
 #include <system_error>
+
+#ifdef _WIN32
+#include <direct.h>
+#ifndef getcwd
+#define getcwd _getcwd
+#endif
+#else
+#include <unistd.h>
+#endif
 
 namespace seasocks {
 
@@ -124,12 +134,18 @@ void replace(std::string& string, const std::string& find, const std::string& re
 }
 
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
-    return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
+    return compareCaseInsensitive(lhs, rhs);
 }
+
 
 std::string webtime(time_t time) {
     struct tm timeValue;
+#ifdef _WIN32
+    gmtime_s(&timeValue, &time);
+#else
     gmtime_r(&time, &timeValue);
+#endif
+
     char buf[1024];
     // Wed, 20 Apr 2011 17:31:28 GMT
     strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S %Z", &timeValue);
@@ -138,6 +154,22 @@ std::string webtime(time_t time) {
 
 std::string now() {
     return webtime(time(nullptr));
+}
+
+std::string getWorkingDir() {
+    std::string cwd_buf = std::string(255, '\0');
+    char* ptr = getcwd(&cwd_buf[0], 1024);
+    if (ptr) {
+        return std::string(ptr);
+    } else {
+        return std::string();
+    }
+}
+
+bool endsWith(const std::string& target, const std::string& endsWithWhat) {
+    if (endsWithWhat.size() > target.size())
+        return false;
+    return std::equal(endsWithWhat.rbegin(), endsWithWhat.rend(), target.rbegin());
 }
 
 }

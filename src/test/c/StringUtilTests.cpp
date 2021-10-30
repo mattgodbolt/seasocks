@@ -123,3 +123,28 @@ TEST_CASE("format address", "[ToStringTests]") {
     address.sin_addr.s_addr = 0x100007f;
     CHECK(formatAddress(address) == "127.0.0.1:12345");
 }
+
+TEST_CASE("case-insensitive compare positive", "[ToStringTests]") {
+    const std::string s1("Hello World");
+    const std::string s2("hello WORLD");
+    const auto result = caseInsensitiveSame(s1, s2);
+    CHECK(result == true);
+}
+
+TEST_CASE("case-insensitive compare negative", "[ToStringTests]") {
+    const std::string s1("Hello World");
+    const std::string s2("hello WROLD");
+    const auto result = caseInsensitiveSame(s1, s2);
+    CHECK(result == false);
+}
+
+TEST_CASE("endswith", "[ToStringTests]") {
+    const std::string s1("Hello World");
+    const auto result = endsWith(s1, "World");
+    CHECK(result == true);
+}
+
+TEST_CASE("getWorkingDir", "[ToStringTests]") {
+    const std::string result = getWorkingDir();
+    CHECK(!result.empty());
+}
