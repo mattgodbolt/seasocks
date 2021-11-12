@@ -1,4 +1,4 @@
-Seasocks - A tiny embeddable C++ HTTP and WebSocket server for Linux
+Seasocks - A tiny embeddable C++ HTTP and WebSocket server
 ====================================================================
 
 [![CI](https://github.com/mattgodbolt/seasocks/workflows/ci/badge.svg)](https://github.com/mattgodbolt/seasocks/actions)
@@ -14,13 +14,14 @@ Features
 * API for building WebSocket servers
 * Simple command line binary for quick serving of static files only
 * Supports newer Hybi-10 and Hybi-16 WebSockets as well as the older Hixie style.
+* Supports Linux and Windows
 
 Stuff it doesn't do
 -------------------
 * It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
 * It provides only limited support for custom content generation (e.g. Servlets).
 * It has been designed for WebSocket based control.
-* It's Linux focused and probably wont work on other systems (patches to support other systems would be welcome, but not a priority for us)
+* It probably won't work on other systems (patches to support other systems would be welcome, but not a priority for us)
 
 Getting started
 ---------------
