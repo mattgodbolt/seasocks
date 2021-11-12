@@ -21,7 +21,7 @@ Stuff it doesn't do
 * It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
 * It provides only limited support for custom content generation (e.g. Servlets).
 * It has been designed for WebSocket based control.
-* It probably wont work on other systems (patches to support other systems would be welcome, but not a priority for us)
+* It probably won't work on other systems (patches to support other systems would be welcome, but not a priority for us)
 
 Getting started
 ---------------
