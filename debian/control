@@ -1,0 +1,15 @@
+Source: seasocks
+Section: embeddable webserver
+Priority: optional
+Maintainer: root <root@debian-BULLSEYE-live-builder-AMD64>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.5.1
+Homepage: https://github.com/mattgodbolt/seasocks
+#Vcs-Browser: 
+#Vcs-Git: https://github.com/mattgodbolt/seasocks
+Rules-Requires-Root: no
+
+Package: seasocks
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Simple, small, C++ embeddable webserver with WebSockets support 

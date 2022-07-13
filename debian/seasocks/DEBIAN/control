@@ -1,0 +1,9 @@
+Package: seasocks
+Version: 1.4.4-1
+Architecture: amd64
+Maintainer: root <root@debian-BULLSEYE-live-builder-AMD64>
+Installed-Size: 10
+Section: embeddable webserver
+Priority: optional
+Homepage: https://github.com/mattgodbolt/seasocks
+Description: Simple, small, C++ embeddable webserver with WebSockets support
