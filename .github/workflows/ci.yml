@@ -8,6 +8,7 @@ jobs:
     strategy:
       matrix:
         build_config:
+          - { compiler: gcc, version: 12 }
           - { compiler: gcc, version: 11 }
           - { compiler: gcc, version: 10 }
           - { compiler: gcc, version: 9 }
