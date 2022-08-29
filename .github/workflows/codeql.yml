@@ -8,14 +8,15 @@ on:
 
 jobs:
   codeql:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     name: "CodeQL"
-    env:
-      CC: gcc-10
-      CXX: g++-10
+    container:
+      image: gcc:10
     steps:
       - name: Checkout
         uses: actions/checkout@main
+      - name: Setup
+        run: apt-get update && apt-get install -y cmake zlib1g-dev
       - name: CodeQL Initialization
         uses: github/codeql-action/init@v2
         with:

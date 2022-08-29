@@ -4,41 +4,39 @@ on: [push, pull_request]
 
 jobs:
   build_linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         build_config:
-          - { cc: gcc, cxx: g++, version: 11 }
-          - { cc: gcc, cxx: g++, version: 10 }
-          - { cc: gcc, cxx: g++, version: 9 }
-          - { cc: gcc, cxx: g++, version: 8 }
-          - { cc: gcc, cxx: g++, version: 7 }
-          - { cc: clang, cxx: clang++, version: 14 }
-          - { cc: clang, cxx: clang++, version: 13 }
-          - { cc: clang, cxx: clang++, version: 12 }
-          - { cc: clang, cxx: clang++, version: 11 }
-          - { cc: clang, cxx: clang++, version: 10 }
-          - { cc: clang, cxx: clang++, version: 9 }
-          - { cc: gcc, cxx: g++, version: 10, args: "-DDEFLATE_SUPPORT=OFF" }
+          - { compiler: gcc, version: 12 }
+          - { compiler: gcc, version: 11 }
+          - { compiler: gcc, version: 10 }
+          - { compiler: gcc, version: 9 }
+          - { compiler: gcc, version: 8 }
+          - { compiler: gcc, version: 7 }
+          - { compiler: clang, version: 14 }
+          - { compiler: clang, version: 13 }
+          - { compiler: clang, version: 12 }
+          - { compiler: clang, version: 11 }
+          - { compiler: clang, version: 10 }
+          - { compiler: clang, version: 9 }
+          - { compiler: gcc, version: 10, args: "-DDEFLATE_SUPPORT=OFF" }
+    container:
+      image: ${{ matrix.build_config.compiler == 'clang' && 'teeks99/clang-ubuntu' || matrix.build_config.compiler }}:${{ matrix.build_config.version }}
     env:
-      CC: ${{ matrix.build_config.cc }}-${{ matrix.build_config.version }}
-      CXX: ${{ matrix.build_config.cxx }}-${{ matrix.build_config.version }}
       JOBS: 2
-    name: "${{ matrix.build_config.cc }}-${{ matrix.build_config.version }} ${{ matrix.build_config.args }}"
+    name: "${{ matrix.build_config.compiler }}-${{ matrix.build_config.version }} ${{ matrix.build_config.args }}"
     steps:
       - uses: actions/checkout@main
       - name: Setup Clang
-        if: matrix.build_config.cc == 'clang'
+        if: matrix.build_config.compiler == 'clang'
         run: |
-          sudo scripts/ci_setup_clang.sh ${{ matrix.build_config.version }}
+          scripts/ci_setup_clang.sh ${{ matrix.build_config.version }}
           echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
-      - name: Setup GCC
-        if: matrix.build_config.cc == 'gcc'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-${{ matrix.build_config.version }} g++-${{ matrix.build_config.version }}
+          echo "CC=clang-${{ matrix.build_config.version }}" >> $GITHUB_ENV
+          echo "CXX=clang++-${{ matrix.build_config.version }}" >> $GITHUB_ENV
       - name: Setup
-        run: sudo apt-get install -y valgrind
+        run: apt-get update && apt-get install -y cmake valgrind zlib1g-dev git
       - name: Build
         run: |
           cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=ON ${{ matrix.build_config.args }}
@@ -49,7 +47,10 @@ jobs:
           cmake --build . --target test
           ctest -D ExperimentalBuild -j${JOBS}
           ctest -D ExperimentalMemCheck -j${JOBS}
-          bash <(curl -s https://codecov.io/bash)
+      - name: CodeCov
+        uses: codecov/codecov-action@v3
+        with:
+          gcov: true
   build_msvc:
     runs-on: windows-latest
     strategy:
@@ -58,9 +59,6 @@ jobs:
           - {args: "-DDEFLATE_SUPPORT=OFF", config: "Debug"}
     steps:
       - uses: actions/checkout@main
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
       - name: Build
         run: |
             cmake . -Bbuild ${{ matrix.build_config.args }}
