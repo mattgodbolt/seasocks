@@ -59,9 +59,6 @@ jobs:
           - {args: "-DDEFLATE_SUPPORT=OFF", config: "Debug"}
     steps:
       - uses: actions/checkout@main
-      - uses: actions/setup-python@main
-        with:
-          python-version: '3.x'
       - name: Build
         run: |
             cmake . -Bbuild ${{ matrix.build_config.args }}
