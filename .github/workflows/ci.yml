@@ -14,6 +14,8 @@ jobs:
           - { compiler: gcc, version: 9 }
           - { compiler: gcc, version: 8 }
           - { compiler: gcc, version: 7 }
+          - { compiler: gcc, version: 6 }
+          - { compiler: gcc, version: 5 }
           - { compiler: clang, version: 14 }
           - { compiler: clang, version: 13 }
           - { compiler: clang, version: 12 }
