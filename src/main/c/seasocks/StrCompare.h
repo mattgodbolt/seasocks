@@ -2,12 +2,12 @@
 // StringCompare.h, written by sjk7 (Steve) 22/10/2021
 // Inherits seasocks licence.
 
-#include <string_view>
+#include <string>
 #include <cctype>
 #include <algorithm>
 
-static inline bool compareCaseInsensitive(const std::string_view lhs,
-                                          const std::string_view rhs) noexcept {
+static inline bool compareCaseInsensitive(const std::string& lhs,
+                                          const std::string& rhs) noexcept {
     // replaces "return strcasecmp(lhs.c_str(), rhs.c_str()) == 0" directly
     // test coverage provided by:
     // TEST_CASE("case insensitive string comparison", "[ToStringTests]")
