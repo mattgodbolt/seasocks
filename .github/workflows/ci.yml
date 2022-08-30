@@ -27,6 +27,7 @@ jobs:
       image: ${{ matrix.build_config.compiler == 'clang' && 'teeks99/clang-ubuntu' || matrix.build_config.compiler }}:${{ matrix.build_config.version }}
     env:
       JOBS: 2
+      CMAKE_VERSION: "3.24.1"
     name: "${{ matrix.build_config.compiler }}-${{ matrix.build_config.version }} ${{ matrix.build_config.args }}"
     steps:
       - uses: actions/checkout@main
@@ -38,7 +39,11 @@ jobs:
           echo "CC=clang-${{ matrix.build_config.version }}" >> $GITHUB_ENV
           echo "CXX=clang++-${{ matrix.build_config.version }}" >> $GITHUB_ENV
       - name: Setup
-        run: apt-get update && apt-get install -y cmake valgrind zlib1g-dev git
+        run: |
+          apt-get update && apt-get install -y valgrind zlib1g-dev git curl
+          curl -sSL https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.sh -o install-cmake.sh
+          chmod +x install-cmake.sh
+          ./install-cmake.sh --prefix=/usr/local --skip-license
       - name: Build
         run: |
           cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=ON ${{ matrix.build_config.args }}
