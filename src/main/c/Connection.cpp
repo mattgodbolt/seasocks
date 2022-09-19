@@ -867,6 +867,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
     }
+    if (std::string(requestUri).find("..") != std::string::npos) {
+        return sendBadRequest("Malformed uri");
+    }
 
     const char* httpVersion = shift(requestLine);
     if (httpVersion == nullptr) {
