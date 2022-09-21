@@ -1200,6 +1200,9 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 #endif
 bool Connection::sendStaticData() {
     // TODO: fold this into the handler way of doing things.
+    if (_server.getStaticPath().empty()) {
+        return send404();
+    }
     std::string path = _server.getStaticPath() + getRequestUri();
     auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
