@@ -39,7 +39,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.h.in internal/Config.h @ONLY)
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    # anything higher than /W3 results in warnings from Catch2, standard libraries, etc 
+    # anything higher than /W3 results in warnings from Catch2, standard libraries, etc
     add_compile_options(/W4 /WX)
 else()
     add_compile_options(-Wall -Werror -Wextra -pedantic -pedantic-errors)
@@ -50,7 +50,7 @@ if (COVERAGE)
     set(CMAKE_SHARED_LINKER_FLAGS "${SHARED_EXE_LINKER_FLAGS} --coverage")
 endif ()
 
-find_package(Threads)
+find_package(Threads REQUIRED)
 find_package(PythonInterp)
 
 if (NOT PYTHONINTERP_FOUND)
