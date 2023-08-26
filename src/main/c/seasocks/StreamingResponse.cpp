@@ -51,7 +51,7 @@ void StreamingResponse::handle(std::shared_ptr<ResponseWriter> writer) {
         bool isGood = stream->good();
         if (isGood || isEof) {
             // everything is fine, push data to client
-            writer->payload(buffer.get(), stream->gcount(), flush);
+            writer->payload(buffer.get(), static_cast<size_t>(stream->gcount()), flush);
         }
 
         if (!isGood) {
