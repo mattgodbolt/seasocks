@@ -34,14 +34,14 @@
 #include "seasocks/util/Json.h"
 #include <cassert>
 #ifdef _WIN32
-#include "../../../win32/winsock_includes.h"
+#include "seasocks/win32/winsock_includes.h"
 #else
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 #endif
 
 #ifdef _WIN32
-#include "../../../win32/wepoll.h"
+#include "seasocks/win32/wepoll.h"
 #else
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
@@ -57,7 +57,7 @@
 #include <cstring>
 
 #ifdef _WIN32
-#include "../../../win32/win_unistd.h"
+#include "seasocks/win32/win_unistd.h"
 #else
 #include <unistd.h>
 #endif

@@ -64,9 +64,6 @@ if (DEFLATE_SUPPORT)
 endif ()
 
 add_subdirectory(src)
-if (WIN32)
-    add_subdirectory(win32)
-endif()
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(cmake/SeasocksConfig.cmake.in ${PROJECT_NAME}Config.cmake

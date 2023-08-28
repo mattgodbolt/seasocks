@@ -27,7 +27,7 @@
 #ifndef _WIN32
 #include <unistd.h>
 #else
-#include "../../../win32/win_unistd.h"
+#include "seasocks/win32/win_unistd.h"
 #endif
 
 namespace seasocks {

@@ -35,7 +35,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #else
-#include "../../../win32/winsock_includes.h"
+#include "seasocks/win32/winsock_includes.h"
 #define SHUT_RDWR SD_BOTH
 #define MSG_NOSIGNAL 0
 #endif
