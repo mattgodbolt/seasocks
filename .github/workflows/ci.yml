@@ -19,8 +19,6 @@ jobs:
           - { compiler: clang, version: 13 }
           - { compiler: clang, version: 12 }
           - { compiler: clang, version: 11 }
-          - { compiler: clang, version: 10 }
-          - { compiler: clang, version: 9 }
           - { compiler: gcc, version: 10, args: "-DDEFLATE_SUPPORT=OFF" }
     container:
       image: ${{ matrix.build_config.compiler == 'clang' && 'teeks99/clang-ubuntu' || matrix.build_config.compiler }}:${{ matrix.build_config.version }}
