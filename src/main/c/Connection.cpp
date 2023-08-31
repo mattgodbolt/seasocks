@@ -49,7 +49,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #else
-#include "../../../win32/winsock_includes.h"
+#include "seasocks/win32/winsock_includes.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h> // O_BINARY
@@ -74,8 +74,8 @@
 #include <unistd.h>
 #include <byteswap.h>
 #else
-#include "../../../win32/win_unistd.h"
-#include "../../../win32/win_byteswap.h"
+#include "seasocks/win32/win_unistd.h"
+#include "seasocks/win32/win_byteswap.h"
 #endif
 #include <unordered_map>
 #include <memory>

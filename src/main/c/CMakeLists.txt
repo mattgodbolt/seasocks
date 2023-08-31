@@ -6,15 +6,15 @@ endif ()
 
 if (WIN32)
     set(WIN_FILES
-        "${PROJECT_SOURCE_DIR}/win32/wepoll.c"
-        "${PROJECT_SOURCE_DIR}/win32/wepoll.h"
-        "${PROJECT_SOURCE_DIR}/win32/win_byteswap.h"
-        "${PROJECT_SOURCE_DIR}/win32/win_getopt.h"
-        "${PROJECT_SOURCE_DIR}/win32/win_unistd.h"
-		"${PROJECT_SOURCE_DIR}/win32/winsock_includes.h"
+        "seasocks/win32/wepoll.c"
+        "seasocks/win32/wepoll.h"
+        "seasocks/win32/win_byteswap.h"
+        "seasocks/win32/win_getopt.h"
+        "seasocks/win32/win_unistd.h"
+		"seasocks/win32/winsock_includes.h"
         )
 else()
-        set (WIN_FILES "")
+    set(WIN_FILES "")
 endif()
 
 add_library(seasocks ${SEASOCKS_LIBTYPE}

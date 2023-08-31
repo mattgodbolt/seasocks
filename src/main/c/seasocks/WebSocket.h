@@ -30,8 +30,8 @@
 #include <string>
 #include <vector>
 #ifdef WIN32
-#include "../../../win32/win_unistd.h"
-#include "../../../win32/winsock_includes.h"
+#include "seasocks/win32/win_unistd.h"
+#include "seasocks/win32/winsock_includes.h"
 #endif
 
 #ifdef _WIN32

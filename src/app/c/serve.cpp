@@ -30,7 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #ifdef _WIN32
-#include "../../../win32/win_getopt.h"
+#include "seasocks/win32/win_getopt.h"
 #else
 #include <getopt.h>
 #endif
