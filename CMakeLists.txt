@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(Seasocks VERSION 1.4.5)
+project(Seasocks VERSION 1.4.6)
 
 if(APPLE)
     message(FATAL_ERROR "${PROJECT_NAME} does not support Apple platforms")
