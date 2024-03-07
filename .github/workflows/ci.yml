@@ -49,7 +49,7 @@ jobs:
           ctest -D ExperimentalBuild -j${JOBS}
           ctest -D ExperimentalMemCheck -j${JOBS}
       - name: CodeCov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           gcov: true
   build_msvc:
