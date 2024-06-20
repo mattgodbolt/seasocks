@@ -28,7 +28,7 @@ class SeasocksConan(ConanFile):
         "with_zlib": [True, False],
     }
     default_options = {
-        "shared": True,
+        "shared": False,
         "fPIC": True,
         "with_zlib": True,
     }
@@ -65,11 +65,13 @@ class SeasocksConan(ConanFile):
             source_folder=self.source_folder.replace("\\", "/"),
             install_folder=self.install_folder.replace("\\", "/")))
         cmake = CMake(self)
+        cmake.definitions["SEASOCKS_SHARED"] = self.options.shared
         cmake.definitions["DEFLATE_SUPPORT"] = self.options.with_zlib
         cmake.configure(source_folder=self.build_folder)
         cmake.build()
 
     def package(self):
+        self.copy("LICENSE", dst="licenses")
         cmake = CMake(self)
         cmake.install()
 
@@ -78,6 +80,8 @@ class SeasocksConan(ConanFile):
         self.cpp_info.names["cmake_find_package"] = "Seasocks"
         self.cpp_info.names["cmake_find_package_multi"] = "Seasocks"
         self.cpp_info.components["libseasocks"].libs = ["seasocks"]
+        if self.settings.os in ("FreeBSD", "Linux"):
+            self.cpp_info.components["libseasocks"].system_libs = ["pthread"]
         # Set the name of the generated seasocks target: `Seasocks::seasocks`
         self.cpp_info.components["libseasocks"].names["cmake_find_package"] = "seasocks"
         self.cpp_info.components["libseasocks"].names["cmake_find_package_multi"] = "seasocks"
