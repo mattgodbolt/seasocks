@@ -895,6 +895,10 @@ int nt_global_init(void) {
     ntdll = GetModuleHandleW(L"ntdll.dll");
     if (ntdll == NULL)
         return -1;
+#if _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 #define X(return_type, attributes, name, parameters) \
     fn_ptr = GetProcAddress(ntdll, #name);           \
@@ -902,6 +906,10 @@ int nt_global_init(void) {
         return -1;                                   \
     name = (return_type(attributes*) parameters)(nt__fn_ptr_cast_t) fn_ptr;
     NT_NTDLL_IMPORT_LIST(X)
+
+#if _WIN32
+#pragma GCC diagnostic pop
+#endif
 #undef X
 
     return 0;
