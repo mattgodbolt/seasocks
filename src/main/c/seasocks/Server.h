@@ -42,7 +42,9 @@
 #ifdef _WIN32
 #include "seasocks/win32/winsock_includes.h"
 #define ioctl ioctlsocket
+#ifndef _INC_TYPES
 using pid_t = DWORD;
+#endif
 #include <afunix.h> // windows has unix sockets -- who'da guessed?
 #endif
 
