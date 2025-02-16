@@ -26,7 +26,7 @@ message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 message(STATUS "Unittests: ${UNITTESTS}")
 message(STATUS "Coverage: ${COVERAGE}")
 message(STATUS "Building shared: ${SEASOCKS_SHARED}")
-
+message(STATUS "Deflate support (requires zlib): ${DEFLATE_SUPPORT}")
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/src/test/suppressions.txt" CACHE INTERNAL "")
 include(CTest)
