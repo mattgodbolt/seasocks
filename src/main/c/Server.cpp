@@ -170,8 +170,8 @@ Server::Server(std::shared_ptr<Logger> logger)
         return;
     }
 
-    epoll_event eventWake = {EPOLLIN, {&_eventFd}};
 #ifndef _WIN32
+    epoll_event eventWake = {EPOLLIN, {&_eventFd}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _eventFd, &eventWake) == -1) {
         LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
         return;
@@ -201,7 +201,7 @@ Server::~Server() {
 
 void Server::shutdown() {
     // Stop listening to any further incoming connections.
-    if (_listenSock != -1) {
+    if (_listenSock != (NativeSocketType) -1) {
 #ifdef _WIN32
         ::closesocket(_listenSock);
 #else
@@ -309,7 +309,7 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
         return false;
     }
     _listenSock = socket(AF_INET, SOCK_STREAM, 0);
-    if (_listenSock == -1) {
+    if (_listenSock == (NativeSocketType) -1) {
         LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
         return false;
     }
@@ -346,7 +346,7 @@ bool Server::startListeningUnix(const char* socketPath) {
     struct sockaddr_un sock;
 
     _listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (_listenSock == -1) {
+    if (_listenSock == (NativeSocketType) -1) {
         LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
         return false;
     }
@@ -452,7 +452,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         } else if (events[i].data.ptr == &_eventFd) {
 // This is never true in windows
 #ifdef _WIN32
-            throw std::exception("Win32 uses a seperate, native wake-up HANDLE as an event");
+            throw std::runtime_error("Win32 uses a seperate, native wake-up HANDLE as an event");
 #else
             if (events[i].events & ~EPOLLIN) {
                 LS_SEVERE(_logger, "Got unexpected event on management pipe ("
@@ -500,7 +500,7 @@ bool Server::serve(const char* staticPath, int port) {
 }
 
 bool Server::loop() {
-    if (_listenSock == -1) {
+    if (_listenSock == (NativeSocketType) -1) {
         LS_ERROR(_logger, "Server not initialised");
         return false;
     }
@@ -528,7 +528,7 @@ Server::PollResult Server::poll(int millis) {
         LS_ERROR(_logger, "poll() called from the wrong thread");
         return PollResult::Error;
     }
-    if (_listenSock == -1) {
+    if (_listenSock == (NativeSocketType) -1) {
         LS_ERROR(_logger, "Server not initialised");
         return PollResult::Error;
     }
@@ -581,7 +581,7 @@ void Server::handleAccept() {
     NativeSocketType fd = ::accept(_listenSock,
                                    reinterpret_cast<sockaddr*>(&address),
                                    &addrLen);
-    if (fd == -1) {
+    if (fd == (NativeSocketType) -1) {
         LS_ERROR(_logger, "Unable to accept: " << getLastError());
         return;
     }
