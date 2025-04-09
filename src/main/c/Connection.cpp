@@ -282,6 +282,8 @@ void Connection::closeInternal() {
         LS_WARNING(_logger, "Unable to shutdown socket : " << getLastError());
     }
     _shutdown = true;
+
+    finalise();
 }
 
 
