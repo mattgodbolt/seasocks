@@ -11,7 +11,7 @@ if (WIN32)
         "seasocks/win32/win_byteswap.h"
         "seasocks/win32/win_getopt.h"
         "seasocks/win32/win_unistd.h"
-		"seasocks/win32/winsock_includes.h"
+        "seasocks/win32/winsock_includes.h"
         )
 else()
     set(WIN_FILES "")
