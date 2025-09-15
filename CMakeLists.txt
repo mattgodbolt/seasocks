@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(Seasocks VERSION 1.4.6)
 
 if(APPLE)
