@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(Seasocks VERSION 1.4.6)
 
 if(APPLE)
@@ -51,12 +51,12 @@ if (COVERAGE)
 endif ()
 
 find_package(Threads REQUIRED)
-find_package(PythonInterp)
+find_package(Python COMPONENTS Interpreter)
 
-if (NOT PYTHONINTERP_FOUND)
+if (NOT Python_FOUND)
     message(SEND_ERROR "Python not found")
 else()
-    message(STATUS "Using Python: '${PYTHON_EXECUTABLE}'")
+    message(STATUS "Using Python: '${Python_EXECUTABLE}'")
 endif ()
 
 if (DEFLATE_SUPPORT)
