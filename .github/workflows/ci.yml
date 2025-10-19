@@ -65,9 +65,11 @@ jobs:
           - {args: "-DDEFLATE_SUPPORT=OFF", config: "Debug"}
     steps:
       - uses: actions/checkout@main
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
       - name: Build
         run: |
-            cmake . -Bbuild ${{ matrix.build_config.args }}
+            cmake . -Bbuild -GNinja ${{ matrix.build_config.args }}
             cmake --build build --parallel --config ${{ matrix.build_config.config }}
       - name: Test
         run: |
