@@ -1,5 +1,4 @@
-add_library(Catch INTERFACE)
-target_include_directories(Catch INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/catch")
+find_package(Catch2 3 REQUIRED)
 
 add_seasocks_executable(AllTests
         test_main.cpp
@@ -19,6 +18,6 @@ add_seasocks_executable(AllTests
         RequestTest.cpp
         )
 
-target_link_libraries(AllTests PRIVATE Catch Threads::Threads)
+target_link_libraries(AllTests PRIVATE Catch2::Catch2WithMain Threads::Threads)
 
 add_test(NAME AllTests COMMAND AllTests)

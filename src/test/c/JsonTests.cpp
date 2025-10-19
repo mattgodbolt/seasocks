@@ -25,11 +25,12 @@
 
 #include "seasocks/util/Json.h"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <ostream>
 #include <map>
 #include <unordered_map>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 using namespace seasocks;
 
@@ -138,7 +139,7 @@ TEST_CASE("handlesMaps", "[JsonTests]") {
     std::map<std::string, JsonnedString> unordMap;
     unordMap["hello"] = to_json(true);
     unordMap["goodbye"] = to_json(false);
-    CHECK_THAT(makeMapFromContainer(unordMap), Catch::Equals(R"({"goodbye":false,"hello":true})") || Catch::Equals(R"({"hello":true,"goodbye":false})"));
+    CHECK_THAT(makeMapFromContainer(unordMap), Equals(R"({"goodbye":false,"hello":true})") || Equals(R"({"hello":true,"goodbye":false})"));
 }
 
 }
