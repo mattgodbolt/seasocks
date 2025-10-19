@@ -20,7 +20,7 @@ jobs:
       - name: CodeQL Initialization
         uses: github/codeql-action/init@v3
         with:
-          languages: cpp
+          languages: cpp, actions
           queries: +security-and-quality
       - name: Build
         run: |
