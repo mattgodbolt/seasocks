@@ -42,10 +42,10 @@ jobs:
           echo "CC=clang-${{ matrix.build_config.version }}" >> $GITHUB_ENV
           echo "CXX=clang++-${{ matrix.build_config.version }}" >> $GITHUB_ENV
       - name: Setup
-        run: apt-get update && apt-get install -y cmake valgrind zlib1g-dev git
+        run: apt-get update && apt-get install -y cmake valgrind zlib1g-dev git ninja-build
       - name: Build
         run: |
-          cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=ON ${{ matrix.build_config.args }}
+          cmake . -Bbuild -GNinja -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=ON ${{ matrix.build_config.args }}
           cmake --build build -- -j${JOBS}
       - name: Test
         run: |
