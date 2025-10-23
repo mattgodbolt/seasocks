@@ -18,7 +18,6 @@ jobs:
       - name: Setup
         run: |
           apt-get update && apt-get install -y cmake zlib1g-dev ninja-build
-          scripts/setup_catch.sh
       - name: CodeQL Initialization
         uses: github/codeql-action/init@v3
         with:

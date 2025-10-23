@@ -44,7 +44,6 @@ jobs:
       - name: Setup
         run: |
           apt-get update && apt-get install -y cmake valgrind zlib1g-dev git ninja-build
-          scripts/setup_catch.sh
       - name: Build
         run: |
           cmake . -Bbuild -GNinja -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=ON ${{ matrix.build_config.args }}
@@ -69,13 +68,6 @@ jobs:
       - uses: actions/checkout@main
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
-      - name: Setup
-        run: |
-          git clone --branch=v3.11.0 https://github.com/catchorg/Catch2.git
-          cd Catch2
-          cmake . -Bbuild -GNinja
-          cmake --build build
-          cmake --install build
       - name: Build
         run: |
             cmake . -Bbuild -GNinja ${{ matrix.build_config.args }}
