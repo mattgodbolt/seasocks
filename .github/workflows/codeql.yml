@@ -16,8 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
       - name: Setup
-        run: |
-          apt-get update && apt-get install -y cmake zlib1g-dev ninja-build
+        run: apt-get update && apt-get install -y cmake zlib1g-dev ninja-build
       - name: CodeQL Initialization
         uses: github/codeql-action/init@v3
         with:
