@@ -23,13 +23,14 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include "seasocks/Request.h"
 
 using seasocks::Request;
 
 TEST_CASE("request verb to name", "[RequestTest]") {
-    using Catch::Matchers::Equals;
+    using namespace Catch::Matchers;
     using V = Request::Verb;
 
     CHECK_THAT(Request::name(V::Invalid), Equals("Invalid"));
