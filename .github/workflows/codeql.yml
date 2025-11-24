@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '0 5 * * 3'
 
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
+
 jobs:
   codeql:
     runs-on: ubuntu-latest

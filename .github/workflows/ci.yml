@@ -2,6 +2,10 @@ name: ci
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   build_linux:
     runs-on: ubuntu-latest
@@ -54,7 +58,7 @@ jobs:
           ctest -D ExperimentalBuild -j${JOBS}
           ctest -D ExperimentalMemCheck -j${JOBS}
       - name: CodeCov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
         with:
           gcov: true
   build_msvc:
