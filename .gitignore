@@ -107,3 +107,12 @@ ipch/
 # TFS 2012 Local Workspace
 $tf/
 
+# cmake
+*.cmake
+CMakeFiles/
+CMakeCache.txt
+Makefile
+
+*.tcl
+internal/Config.h
+src/main/web/Embedded.cpp
