@@ -27,6 +27,9 @@ jobs:
         with:
           languages: cpp, actions
           queries: +security-and-quality
+          config: |
+            paths-ignore:
+            - 'build/**'
       - name: Build
         run: |
           cmake . -Bbuild -GNinja
