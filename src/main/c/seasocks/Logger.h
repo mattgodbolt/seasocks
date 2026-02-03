@@ -25,7 +25,16 @@
 
 #pragma once
 
+#define HAS_SLOC true
+#ifdef __cpp_lib_source_location
+#include <source_location>
+#elif __has_include(<experimental/source_location>)
 #include <experimental/source_location>
+#else
+#undef HAS_SLOC
+#define HAS_SLOC false
+#endif
+
 #include <memory>
 #include <sstream>
 
@@ -74,7 +83,19 @@ public:
 namespace LS {
 
 namespace detail {
+
+#ifdef __cpp_lib_source_location
+using source_location = std::source_location;
+#elif __has_include(<experimental/source_location>)
 using source_location = std::experimental::source_location;
+#else
+struct noop_location {
+    static noop_location current() {
+        return noop_location{};
+    }
+};
+using source_location = noop_location;
+#endif
 
 template <typename>
 inline constexpr bool logger_ptr_type = false;
@@ -85,11 +106,22 @@ inline constexpr bool logger_ptr_type<std::shared_ptr<seasocks::Logger>> = true;
 template <>
 inline constexpr bool logger_ptr_type<seasocks::Logger*> = true;
 
+#if HAS_SLOC == true
 inline constexpr std::string_view sloc_fname(const source_location& loc) {
     std::string_view sv{loc.file_name()};
     if (auto p = sv.rfind('/'); p != sv.npos)
         sv.remove_prefix(p + 1);
     return sv;
+}
+#endif
+
+inline void prepend_location([[maybe_unused]] std::ostringstream& os, [[maybe_unused]] const source_location& loc) {
+#if HAS_SLOC == true
+    os << '[' << sloc_fname(loc) << ':' << loc.line() << "] ";
+#else
+    (void) os;
+    (void) loc;
+#endif
 }
 }
 
@@ -98,7 +130,7 @@ struct LOG {
     explicit LOG(LoggerPtr logger, seasocks::Logger::Level level, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(level, os_.str().c_str());
     }
@@ -109,7 +141,7 @@ struct DEBUG {
     explicit DEBUG(LoggerPtr logger, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(seasocks::Logger::Level::Debug, os_.str().c_str());
     }
@@ -120,7 +152,7 @@ struct ACCESS {
     explicit ACCESS(LoggerPtr logger, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(seasocks::Logger::Level::Access, os_.str().c_str());
     }
@@ -131,7 +163,7 @@ struct INFO {
     explicit INFO(LoggerPtr logger, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(seasocks::Logger::Level::Info, os_.str().c_str());
     }
@@ -142,7 +174,7 @@ struct WARNING {
     explicit WARNING(LoggerPtr logger, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(seasocks::Logger::Level::Warning, os_.str().c_str());
     }
@@ -153,7 +185,7 @@ struct ERROR {
     explicit ERROR(LoggerPtr logger, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(seasocks::Logger::Level::Error, os_.str().c_str());
     }
@@ -164,7 +196,7 @@ struct SEVERE {
     explicit SEVERE(LoggerPtr logger, Args&&... args, const detail::source_location& loc = detail::source_location::current()) {
         static_assert(detail::logger_ptr_type<LoggerPtr>);
         std::ostringstream os_;
-        os_ << '[' << detail::sloc_fname(loc) << ':' << loc.line() << "] ";
+        detail::prepend_location(os_, loc);
         (os_ << ... << std::forward<Args>(args));
         logger->log(seasocks::Logger::Level::Severe, os_.str().c_str());
     }
