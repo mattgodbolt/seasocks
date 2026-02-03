@@ -25,6 +25,10 @@
 
 #pragma once
 
+#if __has_include(<version>)
+#include <version>
+#endif
+
 #define HAS_SLOC true
 #ifdef __cpp_lib_source_location
 #include <source_location>
