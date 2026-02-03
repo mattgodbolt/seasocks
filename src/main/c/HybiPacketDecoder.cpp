@@ -24,7 +24,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "internal/HybiPacketDecoder.h"
-#include "internal/LogStream.h"
 
 #ifdef _WIN32
 #include "seasocks/win32/winsock_includes.h"
@@ -53,13 +52,13 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
     if ((_buffer[_messageStart] & 0x80) == 0) {
         // FIN bit is not clear...
         // TODO: support
-        LS_WARNING(&_logger, "Received hybi frame without FIN bit set - unsupported");
+        LS::WARNING(&_logger, "Received hybi frame without FIN bit set - unsupported");
         return MessageState::Error;
     }
 
     auto reservedBits = _buffer[_messageStart] & (7 << 4);
     if ((reservedBits & 0x30) != 0) {
-        LS_WARNING(&_logger, "Received hybi frame with reserved bits set - error");
+        LS::WARNING(&_logger, "Received hybi frame with reserved bits set - error");
         return MessageState::Error;
     }
 
@@ -111,8 +110,7 @@ HybiPacketDecoder::MessageState HybiPacketDecoder::decodeNextMessage(
     _messageStart = ptr;
     switch (opcode) {
         default:
-            LS_WARNING(&_logger, "Received hybi frame with unknown opcode "
-                                     << static_cast<int>(opcode));
+            LS::WARNING(&_logger, "Received hybi frame with unknown opcode ", static_cast<int>(opcode));
             return MessageState::Error;
         case Opcode::Text:
             return MessageState::TextMessage;

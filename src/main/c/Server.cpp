@@ -24,7 +24,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "internal/Config.h"
-#include "internal/LogStream.h"
 
 #include "seasocks/Connection.h"
 #include "seasocks/Logger.h"
@@ -71,6 +70,7 @@ struct EventBits {
     }
 };
 
+[[maybe_unused]]
 std::ostream& operator<<(std::ostream& o, const EventBits& b) {
     uint32_t bits = b.bits;
 #define DO_BIT(NAME)              \
@@ -156,7 +156,7 @@ Server::Server(std::shared_ptr<Logger> logger)
 
     _epollFd = epoll_create(10);
     if (_epollFd == EpollBadHandle) {
-        LS_ERROR(_logger, "Unable to create epoll: " << getLastError());
+        LS::ERROR(_logger, "Unable to create epoll: ", getLastError());
         return;
     }
 
@@ -166,21 +166,21 @@ Server::Server(std::shared_ptr<Logger> logger)
     _eventFd = ::CreateEvent(0, 0, 0, 0);
 #endif
     if (_eventFd == EpollBadHandle) {
-        LS_ERROR(_logger, "Unable to create event FD: " << getLastError());
+        LS::ERROR(_logger, "Unable to create event FD: ", getLastError());
         return;
     }
 
     epoll_event eventWake = {EPOLLIN, {&_eventFd}};
 #ifndef _WIN32
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _eventFd, &eventWake) == -1) {
-        LS_ERROR(_logger, "Unable to add wake socket to epoll: " << getLastError());
+        LS::ERROR(_logger, "Unable to add wake socket to epoll: ", getLastError());
         return;
     }
 #endif
 }
 
 Server::~Server() {
-    LS_INFO(_logger, "Server destruction");
+    LS::INFO(_logger, "Server destruction");
     shutdown();
 // Only shut the eventfd and epoll at the very end
 #ifndef _WIN32
@@ -222,14 +222,14 @@ bool Server::makeNonBlocking(NativeSocketType fd) const {
     int yesPlease = 1;
 #ifndef _WIN32
     if (ioctl(fd, FIONBIO, &yesPlease) != 0) {
-        LS_ERROR(_logger, "Unable to make FD non-blocking: " << getLastError());
+        LS::ERROR(_logger, "Unable to make FD non-blocking: ", getLastError());
         return false;
     }
     return true;
 #else
     u_long yp = yesPlease;
     if (ioctl(fd, FIONBIO, &yp) != 0) {
-        LS_ERROR(_logger, "Unable to make FD non-blocking: " << getLastError());
+        LS::ERROR(_logger, "Unable to make FD non-blocking: ", getLastError());
         return false;
     }
     return true;
@@ -244,35 +244,35 @@ bool Server::configureSocket(NativeSocketType fd) const {
     // signature of ::setsockopt in Windows is:
     // int setsockopt(SOCKET, int level, int optname, const char *optval, int optlen);
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
-        LS_ERROR(_logger, "Unable to set reuse address socket option: " << getLastError());
+        LS::ERROR(_logger, "Unable to set reuse address socket option: ", getLastError());
         return false;
     }
 #ifdef SO_REUSEPORT
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &yesPlease, sizeof(yesPlease)) == -1) {
-        LS_ERROR(_logger, "Unable to set reuse port socket option: " << getLastError());
+        LS::ERROR(_logger, "Unable to set reuse port socket option: ", getLastError());
         return false;
     }
 #endif
     if (_maxKeepAliveDrops > 0) {
         if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
                        reinterpret_cast<const char*>(&yesPlease), sizeof(yesPlease)) == -1) {
-            LS_ERROR(_logger, "Unable to enable keepalive: " << getLastError());
+            LS::ERROR(_logger, "Unable to enable keepalive: ", getLastError());
             return false;
         }
         const int oneSecond = 1;
         if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE,
                        reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
-            LS_ERROR(_logger, "Unable to set idle probe: " << getLastError());
+            LS::ERROR(_logger, "Unable to set idle probe: ", getLastError());
             return false;
         }
         if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL,
                        reinterpret_cast<const char*>(&oneSecond), sizeof(oneSecond)) == -1) {
-            LS_ERROR(_logger, "Unable to set idle interval: " << getLastError());
+            LS::ERROR(_logger, "Unable to set idle interval: ", getLastError());
             return false;
         }
         if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT,
                        reinterpret_cast<const char*>(&_maxKeepAliveDrops), sizeof(_maxKeepAliveDrops)) == -1) {
-            LS_ERROR(_logger, "Unable to set keep alive count: " << getLastError());
+            LS::ERROR(_logger, "Unable to set keep alive count: ", getLastError());
             return false;
         }
     }
@@ -286,7 +286,7 @@ void Server::terminate() {
 #ifndef _WIN32
     uint64_t one = 1;
     if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
-        LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+        LS::ERROR(_logger, "Unable to post a wake event: ", getLastError());
     }
 #else
     SetEvent(_eventFd);
@@ -299,18 +299,18 @@ bool Server::startListening(int port) {
 
 bool Server::startListening(uint32_t ipInHostOrder, int port) {
     if (_epollFd == EpollBadHandle || _eventFd == EpollBadHandle) {
-        LS_ERROR(_logger, "Unable to serve, did not initialize properly.");
+        LS::ERROR(_logger, "Unable to serve, did not initialize properly.");
         return false;
     }
 
     auto port16 = static_cast<uint16_t>(port);
     if (port != port16) {
-        LS_ERROR(_logger, "Invalid port: " << port);
+        LS::ERROR(_logger, "Invalid port: ", port);
         return false;
     }
     _listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (_listenSock == -1) {
-        LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
+        LS::ERROR(_logger, "Unable to create listen socket: ", getLastError());
         return false;
     }
     if (!configureSocket(_listenSock)) {
@@ -322,22 +322,22 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
     sock.sin_addr.s_addr = htonl(ipInHostOrder);
     sock.sin_family = AF_INET;
     if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
-        LS_ERROR(_logger, "Unable to bind socket: " << getLastError());
+        LS::ERROR(_logger, "Unable to bind socket: ", getLastError());
         return false;
     }
     if (listen(_listenSock, 5) == -1) {
-        LS_ERROR(_logger, "Unable to listen on socket: " << getLastError());
+        LS::ERROR(_logger, "Unable to listen on socket: ", getLastError());
         return false;
     }
     epoll_event event = {EPOLLIN, {this}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
-        LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
+        LS::ERROR(_logger, "Unable to add listen socket to epoll: ", getLastError());
         return false;
     }
 
     char buf[1024];
     ::gethostname(buf, sizeof(buf));
-    LS_INFO(_logger, "Listening on http://" << buf << ":" << port << "/");
+    LS::INFO(_logger, "Listening on http://", buf, ":", port, "/");
 
     return true;
 }
@@ -347,7 +347,7 @@ bool Server::startListeningUnix(const char* socketPath) {
 
     _listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (_listenSock == -1) {
-        LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
+        LS::ERROR(_logger, "Unable to create unix listen socket: ", getLastError());
         return false;
     }
     if (!configureSocket(_listenSock)) {
@@ -359,22 +359,22 @@ bool Server::startListeningUnix(const char* socketPath) {
     strncpy(sock.sun_path, socketPath, sizeof(sock.sun_path) - 1);
 
     if (bind(_listenSock, reinterpret_cast<const sockaddr*>(&sock), sizeof(sock)) == -1) {
-        LS_ERROR(_logger, "Unable to bind unix socket (" << socketPath << "): " << getLastError());
+        LS::ERROR(_logger, "Unable to bind unix socket (", socketPath, "): ", getLastError());
         return false;
     }
 
     if (listen(_listenSock, 5) == -1) {
-        LS_ERROR(_logger, "Unable to listen on unix socket: " << getLastError());
+        LS::ERROR(_logger, "Unable to listen on unix socket: ", getLastError());
         return false;
     }
 
     epoll_event event = {EPOLLIN, {this}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
-        LS_ERROR(_logger, "Unable to add unix listen socket to epoll: " << getLastError());
+        LS::ERROR(_logger, "Unable to add unix listen socket to epoll: ", getLastError());
         return false;
     }
 
-    LS_INFO(_logger, "Listening on unix socket: http://unix:" << socketPath);
+    LS::INFO(_logger, "Listening on unix socket: http://unix:", socketPath);
 
     return true;
 }
@@ -387,7 +387,7 @@ void Server::handlePipe() {
         // Spin, draining the pipe until it returns EWOULDBLOCK or similar.
     }
     if (errno != EAGAIN || errno != EWOULDBLOCK) {
-        LS_ERROR(_logger, "Error from wakeFd read: " << getLastError());
+        LS::ERROR(_logger, "Error from wakeFd read: ", getLastError());
         _terminate = true;
     }
 #endif
@@ -397,16 +397,13 @@ void Server::handlePipe() {
 
 Server::NewState Server::handleConnectionEvents(Connection* connection, uint32_t events) {
     if (events & ~(EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLERR)) {
-        LS_WARNING(_logger, "Got unhandled epoll event (" << EventBits(events) << ") on connection: "
-                                                          << formatAddress(connection->getRemoteAddress()));
+        LS::WARNING(_logger, "Got unhandled epoll event (", EventBits(events), ") on connection: ", formatAddress(connection->getRemoteAddress()));
         return NewState::Close;
     } else if (events & EPOLLERR) {
-        LS_INFO(_logger, "Error on socket (" << EventBits(events) << "): "
-                                             << formatAddress(connection->getRemoteAddress()));
+        LS::INFO(_logger, "Error on socket (", EventBits(events), "): ", formatAddress(connection->getRemoteAddress()));
         return NewState::Close;
     } else if (events & EPOLLHUP) {
-        LS_DEBUG(_logger, "Graceful hang-up (" << EventBits(events) << ") of socket: "
-                                               << formatAddress(connection->getRemoteAddress()));
+        LS::DEBUG(_logger, "Graceful hang-up (", EventBits(events), ") of socket: ", formatAddress(connection->getRemoteAddress()));
         return NewState::Close;
     } else {
         if (events & EPOLLOUT) {
@@ -427,7 +424,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
     int numEvents = epoll_wait(_epollFd, events, maxEvents, epollMillis);
     if (numEvents == -1) {
         if (errno != EINTR) {
-            LS_ERROR(_logger, "Error from epoll_wait: " << getLastError());
+            LS::ERROR(_logger, "Error from epoll_wait: ", getLastError());
         }
         return;
     }
@@ -435,16 +432,15 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         static time_t lastWarnTime = 0;
         time_t now = time(nullptr);
         if (now - lastWarnTime >= 60) {
-            LS_WARNING(_logger, "Full event queue; may start starving connections. "
-                                "Will warn at most once a minute");
+            LS::WARNING(_logger, "Full event queue; may start starving connections. "
+                                 "Will warn at most once a minute");
             lastWarnTime = now;
         }
     }
     for (int i = 0; i < numEvents; ++i) {
         if (events[i].data.ptr == this) {
             if (events[i].events & ~EPOLLIN) {
-                LS_SEVERE(_logger, "Got unexpected event on listening socket ("
-                                       << EventBits(events[i].events) << ") - terminating");
+                LS::SEVERE(_logger, "Got unexpected event on listening socket (", EventBits(events[i].events), ") - terminating");
                 _terminate = true;
                 break;
             }
@@ -455,8 +451,7 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
             throw std::exception("Win32 uses a seperate, native wake-up HANDLE as an event");
 #else
             if (events[i].events & ~EPOLLIN) {
-                LS_SEVERE(_logger, "Got unexpected event on management pipe ("
-                                       << EventBits(events[i].events) << ") - terminating");
+                LS::SEVERE(_logger, "Got unexpected event on management pipe (", EventBits(events[i].events), ") - terminating");
                 _terminate = true;
                 break;
             }
@@ -475,18 +470,17 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
     // closes etc before we call onDisconnect().
     for (auto connection : toBeDeleted) {
         if (_connections.find(connection) == _connections.end()) {
-            LS_SEVERE(_logger, "Attempt to delete connection we didn't know about: " << (void*) connection
-                                                                                     << formatAddress(connection->getRemoteAddress()));
+            LS::SEVERE(_logger, "Attempt to delete connection we didn't know about: ", (void*) connection, formatAddress(connection->getRemoteAddress()));
             _terminate = true;
             break;
         }
-        LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
+        LS::DEBUG(_logger, "Deleting connection: ", formatAddress(connection->getRemoteAddress()));
         delete connection;
     }
 }
 
 void Server::setStaticPath(const char* staticPath) {
-    LS_INFO(_logger, "Serving content from " << staticPath);
+    LS::INFO(_logger, "Serving content from ", staticPath);
     _staticPath = staticPath;
 }
 
@@ -501,7 +495,7 @@ bool Server::serve(const char* staticPath, int port) {
 
 bool Server::loop() {
     if (_listenSock == -1) {
-        LS_ERROR(_logger, "Server not initialised");
+        LS::ERROR(_logger, "Server not initialised");
         return false;
     }
 
@@ -515,7 +509,7 @@ bool Server::loop() {
     }
     // Reasonable effort to ensure anything enqueued during terminate has a chance to run.
     processEventQueue();
-    LS_INFO(_logger, "Server terminating");
+    LS::INFO(_logger, "Server terminating");
     shutdown();
     return _expectedTerminate;
 }
@@ -525,11 +519,11 @@ Server::PollResult Server::poll(int millis) {
     if (_threadId == 0)
         _threadId = gettid();
     if (_threadId != gettid()) {
-        LS_ERROR(_logger, "poll() called from the wrong thread");
+        LS::ERROR(_logger, "poll() called from the wrong thread");
         return PollResult::Error;
     }
     if (_listenSock == -1) {
-        LS_ERROR(_logger, "Server not initialised");
+        LS::ERROR(_logger, "Server not initialised");
         return PollResult::Error;
     }
     processEventQueue();
@@ -539,7 +533,7 @@ Server::PollResult Server::poll(int millis) {
 
     // Reasonable effort to ensure anything enqueued during terminate has a chance to run.
     processEventQueue();
-    LS_INFO(_logger, "Server terminating");
+    LS::INFO(_logger, "Server terminating");
     shutdown();
 
     return _expectedTerminate ? PollResult::Terminated : PollResult::Error;
@@ -555,9 +549,7 @@ void Server::processEventQueue() {
         time_t numSecondsSinceConnection = now - _connection.second;
         auto connection = _connection.first;
         if (connection->bytesReceived() == 0 && numSecondsSinceConnection >= _lameConnectionTimeoutSeconds) {
-            LS_INFO(_logger, formatAddress(connection->getRemoteAddress())
-                                 << " : Killing lame connection - no bytes received after "
-                                 << numSecondsSinceConnection << "s");
+            LS::INFO(_logger, formatAddress(connection->getRemoteAddress()), " : Killing lame connection - no bytes received after ", numSecondsSinceConnection, "s");
             toRemove.push_back(connection);
         }
     }
@@ -582,7 +574,7 @@ void Server::handleAccept() {
                                    reinterpret_cast<sockaddr*>(&address),
                                    &addrLen);
     if (fd == -1) {
-        LS_ERROR(_logger, "Unable to accept: " << getLastError());
+        LS::ERROR(_logger, "Unable to accept: ", getLastError());
         return;
     }
     if (!configureSocket(fd)) {
@@ -593,11 +585,11 @@ void Server::handleAccept() {
 #endif
         return;
     }
-    LS_INFO(_logger, formatAddress(address) << " : Accepted on descriptor " << fd);
+    LS::INFO(_logger, formatAddress(address), " : Accepted on descriptor ", fd);
     Connection* newConnection = new Connection(_logger, *this, fd, address);
     epoll_event event = {EPOLLIN, {newConnection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
-        LS_ERROR(_logger, "Unable to add socket to epoll: " << getLastError());
+        LS::ERROR(_logger, "Unable to add socket to epoll: ", getLastError());
         delete newConnection;
 #ifdef _WIN32
         closesocket(fd);
@@ -613,7 +605,7 @@ void Server::remove(Connection* connection) {
     checkThread();
     epoll_event event = {0, {connection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, connection->getFd(), &event) == -1) {
-        LS_ERROR(_logger, "Unable to remove from epoll: " << getLastError());
+        LS::ERROR(_logger, "Unable to remove from epoll: ", getLastError());
     }
     _connections.erase(connection);
 }
@@ -621,7 +613,7 @@ void Server::remove(Connection* connection) {
 bool Server::subscribeToWriteEvents(Connection* connection) {
     epoll_event event = {EPOLLIN | EPOLLOUT, {connection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
-        LS_ERROR(_logger, "Unable to subscribe to write events: " << getLastError());
+        LS::ERROR(_logger, "Unable to subscribe to write events: ", getLastError());
         return false;
     }
     return true;
@@ -630,7 +622,7 @@ bool Server::subscribeToWriteEvents(Connection* connection) {
 bool Server::unsubscribeFromWriteEvents(Connection* connection) {
     epoll_event event = {EPOLLIN, {connection}};
     if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, connection->getFd(), &event) == -1) {
-        LS_ERROR(_logger, "Unable to unsubscribe from write events: " << getLastError());
+        LS::ERROR(_logger, "Unable to unsubscribe from write events: ", getLastError());
         return false;
     }
     return true;
@@ -676,13 +668,13 @@ void Server::execute(std::function<void()> toExecute) {
     uint64_t one = 1;
     if (_eventFd != -1 && ::write(_eventFd, &one, sizeof(one)) == -1) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            LS_ERROR(_logger, "Unable to post a wake event: " << getLastError());
+            LS::ERROR(_logger, "Unable to post a wake event: ", getLastError());
         }
     }
 #else
     BOOL set = SetEvent(_eventFd);
     if (set == FALSE) {
-        LS_ERROR(_logger, "Unable to post a wake event: " << GetLastError());
+        LS::ERROR(_logger, "Unable to post a wake event: ", GetLastError());
     }
 #endif
 }
@@ -710,21 +702,21 @@ std::string Server::getStatsDocument() const {
 }
 
 void Server::setLameConnectionTimeoutSeconds(int seconds) {
-    LS_INFO(_logger, "Setting lame connection timeout to " << seconds);
+    LS::INFO(_logger, "Setting lame connection timeout to ", seconds);
     _lameConnectionTimeoutSeconds = seconds;
 }
 
 void Server::setMaxKeepAliveDrops(int maxKeepAliveDrops) {
-    LS_INFO(_logger, "Setting max keep alive drops to " << maxKeepAliveDrops);
+    LS::INFO(_logger, "Setting max keep alive drops to ", maxKeepAliveDrops);
     _maxKeepAliveDrops = maxKeepAliveDrops;
 }
 
 void Server::setPerMessageDeflateEnabled(bool enabled) {
     if (!Config::deflateEnabled) {
-        LS_ERROR(_logger, "Ignoring request to enable deflate as Seasocks was compiled without support");
+        LS::ERROR(_logger, "Ignoring request to enable deflate as Seasocks was compiled without support");
         return;
     }
-    LS_INFO(_logger, "Setting per-message deflate to " << (enabled ? "enabled" : "disabled"));
+    LS::INFO(_logger, "Setting per-message deflate to ", (enabled ? "enabled" : "disabled"));
     _perMessageDeflateEnabled = enabled;
 }
 
@@ -733,7 +725,7 @@ void Server::checkThread() const {
     if (thisTid != _threadId) {
         std::ostringstream o;
         o << "seasocks called on wrong thread : " << thisTid << " instead of " << _threadId;
-        LS_SEVERE(_logger, o.str());
+        LS::SEVERE(_logger, o.str());
         throw std::runtime_error(o.str());
     }
 }
@@ -748,7 +740,7 @@ std::shared_ptr<Response> Server::handle(const Request& request) {
 }
 
 void Server::setClientBufferSize(size_t bytesToBuffer) {
-    LS_INFO(_logger, "Setting client buffer size to " << bytesToBuffer << " bytes");
+    LS::INFO(_logger, "Setting client buffer size to ", bytesToBuffer, " bytes");
     _clientBufferSize = bytesToBuffer;
 }
 
