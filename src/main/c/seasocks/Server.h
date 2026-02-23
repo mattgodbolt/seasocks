@@ -222,6 +222,7 @@ private:
     std::string _staticPath;
     std::atomic<bool> _terminate;
     std::atomic<bool> _expectedTerminate;
+    std::atomic<bool> _listenPaused; // set when ::accept() fails with EMFILE/ENFILE, unset when a connection closes and we have fds to accept again.
 };
 
 } // namespace seasocks
