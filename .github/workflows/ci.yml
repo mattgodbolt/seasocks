@@ -70,7 +70,9 @@ jobs:
     steps:
       - uses: actions/checkout@main
       - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
+        with:
+          arch: x64
       - name: Build
         run: |
             cmake . -Bbuild -GNinja ${{ matrix.build_config.args }}
