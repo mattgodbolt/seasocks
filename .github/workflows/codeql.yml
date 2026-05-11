@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     name: "CodeQL"
     container:
-      image: gcc:13
+      image: gcc:16
     steps:
       - name: Checkout
         uses: actions/checkout@main

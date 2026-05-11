@@ -17,22 +17,12 @@ jobs:
           - { compiler: gcc, version: 14 }
           - { compiler: gcc, version: 13 }
           - { compiler: gcc, version: 12 }
-          - { compiler: gcc, version: 11 }
-          - { compiler: gcc, version: 10 }
-          - { compiler: gcc, version: 9 }
           - { compiler: clang, version: 22 }
           - { compiler: clang, version: 21 }
           - { compiler: clang, version: 20 }
           - { compiler: clang, version: 19 }
           - { compiler: clang, version: 18 }
-          - { compiler: clang, version: 17 }
-          - { compiler: clang, version: 16 }
-          - { compiler: clang, version: 15 }
-          - { compiler: clang, version: 14 }
-          - { compiler: clang, version: 13 }
-          - { compiler: clang, version: 12 }
-          - { compiler: clang, version: 11 }
-          - { compiler: gcc, version: 10, args: "-DDEFLATE_SUPPORT=OFF" }
+          - { compiler: gcc, version: 16, args: "-DDEFLATE_SUPPORT=OFF" }
     container:
       image: ${{ matrix.build_config.compiler == 'clang' && 'teeks99/clang-ubuntu' || matrix.build_config.compiler }}:${{ matrix.build_config.version }}
     env:
