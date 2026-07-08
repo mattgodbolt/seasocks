@@ -18,9 +18,11 @@ else()
 endif()
 
 add_library(seasocks ${SEASOCKS_LIBTYPE}
+        AcceptEncoding.cpp
         Connection.cpp
         HybiAccept.cpp
         HybiPacketDecoder.cpp
+        internal/AcceptEncoding.h
         internal/Base64.cpp
         internal/Base64.h
         internal/ConcreteResponse.h

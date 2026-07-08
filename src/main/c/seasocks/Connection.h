@@ -218,6 +218,12 @@ private:
     bool _perMessageDeflate = false;
     ZlibContext zlibContext;
 
+    bool _compressResponse = false;
+    std::vector<uint8_t> _responseBuffer;
+    // the response's own Content-Length, held back while compressing so it can be
+    // restored if a handler-set Content-Encoding turns compression off
+    std::string _heldContentLength;
+
     void pickProtocol();
 
     enum class State {

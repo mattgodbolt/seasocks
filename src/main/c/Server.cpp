@@ -728,6 +728,15 @@ void Server::setPerMessageDeflateEnabled(bool enabled) {
     _perMessageDeflateEnabled = enabled;
 }
 
+void Server::setHttpCompressionEnabled(bool enabled) {
+    if (!Config::deflateEnabled) {
+        LS_ERROR(_logger, "Ignoring request to enable HTTP compression as Seasocks was compiled without support");
+        return;
+    }
+    LS_INFO(_logger, "Setting HTTP compression to " << (enabled ? "enabled" : "disabled"));
+    _httpCompressionEnabled = enabled;
+}
+
 void Server::checkThread() const {
     auto thisTid = gettid();
     if (thisTid != _threadId) {

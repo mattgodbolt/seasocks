@@ -157,4 +157,51 @@ bool ZlibContext::inflate(std::vector<uint8_t>& input, std::vector<uint8_t>& out
     return _impl->inflate(input, output, zlibError);
 }
 
+// compress the whole input into one gzip stream (RFC 1952) for HTTP Content-Encoding;
+// follows zlib's zpipe.c deflate idiom and throws on any zlib error
+std::vector<uint8_t> ZlibContext::gzip(const uint8_t* input, size_t inputLen) {
+    z_stream stream;
+    stream.zalloc = Z_NULL;
+    stream.zfree = Z_NULL;
+    stream.opaque = Z_NULL;
+
+    // window bits over 15 select gzip: 15 is the 32K window, +16 adds the gzip
+    // header and trailer instead of a zlib wrapper (zlib manual, deflateInit2)
+    int ret = ::deflateInit2(
+        &stream,
+        Z_DEFAULT_COMPRESSION,
+        Z_DEFLATED,
+        15 + 16,
+        8, // memLevel: zlib's default, no named constant like the level/strategy defaults
+        Z_DEFAULT_STRATEGY);
+
+    if (ret != Z_OK) {
+        throw std::runtime_error("error initialising zlib gzip deflater");
+    }
+
+    stream.next_in = const_cast<z_const Bytef*>(input);
+    stream.avail_in = static_cast<uInt>(inputLen);
+
+    std::vector<uint8_t> output;
+    uint8_t buffer[16384];
+    // Z_FINISH says all the input is supplied; deflate writes the next part of the gzip
+    // stream into the buffer each pass, so loop and append until it returns Z_STREAM_END
+    do {
+        stream.next_out = buffer;
+        stream.avail_out = sizeof(buffer);
+
+        ret = ::deflate(&stream, Z_FINISH);
+
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            ::deflateEnd(&stream);
+            throw std::runtime_error("error gzipping message");
+        }
+
+        output.insert(output.end(), buffer, buffer + sizeof(buffer) - stream.avail_out);
+    } while (ret != Z_STREAM_END);
+
+    ::deflateEnd(&stream);
+    return output;
+}
+
 }

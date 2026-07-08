@@ -148,6 +148,11 @@ public:
         return _perMessageDeflateEnabled;
     }
 
+    void setHttpCompressionEnabled(bool enabled);
+    bool getHttpCompressionEnabled() {
+        return _httpCompressionEnabled;
+    }
+
     class Runnable {
     public:
         virtual ~Runnable() = default;
@@ -203,6 +208,7 @@ private:
 
     // Compression settings
     bool _perMessageDeflateEnabled = false;
+    bool _httpCompressionEnabled = false;
 
     struct WebSocketHandlerEntry {
         std::shared_ptr<WebSocket::Handler> handler;

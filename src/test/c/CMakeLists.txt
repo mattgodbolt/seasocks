@@ -28,4 +28,9 @@ add_seasocks_executable(AllTests
 
 target_link_libraries(AllTests PRIVATE Catch2::Catch2WithMain Threads::Threads)
 
+if (DEFLATE_SUPPORT)
+    target_sources(AllTests PRIVATE HttpCompressionTests.cpp)
+    target_link_libraries(AllTests PRIVATE ZLIB::ZLIB)
+endif ()
+
 add_test(NAME AllTests COMMAND AllTests)

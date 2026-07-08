@@ -23,6 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include "internal/AcceptEncoding.h"
 #include "internal/Config.h"
 #include "internal/Embedded.h"
 #include "internal/HeaderMap.h"
@@ -191,6 +192,13 @@ bool hasConnectionType(const std::string& connection, const std::string& type) {
             return true;
     }
     return false;
+}
+
+// 1xx, 204, 205 and 304 must carry no body (RFC 9110), so there is nothing to compress
+bool hasBody(seasocks::ResponseCode code) {
+    auto value = static_cast<int>(code);
+    return value >= 200 && code != seasocks::ResponseCode::NoContent &&
+           code != seasocks::ResponseCode::ResetContent && code != seasocks::ResponseCode::NotModified;
 }
 
 } // namespace
@@ -1011,6 +1019,12 @@ void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
     if (_transferEncoding == TransferEncoding::Chunked) {
         bufferLine("Transfer-encoding: chunked");
     }
+    // an absent Accept-Encoding accepts any coding (RFC 9110 section 12.5.3)
+    bool clientAcceptsGzip = !hasHeader("Accept-Encoding") || acceptsGzip(getHeader("Accept-Encoding"));
+    // gzip only whole, raw-encoded bodies so the compressed Content-Length is known up front
+    _compressResponse = _server.server().getHttpCompressionEnabled() && _transferEncoding == TransferEncoding::Raw && hasBody(responseCode) && clientAcceptsGzip;
+    _responseBuffer.clear();
+    _heldContentLength.clear();
 }
 
 void Connection::header(const std::string& header, const std::string& value) {
@@ -1019,10 +1033,37 @@ void Connection::header(const std::string& header, const std::string& value) {
         LS_ERROR(_logger, "header() called when in wrong state");
         return;
     }
+    // the handler already encoded the body, so stop compressing and restore the
+    // uncompressed length we held back, leaving the handler's headers and body untouched
+    if (_compressResponse && caseInsensitiveSame(header, "Content-Encoding")) {
+        _compressResponse = false;
+        if (!_heldContentLength.empty()) {
+            bufferLine("Content-Length: " + _heldContentLength);
+        }
+    }
+    // the compressed size isn't known yet; hold the uncompressed length back and write
+    // the compressed one at finish (or restore it above if we end up not compressing)
+    if (_compressResponse && caseInsensitiveSame(header, "Content-Length")) {
+        _heldContentLength = value;
+        return;
+    }
     bufferLine(header + ": " + value);
 }
 void Connection::payload(const void* data, size_t size, bool flush) {
     _server.checkThread();
+    // buffer the body until finish(); headers stay open so we can add the gzip ones there
+    if (_compressResponse) {
+        // buffer the whole body; flush is not honoured because the body cannot be sent
+        // until finish() has compressed it and computed the gzip Content-Length
+        if (_state != State::SENDING_RESPONSE_HEADERS && _state != State::SENDING_RESPONSE_BODY) {
+            LS_ERROR(_logger, "payload() called when in wrong state");
+            return;
+        }
+        _state = State::SENDING_RESPONSE_BODY;
+        auto bytes = static_cast<const uint8_t*>(data);
+        _responseBuffer.insert(_responseBuffer.end(), bytes, bytes + size);
+        return;
+    }
     if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
         _state = State::SENDING_RESPONSE_BODY;
@@ -1048,7 +1089,20 @@ void Connection::writeChunkHeader(size_t size) {
 
 void Connection::finish(bool keepConnectionOpen) {
     _server.checkThread();
-    if (_state == State::SENDING_RESPONSE_HEADERS) {
+    if (_compressResponse) {
+        // the body is complete now, so compress it and emit the gzip headers with the
+        // compressed length, then the compressed body; the shared tail below sends it
+        auto compressed = ZlibContext::gzip(_responseBuffer.data(), _responseBuffer.size());
+        bufferLine("Content-Encoding: gzip");
+        // the body depends on the request's Accept-Encoding, so a shared cache must
+        // keep a separate copy per Accept-Encoding value (RFC 9110 section 12.5.5)
+        bufferLine("Vary: Accept-Encoding");
+        bufferLine("Content-Length: " + toString(compressed.size()));
+        bufferLine("");
+        write(compressed.data(), compressed.size(), false);
+        _compressResponse = false;
+        _responseBuffer.clear();
+    } else if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
     } else if (_state != State::SENDING_RESPONSE_BODY) {
         LS_ERROR(_logger, "finish() called when in wrong state");

@@ -21,6 +21,8 @@ public:
     // WARNING: inflate() alters input
     bool inflate(std::vector<uint8_t>& input, std::vector<uint8_t>& output, int& zlibError);
 
+    static std::vector<uint8_t> gzip(const uint8_t* input, size_t inputLen);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> _impl;
