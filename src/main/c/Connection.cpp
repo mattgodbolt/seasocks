@@ -1092,7 +1092,8 @@ void Connection::finish(bool keepConnectionOpen) {
     if (_compressResponse) {
         // the body is complete now, so compress it and emit the gzip headers with the
         // compressed length, then the compressed body; the shared tail below sends it
-        auto compressed = ZlibContext::gzip(_responseBuffer.data(), _responseBuffer.size());
+        std::vector<uint8_t> compressed;
+        zlibContext.gzip(_responseBuffer.data(), _responseBuffer.size(), compressed);
         bufferLine("Content-Encoding: gzip");
         // the body depends on the request's Accept-Encoding, so a shared cache must
         // keep a separate copy per Accept-Encoding value (RFC 9110 section 12.5.5)

@@ -69,7 +69,9 @@ TEST_CASE("gzip helper round-trips", "[HttpCompressionTests]") {
     original += "some readable text to compress and check";
     auto in = reinterpret_cast<const uint8_t*>(original.data());
 
-    auto compressed = ZlibContext::gzip(in, original.size());
+    ZlibContext context;
+    std::vector<uint8_t> compressed;
+    context.gzip(in, original.size(), compressed);
 
     // gzip stream starts with the magic bytes 1f 8b
     REQUIRE(compressed.size() >= 2);
@@ -82,10 +84,24 @@ TEST_CASE("gzip helper round-trips", "[HttpCompressionTests]") {
 }
 
 TEST_CASE("empty body gzips to a valid stream", "[HttpCompressionTests]") {
-    auto compressed = ZlibContext::gzip(nullptr, 0);
+    ZlibContext context;
+    std::vector<uint8_t> compressed;
+    context.gzip(nullptr, 0, compressed);
     CHECK(compressed[0] == 0x1f);
     CHECK(compressed[1] == 0x8b);
     CHECK(gunzip(compressed).empty());
+}
+
+TEST_CASE("gzip reuses one context across calls", "[HttpCompressionTests]") {
+    ZlibContext context;
+    const std::string first = "the first response body, repeated repeated repeated";
+    const std::string second = "an entirely different second body on the same context";
+    std::vector<uint8_t> a;
+    std::vector<uint8_t> b;
+    context.gzip(reinterpret_cast<const uint8_t*>(first.data()), first.size(), a);
+    context.gzip(reinterpret_cast<const uint8_t*>(second.data()), second.size(), b);
+    CHECK(gunzip(a) == first);
+    CHECK(gunzip(b) == second);
 }
 
 TEST_CASE("acceptsGzip honours the Accept-Encoding value", "[HttpCompressionTests]") {

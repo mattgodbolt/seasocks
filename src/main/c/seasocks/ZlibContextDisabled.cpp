@@ -32,6 +32,9 @@ namespace seasocks {
 struct ZlibContext::Impl {
 };
 
+struct ZlibContext::GzipImpl {
+};
+
 ZlibContext::ZlibContext() {
 }
 
@@ -50,7 +53,7 @@ bool ZlibContext::inflate(std::vector<uint8_t>&, std::vector<uint8_t>&, int&) {
     throw std::runtime_error("Not compiled with zlib support");
 }
 
-std::vector<uint8_t> ZlibContext::gzip(const uint8_t*, size_t) {
+void ZlibContext::gzip(const uint8_t*, size_t, std::vector<uint8_t>&) {
     throw std::runtime_error("Not compiled with zlib support");
 }
 
