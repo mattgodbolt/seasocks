@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2017, Matt Godbolt
+// Copyright (c) 2013-2026, Matt Godbolt and Nguyen Tran
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
