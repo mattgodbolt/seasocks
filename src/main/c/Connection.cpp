@@ -29,7 +29,6 @@
 #include "internal/HeaderMap.h"
 #include "internal/HybiAccept.h"
 #include "internal/HybiPacketDecoder.h"
-#include "internal/LogStream.h"
 #include "internal/PageRequest.h"
 #include "internal/RaiiFd.h"
 
@@ -287,7 +286,7 @@ void Connection::closeInternal() {
     // leaving the close of the FD and the cleanup until the destructor runs.
     _server.checkThread();
     if (_fd != -1 && !_shutdown && ::shutdown(_fd, SHUT_RDWR) == -1) {
-        LS_WARNING(_logger, "Unable to shutdown socket : " << getLastError());
+        LS::WARNING(_logger, "Unable to shutdown socket : ", getLastError());
     }
     _shutdown = true;
 }
@@ -306,7 +305,7 @@ void Connection::finalise() {
     }
     if (_fd != -1) {
         _server.remove(this);
-        LS_DEBUG(_logger, "Closing socket");
+        LS::DEBUG(_logger, "Closing socket");
 #ifndef _WIN32
         ::close(_fd);
 #else
@@ -332,7 +331,7 @@ ssize_t Connection::safeSend(const void* data, size_t size) {
             // Treat this as if zero bytes were written.
             return 0;
         }
-        LS_WARNING(_logger, "Unable to write to socket : " << getLastError() << " - disabling further writes");
+        LS::WARNING(_logger, "Unable to write to socket : ", getLastError(), " - disabling further writes");
         closeInternal();
     } else {
         _bytesSent += sendResult;
@@ -361,8 +360,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         size_t endOfBuffer = _outBuf.size();
         size_t newBufferSize = endOfBuffer + bytesToBuffer;
         if (newBufferSize >= _server.clientBufferSize()) {
-            LS_WARNING(_logger, "Closing connection: buffer size too large ("
-                                    << newBufferSize << " >= " << _server.clientBufferSize() << ")");
+            LS::WARNING(_logger, "Closing connection: buffer size too large (", newBufferSize, " >= ", _server.clientBufferSize(), ")");
             closeInternal();
             return false;
         }
@@ -399,11 +397,11 @@ void Connection::handleDataReadyForRead() {
     auto result = ::recv(_fd, reinterpret_cast<char*>(&_inBuf[curSize]), ReadWriteBufferSize, 0);
 #endif
     if (result == -1) {
-        LS_WARNING(_logger, "Unable to read from socket : " << getLastError());
+        LS::WARNING(_logger, "Unable to read from socket : ", getLastError());
         return;
     }
     if (result == 0) {
-        LS_DEBUG(_logger, "Remote end closed connection");
+        LS::DEBUG(_logger, "Remote end closed connection");
         closeInternal();
         return;
     }
@@ -440,7 +438,7 @@ bool Connection::flush() {
         _registeredForWriteEvents = false;
     }
     if (_outBuf.empty() && !closed() && _closeOnEmpty) {
-        LS_DEBUG(_logger, "Ready for close, now empty");
+        LS::DEBUG(_logger, "Ready for close, now empty");
         closeInternal();
     }
     return true;
@@ -515,7 +513,7 @@ void Connection::handleWebSocketKey3() {
     auto key1 = parseWebSocketKey(_request->getHeader("Sec-WebSocket-Key1"));
     auto key2 = parseWebSocketKey(_request->getHeader("Sec-WebSocket-Key2"));
 
-    LS_DEBUG(_logger, "Got a hixie websocket with key1=0x" << std::hex << key1 << ", key2=0x" << key2);
+    LS::DEBUG(_logger, "Got a hixie websocket with key1=0x", std::hex, key1, ", key2=0x", key2);
 
     md5Source.key1 = htonl(key1);
     md5Source.key2 = htonl(key2);
@@ -527,7 +525,7 @@ void Connection::handleWebSocketKey3() {
     md5_append(&md5state, reinterpret_cast<const uint8_t*>(&md5Source), sizeof(md5Source));
     md5_finish(&md5state, digest);
 
-    LS_DEBUG(_logger, "Attempting websocket upgrade");
+    LS::DEBUG(_logger, "Attempting websocket upgrade");
 
     bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
     bufferLine("Upgrade: websocket");
@@ -561,14 +559,14 @@ void Connection::pickProtocol() {
         return;
     // Ideally we need o support this header being set multiple times...but the headers don't support that.
     auto protocols = split(_request->getHeader(protocolHeader), ',');
-    LS_DEBUG(_logger, "Requested protocols:");
+    LS::DEBUG(_logger, "Requested protocols:");
     std::transform(protocols.begin(), protocols.end(), protocols.begin(), trimWhitespace);
     for (auto&& p : protocols) {
-        LS_DEBUG(_logger, "  " + p);
+        LS::DEBUG(_logger, "  " + p);
     }
     auto choice = _webSocketHandler->chooseProtocol(protocols);
     if (choice >= 0 && choice < static_cast<ssize_t>(protocols.size())) {
-        LS_DEBUG(_logger, "Chose protocol " + protocols[choice]);
+        LS::DEBUG(_logger, "Chose protocol " + protocols[choice]);
         bufferLine(protocolHeader + ": " + protocols[choice]);
     }
 }
@@ -586,7 +584,7 @@ void Connection::send(const char* webSocketResponse) {
     _server.checkThread();
     if (_shutdown) {
         if (_shutdownByUser) {
-            LS_ERROR(_logger, "Server wrote to connection after closing it");
+            LS::ERROR(_logger, "Server wrote to connection after closing it");
         }
         return;
     }
@@ -609,12 +607,12 @@ void Connection::send(const uint8_t* webSocketResponse, size_t length) {
     _server.checkThread();
     if (_shutdown) {
         if (_shutdownByUser) {
-            LS_ERROR(_logger, "Client wrote to connection after closing it");
+            LS::ERROR(_logger, "Client wrote to connection after closing it");
         }
         return;
     }
     if (_state == State::HANDLING_HIXIE_WEBSOCKET) {
-        LS_ERROR(_logger, "Hixie does not support binary");
+        LS::ERROR(_logger, "Hixie does not support binary");
         return;
     }
     sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Binary), webSocketResponse, length);
@@ -632,7 +630,7 @@ void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size
 
         zlibContext.deflate(webSocketResponse, messageLength, compressed);
 
-        LS_DEBUG(_logger, "Compression result: " << messageLength << " bytes -> " << compressed.size() << " bytes");
+        LS::DEBUG(_logger, "Compression result: ", messageLength, " bytes -> ", compressed.size(), " bytes");
         sendHybiData(compressed.data(), compressed.size());
     } else {
         sendHybiData(webSocketResponse, messageLength);
@@ -675,7 +673,7 @@ void Connection::handleHixieWebSocket() {
     size_t messageStart = 0;
     while (messageStart < _inBuf.size()) {
         if (_inBuf[messageStart] != 0) {
-            LS_WARNING(_logger, "Error in WebSocket input stream (got " << (int) _inBuf[messageStart] << ")");
+            LS::WARNING(_logger, "Error in WebSocket input stream (got ", (int) _inBuf[messageStart], ")");
             closeInternal();
             return;
         }
@@ -699,7 +697,7 @@ void Connection::handleHixieWebSocket() {
         _inBuf.erase(_inBuf.begin(), _inBuf.begin() + messageStart);
     }
     if (_inBuf.size() > MaxWebsocketMessageSize) {
-        LS_WARNING(_logger, "WebSocket message too long");
+        LS::WARNING(_logger, "WebSocket message too long");
         closeInternal();
     }
 }
@@ -718,7 +716,7 @@ void Connection::handleHybiWebSocket() {
 
         if (deflateNeeded) {
             if (!_perMessageDeflate) {
-                LS_WARNING(_logger, "Received deflated hybi frame but deflate wasn't negotiated");
+                LS::WARNING(_logger, "Received deflated hybi frame but deflate wasn't negotiated");
                 closeInternal();
                 return;
             }
@@ -732,12 +730,12 @@ void Connection::handleHybiWebSocket() {
             bool success = zlibContext.inflate(decodedMessage, decompressed, zlibError);
 
             if (!success) {
-                LS_WARNING(_logger, "Decompression error from zlib: " << zlibError);
+                LS::WARNING(_logger, "Decompression error from zlib: ", zlibError);
                 closeInternal();
                 return;
             }
 
-            LS_DEBUG(_logger, "Decompression result: " << compressed_size << " bytes -> " << decodedMessage.size() << " bytes");
+            LS::DEBUG(_logger, "Decompression result: ", compressed_size, " bytes -> ", decodedMessage.size(), " bytes");
 
             decodedMessage.swap(decompressed);
         }
@@ -746,7 +744,7 @@ void Connection::handleHybiWebSocket() {
         switch (messageState) {
             default:
                 closeInternal();
-                LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
+                LS::WARNING(_logger, "Unknown HybiPacketDecoder state");
                 return;
             case HybiPacketDecoder::MessageState::Error:
                 closeInternal();
@@ -770,7 +768,7 @@ void Connection::handleHybiWebSocket() {
                 done = true;
                 break;
             case HybiPacketDecoder::MessageState::Close:
-                LS_DEBUG(_logger, "Received WebSocket close");
+                LS::DEBUG(_logger, "Received WebSocket close");
                 closeInternal();
                 return;
         }
@@ -779,20 +777,20 @@ void Connection::handleHybiWebSocket() {
         _inBuf.erase(_inBuf.begin(), _inBuf.begin() + decoder.numBytesDecoded());
     }
     if (_inBuf.size() > MaxWebsocketMessageSize) {
-        LS_WARNING(_logger, "WebSocket message too long");
+        LS::WARNING(_logger, "WebSocket message too long");
         closeInternal();
     }
 }
 
 void Connection::handleWebSocketTextMessage(const char* message) {
-    LS_DEBUG(_logger, "Got text web socket message: '" << message << "'");
+    LS::DEBUG(_logger, "Got text web socket message: '", message, "'");
     if (_webSocketHandler) {
         _webSocketHandler->onData(this, message);
     }
 }
 
 void Connection::handleWebSocketBinaryMessage(const std::vector<uint8_t>& message) {
-    LS_DEBUG(_logger, "Got binary web socket message (size: " << message.size() << ")");
+    LS::DEBUG(_logger, "Got binary web socket message (size: ", message.size(), ")");
     if (_webSocketHandler) {
         _webSocketHandler->onData(this, &message[0], message.size());
     }
@@ -861,7 +859,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     char* requestLine = extractLine(first, last);
     assert(requestLine != nullptr);
 
-    LS_ACCESS(_logger, "Request: " << requestLine);
+    LS::ACCESS(_logger, "Request: ", requestLine);
 
     const char* verbText = shift(requestLine);
     if (!verbText) {
@@ -898,18 +896,18 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         *colonPos = 0;
         const char* key = headerLine;
         const char* value = skipWhitespace(colonPos + 1);
-        LS_DEBUG(_logger, "Key: " << key << " || " << value);
+        LS::DEBUG(_logger, "Key: ", key, " || ", value);
         headers.emplace(key, value);
     }
 
     if (headers.count("Connection") && headers.count("Upgrade") && hasConnectionType(headers["Connection"], "Upgrade") && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
-        LS_INFO(_logger, "Websocket request for " << requestUri << "'");
+        LS::INFO(_logger, "Websocket request for ", requestUri, "'");
         if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");
         }
         _webSocketHandler = _server.getWebSocketHandler(requestUri);
         if (!_webSocketHandler) {
-            LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << requestUri << "'");
+            LS::WARNING(_logger, "Couldn't find WebSocket end point for '", requestUri, "'");
             return send404();
         }
         verb = Request::Verb::WebSocket;
@@ -945,10 +943,10 @@ bool Connection::handlePageRequest() {
     try {
         response = _server.handle(*_request);
     } catch (const std::exception& e) {
-        LS_ERROR(_logger, "page error: " << e.what());
+        LS::ERROR(_logger, "page error: ", e.what());
         return sendISE(e.what());
     } catch (...) {
-        LS_ERROR(_logger, "page error: (unknown)");
+        LS::ERROR(_logger, "page error: (unknown)");
         return sendISE("(unknown)");
     }
     auto uri = _request->getRequestUri();
@@ -959,11 +957,11 @@ bool Connection::handlePageRequest() {
             webSocketVersion = std::stoi(_request->getHeader("Sec-WebSocket-Version"));
         } catch (const std::logic_error& ex) {
             (void) ex;
-            LS_WARNING(_logger, "Invalid Sec-WebSocket-Version '" << _request->getHeader("Sec-WebSocket-Version") << "'");
+            LS::WARNING(_logger, "Invalid Sec-WebSocket-Version '", _request->getHeader("Sec-WebSocket-Version"), "'");
             return sendError(ResponseCode::UpgradeRequired, "Invalid Sec-WebSocket-Version received");
         }
         if (!_webSocketHandler) {
-            LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
+            LS::WARNING(_logger, "Couldn't find WebSocket end point for '", uri, "'");
             return send404();
         }
         if (webSocketVersion == 0) {
@@ -993,11 +991,11 @@ bool Connection::sendResponse(std::shared_ptr<Response> response) {
 void Connection::error(ResponseCode responseCode, const std::string& payload) {
     _server.checkThread();
     if (_state != State::AWAITING_RESPONSE_BEGIN) {
-        LS_ERROR(_logger, "error() called when in wrong state");
+        LS::ERROR(_logger, "error() called when in wrong state");
         return;
     }
     if (isOk(responseCode)) {
-        LS_ERROR(_logger, "error() called with a non-error code");
+        LS::ERROR(_logger, "error() called with a non-error code");
     }
     if (responseCode == ResponseCode::NotFound) {
         // TODO: better here; we use this purely to serve our own embedded content.
@@ -1010,7 +1008,7 @@ void Connection::error(ResponseCode responseCode, const std::string& payload) {
 void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
     _server.checkThread();
     if (_state != State::AWAITING_RESPONSE_BEGIN) {
-        LS_ERROR(_logger, "begin() called when in wrong state");
+        LS::ERROR(_logger, "begin() called when in wrong state");
         return;
     }
     _state = State::SENDING_RESPONSE_HEADERS;
@@ -1030,7 +1028,7 @@ void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
 void Connection::header(const std::string& header, const std::string& value) {
     _server.checkThread();
     if (_state != State::SENDING_RESPONSE_HEADERS) {
-        LS_ERROR(_logger, "header() called when in wrong state");
+        LS::ERROR(_logger, "header() called when in wrong state");
         return;
     }
     // the handler already encoded the body, so stop compressing and restore the
@@ -1068,7 +1066,7 @@ void Connection::payload(const void* data, size_t size, bool flush) {
         bufferLine("");
         _state = State::SENDING_RESPONSE_BODY;
     } else if (_state != State::SENDING_RESPONSE_BODY) {
-        LS_ERROR(_logger, "payload() called when in wrong state");
+        LS::ERROR(_logger, "payload() called when in wrong state");
         return;
     }
     if (size && _transferEncoding == TransferEncoding::Chunked) {
@@ -1106,7 +1104,7 @@ void Connection::finish(bool keepConnectionOpen) {
     } else if (_state == State::SENDING_RESPONSE_HEADERS) {
         bufferLine("");
     } else if (_state != State::SENDING_RESPONSE_BODY) {
-        LS_ERROR(_logger, "finish() called when in wrong state");
+        LS::ERROR(_logger, "finish() called when in wrong state");
         return;
     }
     if (_transferEncoding == TransferEncoding::Chunked) {
@@ -1130,9 +1128,9 @@ bool Connection::handleHybiHandshake(
     if (webSocketVersion != 8 && webSocketVersion != 13) {
         return sendBadRequest("Invalid websocket version");
     }
-    LS_DEBUG(_logger, "Got a hybi-8 websocket with key=" << webSocketKey);
+    LS::DEBUG(_logger, "Got a hybi-8 websocket with key=", webSocketKey);
 
-    LS_DEBUG(_logger, "Attempting websocket upgrade");
+    LS::DEBUG(_logger, "Attempting websocket upgrade");
 
     bufferResponseAndCommonHeaders(ResponseCode::WebSocketProtocolHandshake);
     bufferLine("Upgrade: websocket");
@@ -1158,7 +1156,7 @@ void Connection::parsePerMessageDeflateHeader(const std::string& header) {
         }
 
         if (seasocks::caseInsensitiveSame(extField, "permessage-deflate")) {
-            LS_INFO(_logger, "Enabling per-message deflate");
+            LS::INFO(_logger, "Enabling per-message deflate");
             _perMessageDeflate = true;
             zlibContext.initialise();
         }
@@ -1171,7 +1169,7 @@ void Connection::parsePerMessageDeflateHeader(const std::string& header) {
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     size_t minusPos = rangeStr.find('-');
     if (minusPos == std::string::npos) {
-        LS_WARNING(_logger, "Bad range: '" << rangeStr << "'");
+        LS::WARNING(_logger, "Bad range: '", rangeStr, "'");
         return false;
     }
     if (minusPos == 0) {
@@ -1197,7 +1195,7 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
 bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges) const {
     static const std::string expectedPrefix = "bytes=";
     if (range.length() < expectedPrefix.length() || range.substr(0, expectedPrefix.length()) != expectedPrefix) {
-        LS_WARNING(_logger, "Bad range request prefix: '" << range << "'");
+        LS::WARNING(_logger, "Bad range request prefix: '", range, "'");
         return false;
     }
     auto rangesText = split(range.substr(expectedPrefix.length()), ',');
@@ -1310,7 +1308,7 @@ bool Connection::sendStaticData() {
                                     static_cast<unsigned int>(std::min(static_cast<long>(sizeof(buf)), bytesLeft)));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
-                LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));
+                LS::ERROR(_logger, "Error reading file: ", (bytesRead == 0 ? unexpectedEof : getLastError()));
                 // We can't send an error document as we've sent the header.
                 return false;
             }
@@ -1349,7 +1347,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
     auto responseCodeInt = static_cast<int>(code);
     auto responseCodeName = ::name(code);
     auto response = std::string("HTTP/1.1 " + toString(responseCodeInt) + " " + responseCodeName);
-    LS_ACCESS(_logger, "Response: " << response);
+    LS::ACCESS(_logger, "Response: ", response);
     bufferLine(response);
     bufferLine("Server: " + std::string(Config::version));
     bufferLine("Date: " + now());
@@ -1365,7 +1363,7 @@ void Connection::setLinger() {
     // signature of ::setsockopt in Windows is:
     // int setsockopt(SOCKET, int level, int optname, const char *optval, int optlen);
     if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, reinterpret_cast<const char*>(&linger), sizeof(linger)) == -1) {
-        LS_INFO(_logger, "Unable to set linger on socket");
+        LS::INFO(_logger, "Unable to set linger on socket");
     }
 }
 

@@ -31,9 +31,7 @@ add_library(seasocks ${SEASOCKS_LIBTYPE}
         internal/HeaderMap.h
         internal/HybiAccept.h
         internal/HybiPacketDecoder.h
-        internal/LogStream.h
         internal/PageRequest.h
-        Logger.cpp
         md5/md5.cpp
         md5/md5.h
         PageRequest.cpp
