@@ -875,6 +875,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
     }
+    if (std::string(requestUri).find("..") != std::string::npos) {
+        return sendBadRequest("Malformed uri");
+    }
 
     const char* httpVersion = shift(requestLine);
     if (httpVersion == nullptr) {
@@ -1252,6 +1255,9 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
 #endif
 bool Connection::sendStaticData() {
     // TODO: fold this into the handler way of doing things.
+    if (_server.getStaticPath().empty()) {
+        return send404();
+    }
     std::string path = _server.getStaticPath() + getRequestUri();
     auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
