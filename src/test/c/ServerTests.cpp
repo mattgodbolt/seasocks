@@ -139,8 +139,7 @@ public:
         char buf[4096];
         // Responses to these requests are small; stop once we have headers
         // and, for 200s, the short body.
-        while (response.find("\r\n\r\n") == std::string::npos
-               || (response.rfind("HTTP/1.1 200", 0) == 0 && response.find("static-ok") == std::string::npos)) {
+        while (response.find("\r\n\r\n") == std::string::npos || (response.rfind("HTTP/1.1 200", 0) == 0 && response.find("static-ok") == std::string::npos)) {
             auto received = ::recv(client, buf, sizeof(buf), 0);
             if (received <= 0)
                 break;
