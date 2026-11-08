@@ -136,8 +136,7 @@ const std::unordered_map<std::string, std::string> contentTypes = {
     {"mp3", "audio/mpeg"},
     {"wav", "audio/x-wav"},
     {"ttf", "font/ttf"},
-    {"wasm", "application/wasm"}
-};
+    {"wasm", "application/wasm"}};
 
 std::string getExt(const std::string& path) {
     auto lastDot = path.find_last_of('.');
