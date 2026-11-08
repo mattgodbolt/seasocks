@@ -47,6 +47,11 @@ std::string formatAddress(const sockaddr_in& address);
 
 std::vector<std::string> split(const std::string& input, char splitChar);
 
+// True if the path part of a request URI (before any '?') contains a ".."
+// segment, treating both '/' and '\\' as separators. Seasocks doesn't
+// percent-decode URIs; if that ever changes, this must run on the decoded form.
+bool hasParentDirectorySegment(const std::string& uri);
+
 void replace(std::string& string, const std::string& find, const std::string& replace);
 
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs);

@@ -150,3 +150,27 @@ TEST_CASE("getWorkingDir", "[ToStringTests]") {
     const std::string result = getWorkingDir();
     CHECK(!result.empty());
 }
+
+TEST_CASE("hasParentDirectorySegment detects .. path segments", "[StringUtilTests]") {
+    CHECK(hasParentDirectorySegment(".."));
+    CHECK(hasParentDirectorySegment("/.."));
+    CHECK(hasParentDirectorySegment("../"));
+    CHECK(hasParentDirectorySegment("/../etc/passwd"));
+    CHECK(hasParentDirectorySegment("/a/b/../../c"));
+    CHECK(hasParentDirectorySegment("/a/.."));
+    CHECK(hasParentDirectorySegment("/a\\..\\b"));
+    CHECK(hasParentDirectorySegment("/a/../b?x=y"));
+}
+
+TEST_CASE("hasParentDirectorySegment ignores other uses of dots", "[StringUtilTests]") {
+    CHECK_FALSE(hasParentDirectorySegment(""));
+    CHECK_FALSE(hasParentDirectorySegment("/"));
+    CHECK_FALSE(hasParentDirectorySegment("/index.html"));
+    CHECK_FALSE(hasParentDirectorySegment("/a..b"));
+    CHECK_FALSE(hasParentDirectorySegment("/..a"));
+    CHECK_FALSE(hasParentDirectorySegment("/a.."));
+    CHECK_FALSE(hasParentDirectorySegment("/..."));
+    CHECK_FALSE(hasParentDirectorySegment("/./a"));
+    CHECK_FALSE(hasParentDirectorySegment("/a?next=../b"));
+    CHECK_FALSE(hasParentDirectorySegment("/%2e%2e/a"));
+}

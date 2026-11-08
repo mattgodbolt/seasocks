@@ -119,6 +119,23 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
     return result;
 }
 
+bool hasParentDirectorySegment(const std::string& uri) {
+    // Only the path matters: a query string like "?next=../x" is not a path.
+    const auto path = uri.substr(0, uri.find('?'));
+    size_t segmentStart = 0;
+    while (segmentStart <= path.size()) {
+        auto segmentEnd = path.find_first_of("/\\", segmentStart);
+        if (segmentEnd == std::string::npos) {
+            segmentEnd = path.size();
+        }
+        if (path.compare(segmentStart, segmentEnd - segmentStart, "..") == 0) {
+            return true;
+        }
+        segmentStart = segmentEnd + 1;
+    }
+    return false;
+}
+
 void replace(std::string& string, const std::string& find, const std::string& replace) {
     if (find.empty()) {
         return;

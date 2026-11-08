@@ -876,7 +876,10 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
     }
-    if (std::string(requestUri).find("..") != std::string::npos) {
+
+    // Reject traversal early for every kind of request (handlers and websockets
+    // included), as before; sendStaticData re-checks as the last line of defence.
+    if (hasParentDirectorySegment(requestUri)) {
         return sendBadRequest("Malformed uri");
     }
 
@@ -1259,7 +1262,14 @@ bool Connection::sendStaticData() {
     if (_server.getStaticPath().empty()) {
         return send404();
     }
-    std::string path = _server.getStaticPath() + getRequestUri();
+    // The static path is simply prefixed onto the URI, so the URI must be
+    // rooted: otherwise "/var/www" + "etc" would name the sibling "/var/wwwetc".
+    // Parent directory segments were already rejected in processHeaders.
+    const auto& uri = getRequestUri();
+    if (uri.empty() || uri[0] != '/') {
+        return sendBadRequest("Malformed uri");
+    }
+    std::string path = _server.getStaticPath() + uri;
     auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
     size_t queryPos = path.find('?');
