@@ -121,14 +121,29 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
 
 bool hasParentDirectorySegment(const std::string& uri) {
     // Only the path matters: a query string like "?next=../x" is not a path.
-    const auto path = uri.substr(0, uri.find('?'));
-    size_t segmentStart = 0;
-    while (segmentStart <= path.size()) {
-        auto segmentEnd = path.find_first_of("/\\", segmentStart);
-        if (segmentEnd == std::string::npos) {
-            segmentEnd = path.size();
+    auto path = uri.substr(0, uri.find('?'));
+
+    // CrackedUri (and so PathHandler and friends) percent-decodes segments, so
+    // "%2e%2e" reaches handlers as "..". Decode (leaving malformed escapes
+    // alone) before looking for segments; this also catches "%2f" and "%5c".
+    std::string decoded;
+    decoded.reserve(path.size());
+    for (size_t i = 0; i < path.size(); ++i) {
+        if (path[i] == '%' && i + 2 < path.size() && std::isxdigit(static_cast<unsigned char>(path[i + 1])) && std::isxdigit(static_cast<unsigned char>(path[i + 2]))) {
+            decoded += static_cast<char>(std::stoi(path.substr(i + 1, 2), nullptr, 16));
+            i += 2;
+        } else {
+            decoded += path[i];
         }
-        if (path.compare(segmentStart, segmentEnd - segmentStart, "..") == 0) {
+    }
+
+    size_t segmentStart = 0;
+    while (segmentStart <= decoded.size()) {
+        auto segmentEnd = decoded.find_first_of("/\\", segmentStart);
+        if (segmentEnd == std::string::npos) {
+            segmentEnd = decoded.size();
+        }
+        if (decoded.compare(segmentStart, segmentEnd - segmentStart, "..") == 0) {
             return true;
         }
         segmentStart = segmentEnd + 1;

@@ -135,11 +135,12 @@ public:
         std::strncpy(addr.sun_path, _socketPath.c_str(), sizeof(addr.sun_path) - 1);
         REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
         REQUIRE(::send(client, rawRequest.data(), rawRequest.size(), 0) == static_cast<ssize_t>(rawRequest.size()));
+        // Half-close so the server sees EOF after the request and closes once
+        // it has replied: no need to guess where the response ends.
+        ::shutdown(client, SHUT_WR);
         std::string response;
         char buf[4096];
-        // Responses to these requests are small; stop once we have headers
-        // and, for 200s, the short body.
-        while (response.find("\r\n\r\n") == std::string::npos || (response.rfind("HTTP/1.1 200", 0) == 0 && response.find("static-ok") == std::string::npos)) {
+        for (;;) {
             auto received = ::recv(client, buf, sizeof(buf), 0);
             if (received <= 0)
                 break;
@@ -224,7 +225,7 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
     SECTION("rejects parent directory segments") {
         UnixSocketServer s(tree.www);
         for (const char* uri : {"/../secret.txt", "/a/../../secret.txt", "/..", "/../", "/..\\secret.txt",
-                                "/hello.txt/../../secret.txt", "/..?x=1"}) {
+                                "/hello.txt/../../secret.txt", "/..?x=1", "/%2e%2e/secret.txt", "/%2E./secret.txt", "/a%2f..%2f..%2fsecret.txt"}) {
             INFO(uri);
             auto response = s.get(uri);
             CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
@@ -261,6 +262,10 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
         auto ok = s.get("/anything");
         CHECK(ok.find("handler-reached") != std::string::npos);
         auto response = s.get("/../anything");
+        CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+        CHECK(response.find("handler-reached") == std::string::npos);
+        // CrackedUri percent-decodes path segments before handlers see them.
+        response = s.get("/%2e%2e/anything");
         CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
         CHECK(response.find("handler-reached") == std::string::npos);
     }

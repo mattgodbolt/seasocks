@@ -877,7 +877,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     }
 
     // Reject traversal early for every kind of request (handlers and websockets
-    // included), as before; sendStaticData re-checks as the last line of defence.
+    // included), as before. This also looks through percent-encoding, since
+    // CrackedUri decodes path segments before custom handlers see them.
     if (hasParentDirectorySegment(requestUri)) {
         return sendBadRequest("Malformed uri");
     }
