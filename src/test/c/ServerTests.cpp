@@ -29,7 +29,14 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstring>
+#include <string>
 #include <thread>
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#endif
 #include <chrono>
 
 using namespace seasocks;
@@ -79,3 +86,41 @@ TEST_CASE("Server tests", "[ServerTests]") {
     server.terminate();
     seasocksThread.join();
 }
+
+#ifndef _WIN32
+// Newer Linux kernels reject SO_REUSEPORT on AF_UNIX sockets (issue #208).
+// Accepted connections are configured with the same options as the listener,
+// so check that a client can actually connect and get a response too.
+TEST_CASE("Server can listen on and accept from a unix socket", "[ServerTests]") {
+    auto logger = std::make_shared<IgnoringLogger>();
+    Server server(logger);
+    auto path = "/tmp/seasocks-test-" + std::to_string(::getpid()) + ".sock";
+    ::unlink(path.c_str());
+    REQUIRE(server.startListeningUnix(path.c_str()));
+    std::thread seasocksThread([&] {
+        REQUIRE(server.loop());
+    });
+
+    int client = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    REQUIRE(client != -1);
+    timeval timeout{5, 0};
+    ::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+    REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
+
+    const std::string request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    REQUIRE(::send(client, request.data(), request.size(), 0) == static_cast<ssize_t>(request.size()));
+    char buf[256] = {};
+    auto received = ::recv(client, buf, sizeof(buf) - 1, 0);
+    // Any HTTP response will do: it shows the accepted socket was usable.
+    REQUIRE(received > 0);
+    CHECK(std::string(buf, received).rfind("HTTP/1.1 ", 0) == 0);
+
+    ::close(client);
+    server.terminate();
+    seasocksThread.join();
+    ::unlink(path.c_str());
+}
+#endif
