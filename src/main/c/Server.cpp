@@ -148,7 +148,7 @@ Server::Server(std::shared_ptr<Logger> logger)
           _lameConnectionTimeoutSeconds(DefaultLameConnectionTimeoutSeconds),
           _clientBufferSize(DefaultClientBufferSize),
           _nextDeadConnectionCheck(0), _threadId(0), _terminate(false),
-          _expectedTerminate(false) {
+          _expectedTerminate(false), _listenPaused(false) {
 
 #ifdef _WIN32
     init_winsock();
@@ -482,6 +482,16 @@ void Server::checkAndDispatchEpoll(int epollMillis) {
         }
         LS_DEBUG(_logger, "Deleting connection: " << formatAddress(connection->getRemoteAddress()));
         delete connection;
+
+        if (_listenPaused) {
+            LS_ERROR(_logger, "A connection has been closed and fds are available again, continue poll for _listenSock");
+            _listenPaused = false;
+            epoll_event event = {EPOLLIN, {this}};
+            if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _listenSock, &event) == -1) {
+                LS_ERROR(_logger, "Unable to add listen socket to epoll: " << getLastError());
+                return;
+            }
+        }
     }
 }
 
@@ -582,6 +592,16 @@ void Server::handleAccept() {
                                    reinterpret_cast<sockaddr*>(&address),
                                    &addrLen);
     if (fd == -1) {
+        if (errno == EMFILE || errno == ENFILE) {
+            if (_connections.empty()) {
+                LS_ERROR(_logger, "Out of file descriptors and there are also no connections that might eventually close");
+                return;
+            }
+            LS_ERROR(_logger, "Out of file descriptors, stop polling for _listenSock until a Connection closes its fd");
+            _listenPaused = true;
+            epoll_ctl(_epollFd, EPOLL_CTL_DEL, _listenSock, NULL);
+            return;
+        }
         LS_ERROR(_logger, "Unable to accept: " << getLastError());
         return;
     }
