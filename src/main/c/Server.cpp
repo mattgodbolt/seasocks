@@ -33,6 +33,7 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/util/Json.h"
 #include <cassert>
+#include <cerrno>
 #ifdef _WIN32
 #include "seasocks/win32/winsock_includes.h"
 #else
@@ -249,8 +250,15 @@ bool Server::configureSocket(NativeSocketType fd) const {
     }
 #ifdef SO_REUSEPORT
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &yesPlease, sizeof(yesPlease)) == -1) {
-        LS_ERROR(_logger, "Unable to set reuse port socket option: " << getLastError());
-        return false;
+        // Newer Linux kernels reject SO_REUSEPORT on AF_UNIX sockets (this
+        // function also configures accepted unix connections). It's only an
+        // optimisation for us, so carry on if the socket type doesn't support it.
+        if (errno == EOPNOTSUPP) {
+            LS_DEBUG(_logger, "SO_REUSEPORT not supported on this socket; continuing without it");
+        } else {
+            LS_ERROR(_logger, "Unable to set reuse port socket option: " << getLastError());
+            return false;
+        }
     }
 #endif
     if (_maxKeepAliveDrops > 0) {

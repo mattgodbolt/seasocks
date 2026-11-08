@@ -30,6 +30,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <thread>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 #include <chrono>
 
 using namespace seasocks;
@@ -79,3 +82,15 @@ TEST_CASE("Server tests", "[ServerTests]") {
     server.terminate();
     seasocksThread.join();
 }
+
+#ifndef _WIN32
+// Newer Linux kernels reject SO_REUSEPORT on AF_UNIX sockets (issue #208).
+TEST_CASE("Server can listen on a unix socket", "[ServerTests]") {
+    auto logger = std::make_shared<IgnoringLogger>();
+    Server server(logger);
+    auto path = "/tmp/seasocks-test-" + std::to_string(::getpid()) + ".sock";
+    ::unlink(path.c_str());
+    CHECK(server.startListeningUnix(path.c_str()));
+    ::unlink(path.c_str());
+}
+#endif
