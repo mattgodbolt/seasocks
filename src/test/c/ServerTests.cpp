@@ -96,8 +96,6 @@ TEST_CASE("Server tests", "[ServerTests]") {
 #ifndef _WIN32
 namespace {
 
-// Starts a server listening on a unix socket for the lifetime of the object
-// and lets tests send it a raw HTTP request.
 class UnixSocketServer {
     std::shared_ptr<IgnoringLogger> _logger = std::make_shared<IgnoringLogger>();
     std::string _socketPath = "/tmp/seasocks-test-" + std::to_string(::getpid()) + ".sock";
@@ -108,7 +106,7 @@ public:
 
     explicit UnixSocketServer(const std::string& staticPath = "", std::shared_ptr<PageHandler> handler = nullptr) {
         ::unlink(_socketPath.c_str());
-        // Must be set before the server thread starts: it isn't synchronised.
+        // Not synchronised, so must be set before the server thread starts.
         if (!staticPath.empty()) {
             server.setStaticPath(staticPath.c_str());
         }
@@ -124,7 +122,6 @@ public:
         ::unlink(_socketPath.c_str());
     }
 
-    // Returns everything the server sent back before closing or timing out.
     std::string request(const std::string& rawRequest) const {
         int client = ::socket(AF_UNIX, SOCK_STREAM, 0);
         REQUIRE(client != -1);
@@ -135,8 +132,7 @@ public:
         std::strncpy(addr.sun_path, _socketPath.c_str(), sizeof(addr.sun_path) - 1);
         REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
         REQUIRE(::send(client, rawRequest.data(), rawRequest.size(), 0) == static_cast<ssize_t>(rawRequest.size()));
-        // Half-close so the server sees EOF after the request and closes once
-        // it has replied: no need to guess where the response ends.
+        // Half-close so the server closes after replying and we can read to EOF.
         ::shutdown(client, SHUT_WR);
         std::string response;
         char buf[4096];
@@ -172,10 +168,8 @@ TEST_CASE("Server can listen on and accept from a unix socket", "[ServerTests]")
 
 namespace {
 
-// A throwaway directory tree, removed even if an assertion throws:
-//   <root>/www/...     the static directory
-//   <root>/secret.txt  outside it
-//   <root>/wwwsecret.txt  a sibling whose name starts with the static dir's name
+// <root>/www is the static dir; <root>/secret.txt and <root>/wwwsecret.txt
+// (a sibling sharing its name prefix) must never be served.
 struct TempTree {
     std::string root;
     std::string www;
@@ -233,14 +227,13 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
         }
     }
     SECTION("a .. after the query marker is not part of the path") {
-        // The path is /hello.txt; what follows '?' is trimmed before opening the file.
         UnixSocketServer s(tree.www);
         auto response = s.get("/hello.txt?/../../secret.txt");
         CHECK(statusLine(response) == "HTTP/1.1 200 OK");
         CHECK(response.find("TOP-SECRET") == std::string::npos);
     }
     SECTION("rejects URIs that are not rooted") {
-        // Without a leading '/', "<www>" + "secret.txt" would be the sibling "<root>/wwwsecret.txt".
+        // "<www>" + "secret.txt" would be the sibling "<root>/wwwsecret.txt".
         UnixSocketServer s(tree.www);
         auto response = s.get("secret.txt");
         CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
@@ -264,7 +257,6 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
         auto response = s.get("/../anything");
         CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
         CHECK(response.find("handler-reached") == std::string::npos);
-        // CrackedUri percent-decodes path segments before handlers see them.
         response = s.get("/%2e%2e/anything");
         CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
         CHECK(response.find("handler-reached") == std::string::npos);

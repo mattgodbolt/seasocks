@@ -876,9 +876,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         return sendBadRequest("Malformed request line");
     }
 
-    // Reject traversal early for every kind of request (handlers and websockets
-    // included), as before. This also looks through percent-encoding, since
-    // CrackedUri decodes path segments before custom handlers see them.
     if (hasParentDirectorySegment(requestUri)) {
         return sendBadRequest("Malformed uri");
     }
@@ -1262,9 +1259,7 @@ bool Connection::sendStaticData() {
     if (_server.getStaticPath().empty()) {
         return send404();
     }
-    // The static path is simply prefixed onto the URI, so the URI must be
-    // rooted: otherwise "/var/www" + "etc" would name the sibling "/var/wwwetc".
-    // Parent directory segments were already rejected in processHeaders.
+    // Must be rooted, else "/var/www" + "etc" names the sibling "/var/wwwetc".
     const auto& uri = getRequestUri();
     if (uri.empty() || uri[0] != '/') {
         return sendBadRequest("Malformed uri");

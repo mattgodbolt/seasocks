@@ -120,12 +120,9 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
 }
 
 bool hasParentDirectorySegment(const std::string& uri) {
-    // Only the path matters: a query string like "?next=../x" is not a path.
     auto path = uri.substr(0, uri.find('?'));
 
-    // CrackedUri (and so PathHandler and friends) percent-decodes segments, so
-    // "%2e%2e" reaches handlers as "..". Decode (leaving malformed escapes
-    // alone) before looking for segments; this also catches "%2f" and "%5c".
+    // CrackedUri decodes segments before handlers see them, so "%2e%2e" is "..".
     std::string decoded;
     decoded.reserve(path.size());
     for (size_t i = 0; i < path.size(); ++i) {

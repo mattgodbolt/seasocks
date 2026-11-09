@@ -47,11 +47,6 @@ std::string formatAddress(const sockaddr_in& address);
 
 std::vector<std::string> split(const std::string& input, char splitChar);
 
-// True if the path part of a request URI (before any '?') contains a ".."
-// segment, treating both '/' and '\\' as separators. The path is
-// percent-decoded first, because CrackedUri decodes segments before handlers
-// see them: "%2e%2e" and "a%2f..%2fb" count. (Static file serving does not
-// decode, so a file literally named "%2e%2e" is also refused; that's fine.)
 bool hasParentDirectorySegment(const std::string& uri);
 
 void replace(std::string& string, const std::string& find, const std::string& replace);
