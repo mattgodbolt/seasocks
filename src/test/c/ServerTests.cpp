@@ -153,6 +153,10 @@ public:
     }
 };
 
+bool contains(const std::string& haystack, const std::string& needle) {
+    return haystack.find(needle) != std::string::npos;
+}
+
 std::string statusLine(const std::string& response) {
     return response.substr(0, response.find("\r\n"));
 }
@@ -287,3 +291,19 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
     }
 }
 #endif
+
+TEST_CASE("Error pages escape the request path and are served as HTML", "[ServerTests]") {
+    UnixSocketServer s;
+    auto response = s.get("/<script>alert(1)</script>\"'&x");
+    CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+    CHECK(contains(response, "Content-Type: text/html; charset=utf-8\r\n"));
+    CHECK_FALSE(contains(response, "<script>"));
+    CHECK(contains(response, "Unable to find resource for: /&lt;script&gt;alert(1)&lt;/script&gt;&quot;&#39;&amp;x"));
+}
+
+TEST_CASE("Error pages do not re-substitute template placeholders in the body", "[ServerTests]") {
+    UnixSocketServer s;
+    auto response = s.get("/%%BODY%%%%MESSAGE%%%%ERRORCODE%%");
+    CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+    CHECK(contains(response, "Unable to find resource for: /%%BODY%%%%MESSAGE%%%%ERRORCODE%%"));
+}

@@ -804,20 +804,23 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
     auto message = ::name(errorCode);
     bufferResponseAndCommonHeaders(errorCode);
     auto errorContent = findEmbeddedContent("/_error.html");
+    // The body often echoes request data (e.g. the URI), so must never be inserted as raw HTML.
+    const auto escapedBody = escapeHtml(body);
     std::string document;
     if (errorContent) {
         document.assign(errorContent->data, errorContent->data + errorContent->length);
         replace(document, "%%ERRORCODE%%", toString(errorNumber));
         replace(document, "%%MESSAGE%%", message);
-        replace(document, "%%BODY%%", body);
+        replace(document, "%%BODY%%", escapedBody);
     } else {
         std::stringstream documentStr;
         documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
                     << "<body><h1>" << errorNumber << " - " << message << "</h1>"
-                    << "<div>" << body << "</div><hr/><div><i>Powered by "
-                                          "<a href=\"https://github.com/mattgodbolt/seasocks\">Seasocks</a></i></div></body></html>";
+                    << "<div>" << escapedBody << "</div><hr/><div><i>Powered by "
+                                                 "<a href=\"https://github.com/mattgodbolt/seasocks\">Seasocks</a></i></div></body></html>";
         document = documentStr.str();
     }
+    bufferLine("Content-Type: text/html; charset=utf-8");
     bufferLine("Content-Length: " + toString(document.length()));
     bufferLine("Connection: close");
     bufferLine("");
