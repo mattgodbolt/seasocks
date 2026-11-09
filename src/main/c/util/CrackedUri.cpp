@@ -85,6 +85,11 @@ CrackedUri::CrackedUri(const std::string& uri) {
 
     _path = split(path, '/');
     std::transform(_path.begin(), _path.end(), _path.begin(), unescape);
+    for (const auto& segment : _path) {
+        if (hasParentDirectorySegment(segment)) {
+            THROW("Parent directory in uri: '" << uri << "'");
+        }
+    }
 
     auto splitRemainder = split(remainder, '&');
     for (const auto& iter : splitRemainder) {

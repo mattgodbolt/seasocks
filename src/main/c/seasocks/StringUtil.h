@@ -47,7 +47,7 @@ std::string formatAddress(const sockaddr_in& address);
 
 std::vector<std::string> split(const std::string& input, char splitChar);
 
-bool hasParentDirectorySegment(const std::string& uri);
+bool hasParentDirectorySegment(const std::string& path);
 
 void replace(std::string& string, const std::string& find, const std::string& replace);
 

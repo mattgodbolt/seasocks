@@ -876,7 +876,8 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         return sendBadRequest("Malformed request line");
     }
 
-    if (hasParentDirectorySegment(requestUri)) {
+    const std::string requestUriString(requestUri);
+    if (hasParentDirectorySegment(requestUriString.substr(0, requestUriString.find('?')))) {
         return sendBadRequest("Malformed uri");
     }
 

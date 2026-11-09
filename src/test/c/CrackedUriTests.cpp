@@ -144,3 +144,16 @@ TEST_CASE("shouldShift", "[CrackedUriTests]") {
 }
 
 }
+
+TEST_CASE("shouldRejectEncodedParentDirectory", "[CrackedUriTests]") {
+    CHECK_THROWS(CrackedUri("/%2e%2e/a"));
+    CHECK_THROWS(CrackedUri("/a/%2E%2e"));
+    CHECK_THROWS(CrackedUri("/a%2f..%2fb"));
+    CHECK_THROWS(CrackedUri("/a%5c..%5cb"));
+    CHECK_THROWS(CrackedUri("/x%3f%2f..%2fy"));
+}
+
+TEST_CASE("shouldAllowDotsThatAreNotParentDirectory", "[CrackedUriTests]") {
+    CHECK_NOTHROW(CrackedUri("/a..b/%2e/c"));
+    CHECK_NOTHROW(CrackedUri("/a?next=%2e%2e"));
+}

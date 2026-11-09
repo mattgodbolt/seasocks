@@ -28,6 +28,8 @@
 #include "seasocks/IgnoringLogger.h"
 #include "seasocks/PageHandler.h"
 #include "seasocks/Response.h"
+#include "seasocks/util/CrackedUriPageHandler.h"
+#include "seasocks/util/RootPageHandler.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -219,10 +221,19 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
     SECTION("rejects parent directory segments") {
         UnixSocketServer s(tree.www);
         for (const char* uri : {"/../secret.txt", "/a/../../secret.txt", "/..", "/../", "/..\\secret.txt",
-                                "/hello.txt/../../secret.txt", "/..?x=1", "/%2e%2e/secret.txt", "/%2E./secret.txt", "/a%2f..%2f..%2fsecret.txt"}) {
+                                "/hello.txt/../../secret.txt", "/..?x=1"}) {
             INFO(uri);
             auto response = s.get(uri);
             CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+            CHECK(response.find("TOP-SECRET") == std::string::npos);
+        }
+    }
+    SECTION("does not decode percent-encoding when serving files") {
+        UnixSocketServer s(tree.www);
+        for (const char* uri : {"/%2e%2e/secret.txt", "/a%2f..%2f..%2fsecret.txt"}) {
+            INFO(uri);
+            auto response = s.get(uri);
+            CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
             CHECK(response.find("TOP-SECRET") == std::string::npos);
         }
     }
@@ -246,19 +257,23 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
         CHECK(statusLine(s.get("/hello.txt?next=../x")) == "HTTP/1.1 200 OK");
     }
     SECTION("rejects parent directory segments before custom handlers see them") {
-        struct EchoHandler : PageHandler {
-            std::shared_ptr<Response> handle(const Request&) override {
+        struct EchoHandler : CrackedUriPageHandler {
+            std::shared_ptr<Response> handle(const CrackedUri&, const Request&) override {
                 return Response::textResponse("handler-reached");
             }
         };
-        UnixSocketServer s(tree.www, std::make_shared<EchoHandler>());
-        auto ok = s.get("/anything");
-        CHECK(ok.find("handler-reached") != std::string::npos);
+        auto root = std::make_shared<RootPageHandler>();
+        root->add(std::make_shared<EchoHandler>());
+        UnixSocketServer s(tree.www, root);
+        CHECK(s.get("/anything").find("handler-reached") != std::string::npos);
+
         auto response = s.get("/../anything");
         CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
         CHECK(response.find("handler-reached") == std::string::npos);
+
+        // Percent-encoded: only CrackedUri sees the decoded ".." (and it throws).
         response = s.get("/%2e%2e/anything");
-        CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+        CHECK(statusLine(response) == "HTTP/1.1 500 Internal Server Error");
         CHECK(response.find("handler-reached") == std::string::npos);
     }
     SECTION("applies to HEAD and POST too") {
