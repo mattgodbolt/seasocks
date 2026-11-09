@@ -26,14 +26,22 @@
 #include "seasocks/Server.h"
 #include "seasocks/Connection.h"
 #include "seasocks/IgnoringLogger.h"
+#include "seasocks/PageHandler.h"
+#include "seasocks/Response.h"
+#include "seasocks/util/CrackedUriPageHandler.h"
+#include "seasocks/util/RootPageHandler.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstdio>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <thread>
+#include <vector>
 #ifndef _WIN32
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <unistd.h>
 #endif
@@ -88,39 +96,194 @@ TEST_CASE("Server tests", "[ServerTests]") {
 }
 
 #ifndef _WIN32
+namespace {
+
+class UnixSocketServer {
+    std::shared_ptr<IgnoringLogger> _logger = std::make_shared<IgnoringLogger>();
+    std::string _socketPath = "/tmp/seasocks-test-" + std::to_string(::getpid()) + ".sock";
+    std::thread _thread;
+
+public:
+    Server server{_logger};
+
+    explicit UnixSocketServer(const std::string& staticPath = "", std::shared_ptr<PageHandler> handler = nullptr) {
+        ::unlink(_socketPath.c_str());
+        // Not synchronised, so must be set before the server thread starts.
+        if (!staticPath.empty()) {
+            server.setStaticPath(staticPath.c_str());
+        }
+        if (handler) {
+            server.addPageHandler(std::move(handler));
+        }
+        REQUIRE(server.startListeningUnix(_socketPath.c_str()));
+        _thread = std::thread([this] { REQUIRE(server.loop()); });
+    }
+    ~UnixSocketServer() {
+        server.terminate();
+        _thread.join();
+        ::unlink(_socketPath.c_str());
+    }
+
+    std::string request(const std::string& rawRequest) const {
+        int client = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        REQUIRE(client != -1);
+        timeval timeout{5, 0};
+        ::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        sockaddr_un addr{};
+        addr.sun_family = AF_UNIX;
+        std::strncpy(addr.sun_path, _socketPath.c_str(), sizeof(addr.sun_path) - 1);
+        REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
+        REQUIRE(::send(client, rawRequest.data(), rawRequest.size(), 0) == static_cast<ssize_t>(rawRequest.size()));
+        // Half-close so the server closes after replying and we can read to EOF.
+        ::shutdown(client, SHUT_WR);
+        std::string response;
+        char buf[4096];
+        for (;;) {
+            auto received = ::recv(client, buf, sizeof(buf), 0);
+            if (received <= 0)
+                break;
+            response.append(buf, static_cast<size_t>(received));
+        }
+        ::close(client);
+        return response;
+    }
+
+    std::string get(const std::string& uri) const {
+        return request("GET " + uri + " HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    }
+};
+
+std::string statusLine(const std::string& response) {
+    return response.substr(0, response.find("\r\n"));
+}
+
+} // namespace
+
 // Newer Linux kernels reject SO_REUSEPORT on AF_UNIX sockets (issue #208).
 // Accepted connections are configured with the same options as the listener,
 // so check that a client can actually connect and get a response too.
 TEST_CASE("Server can listen on and accept from a unix socket", "[ServerTests]") {
-    auto logger = std::make_shared<IgnoringLogger>();
-    Server server(logger);
-    auto path = "/tmp/seasocks-test-" + std::to_string(::getpid()) + ".sock";
-    ::unlink(path.c_str());
-    REQUIRE(server.startListeningUnix(path.c_str()));
-    std::thread seasocksThread([&] {
-        REQUIRE(server.loop());
-    });
-
-    int client = ::socket(AF_UNIX, SOCK_STREAM, 0);
-    REQUIRE(client != -1);
-    timeval timeout{5, 0};
-    ::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
-    REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
-
-    const std::string request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
-    REQUIRE(::send(client, request.data(), request.size(), 0) == static_cast<ssize_t>(request.size()));
-    char buf[256] = {};
-    auto received = ::recv(client, buf, sizeof(buf) - 1, 0);
+    UnixSocketServer s;
     // Any HTTP response will do: it shows the accepted socket was usable.
-    REQUIRE(received > 0);
-    CHECK(std::string(buf, received).rfind("HTTP/1.1 ", 0) == 0);
+    CHECK(s.get("/").rfind("HTTP/1.1 ", 0) == 0);
+}
 
-    ::close(client);
-    server.terminate();
-    seasocksThread.join();
-    ::unlink(path.c_str());
+namespace {
+
+// <root>/www is the static dir; <root>/secret.txt and <root>/wwwsecret.txt
+// (a sibling sharing its name prefix) must never be served.
+struct TempTree {
+    std::string root;
+    std::string www;
+    std::vector<std::string> files;
+
+    TempTree() {
+        char rootTemplate[] = "/tmp/seasocks-static-XXXXXX";
+        REQUIRE(::mkdtemp(rootTemplate) != nullptr);
+        root = rootTemplate;
+        www = root + "/www";
+        REQUIRE(::mkdir(www.c_str(), 0700) == 0);
+    }
+    ~TempTree() {
+        for (const auto& f : files) {
+            std::remove(f.c_str());
+        }
+        ::rmdir(www.c_str());
+        ::rmdir(root.c_str());
+    }
+    void write(const std::string& path, const std::string& contents) {
+        files.push_back(path);
+        std::ofstream out(path);
+        out << contents;
+        REQUIRE(out.good());
+    }
+};
+
+} // namespace
+
+TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
+    TempTree tree;
+    tree.write(tree.www + "/hello.txt", "static-ok");
+    tree.write(tree.root + "/secret.txt", "TOP-SECRET");
+    tree.write(tree.root + "/wwwsecret.txt", "TOP-SECRET");
+
+    SECTION("with no static path nothing is served from the filesystem") {
+        UnixSocketServer s;
+        CHECK(statusLine(s.get("/etc/passwd")) == "HTTP/1.1 404 Not Found");
+        CHECK(statusLine(s.get(tree.root + "/secret.txt")) == "HTTP/1.1 404 Not Found");
+    }
+    SECTION("serves files under the static path") {
+        UnixSocketServer s(tree.www);
+        auto response = s.get("/hello.txt");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(response.find("static-ok") != std::string::npos);
+    }
+    SECTION("rejects parent directory segments") {
+        UnixSocketServer s(tree.www);
+        for (const char* uri : {"/../secret.txt", "/a/../../secret.txt", "/..", "/../", "/..\\secret.txt",
+                                "/hello.txt/../../secret.txt", "/..?x=1"}) {
+            INFO(uri);
+            auto response = s.get(uri);
+            CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+            CHECK(response.find("TOP-SECRET") == std::string::npos);
+        }
+    }
+    SECTION("does not decode percent-encoding when serving files") {
+        UnixSocketServer s(tree.www);
+        for (const char* uri : {"/%2e%2e/secret.txt", "/a%2f..%2f..%2fsecret.txt"}) {
+            INFO(uri);
+            auto response = s.get(uri);
+            CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+            CHECK(response.find("TOP-SECRET") == std::string::npos);
+        }
+    }
+    SECTION("a .. after the query marker is not part of the path") {
+        UnixSocketServer s(tree.www);
+        auto response = s.get("/hello.txt?/../../secret.txt");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(response.find("TOP-SECRET") == std::string::npos);
+    }
+    SECTION("rejects URIs that are not rooted") {
+        // "<www>" + "secret.txt" would be the sibling "<root>/wwwsecret.txt".
+        UnixSocketServer s(tree.www);
+        auto response = s.get("secret.txt");
+        CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+        CHECK(response.find("TOP-SECRET") == std::string::npos);
+    }
+    SECTION("allows dots that are not a parent segment") {
+        tree.write(tree.www + "/a..b.txt", "static-ok");
+        UnixSocketServer s(tree.www);
+        CHECK(statusLine(s.get("/a..b.txt")) == "HTTP/1.1 200 OK");
+        CHECK(statusLine(s.get("/hello.txt?next=../x")) == "HTTP/1.1 200 OK");
+    }
+    SECTION("rejects parent directory segments before custom handlers see them") {
+        struct EchoHandler : CrackedUriPageHandler {
+            std::shared_ptr<Response> handle(const CrackedUri&, const Request&) override {
+                return Response::textResponse("handler-reached");
+            }
+        };
+        auto root = std::make_shared<RootPageHandler>();
+        root->add(std::make_shared<EchoHandler>());
+        UnixSocketServer s(tree.www, root);
+        CHECK(s.get("/anything").find("handler-reached") != std::string::npos);
+
+        auto response = s.get("/../anything");
+        CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+        CHECK(response.find("handler-reached") == std::string::npos);
+
+        // Percent-encoded: only CrackedUri sees the decoded ".." (and it throws).
+        response = s.get("/%2e%2e/anything");
+        CHECK(statusLine(response) == "HTTP/1.1 500 Internal Server Error");
+        CHECK(response.find("handler-reached") == std::string::npos);
+    }
+    SECTION("applies to HEAD and POST too") {
+        UnixSocketServer s(tree.www);
+        for (const char* verb : {"HEAD", "POST"}) {
+            INFO(verb);
+            auto response = s.request(std::string(verb) + " /../secret.txt HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\n\r\n");
+            CHECK(statusLine(response) == "HTTP/1.1 400 Bad Request");
+            CHECK(response.find("TOP-SECRET") == std::string::npos);
+        }
+    }
 }
 #endif

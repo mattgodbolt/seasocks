@@ -136,8 +136,7 @@ const std::unordered_map<std::string, std::string> contentTypes = {
     {"mp3", "audio/mpeg"},
     {"wav", "audio/x-wav"},
     {"ttf", "font/ttf"},
-    {"wasm", "application/wasm"}
-};
+    {"wasm", "application/wasm"}};
 
 std::string getExt(const std::string& path) {
     auto lastDot = path.find_last_of('.');
@@ -876,7 +875,9 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
     }
-    if (std::string(requestUri).find("..") != std::string::npos) {
+
+    const std::string requestUriString(requestUri);
+    if (hasParentDirectorySegment(requestUriString.substr(0, requestUriString.find('?')))) {
         return sendBadRequest("Malformed uri");
     }
 
@@ -1259,7 +1260,12 @@ bool Connection::sendStaticData() {
     if (_server.getStaticPath().empty()) {
         return send404();
     }
-    std::string path = _server.getStaticPath() + getRequestUri();
+    // Must be rooted, else "/var/www" + "etc" names the sibling "/var/wwwetc".
+    const auto& uri = getRequestUri();
+    if (uri.empty() || uri[0] != '/') {
+        return sendBadRequest("Malformed uri");
+    }
+    std::string path = _server.getStaticPath() + uri;
     auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
     size_t queryPos = path.find('?');

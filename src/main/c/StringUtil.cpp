@@ -26,7 +26,6 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/StrCompare.h"
 
-#include <cctype>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -117,6 +116,21 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
     }
     result.push_back(input.substr(pos));
     return result;
+}
+
+bool hasParentDirectorySegment(const std::string& path) {
+    size_t segmentStart = 0;
+    while (segmentStart <= path.size()) {
+        auto segmentEnd = path.find_first_of("/\\", segmentStart);
+        if (segmentEnd == std::string::npos) {
+            segmentEnd = path.size();
+        }
+        if (path.compare(segmentStart, segmentEnd - segmentStart, "..") == 0) {
+            return true;
+        }
+        segmentStart = segmentEnd + 1;
+    }
+    return false;
 }
 
 void replace(std::string& string, const std::string& find, const std::string& replace) {
