@@ -59,13 +59,23 @@
 #endif
 #endif
 
+// MSVC's <sys/stat.h> only provides the underscore-prefixed names (S_ISREG is absent).
+#ifndef S_ISREG
+#ifndef S_IFMT
+#define S_IFMT _S_IFMT
+#endif
+#ifndef S_IFREG
+#define S_IFREG _S_IFREG
+#endif
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
 #include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cerrno>
 #include <fcntl.h>
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -1283,15 +1293,17 @@ bool Connection::sendStaticData() {
 #endif
     RaiiFd input{::open(path.c_str(), O_RDONLY | O_BINARY)};
     if (!input.ok()) {
-        std::string s = seasocks::getLastError();
-        std::cout << s << std::endl;
-        std::cout << std::endl;
+        LS_DEBUG(_logger, "Unable to open static file: " << seasocks::getLastError());
     }
     // This took a while to find! Linux opens all files in binary mode by default,
     // Windows does not. So let's be explicit about this.
 
     struct stat fileStat;
     if (!input.ok() || ::fstat(input, &fileStat) == -1) {
+        return send404();
+    }
+    // open() succeeds on a directory but read() would fail after the headers are sent.
+    if (!S_ISREG(fileStat.st_mode)) {
         return send404();
     }
     std::list<Range> ranges;

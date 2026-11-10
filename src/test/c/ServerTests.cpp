@@ -37,6 +37,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -282,6 +283,59 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
         response = s.get("/%2e%2e/anything");
         CHECK(statusLine(response) == "HTTP/1.1 500 Internal Server Error");
         CHECK(response.find("handler-reached") == std::string::npos);
+    }
+    SECTION("a directory without a trailing slash is a 404, not a truncated 200") {
+        REQUIRE(::mkdir((tree.www + "/dir").c_str(), 0700) == 0);
+        struct DirRemover {
+            std::string path;
+            ~DirRemover() {
+                ::rmdir(path.c_str());
+            }
+        } remover{tree.www + "/dir"};
+        UnixSocketServer s(tree.www);
+        auto response = s.get("/dir");
+        CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+        CHECK(response.find("200 OK") == std::string::npos);
+        // A query string is stripped before the lookup, so this is the same directory.
+        CHECK(statusLine(s.get("/dir?x=1")) == "HTTP/1.1 404 Not Found");
+        // A trailing slash with no index.html is still a plain 404.
+        CHECK(statusLine(s.get("/dir/")) == "HTTP/1.1 404 Not Found");
+    }
+    SECTION("a missing file is a 404 and writes nothing to stdout") {
+        UnixSocketServer s(tree.www);
+        // Restores fd 1 and releases the capture file even if the request throws.
+        struct StdoutCapture {
+            int saved;
+            std::FILE* file;
+            StdoutCapture()
+                    : saved(::dup(STDOUT_FILENO)), file(std::tmpfile()) {
+                REQUIRE(saved != -1);
+                REQUIRE(file != nullptr);
+                std::fflush(stdout);
+                REQUIRE(::dup2(::fileno(file), STDOUT_FILENO) != -1);
+            }
+            ~StdoutCapture() {
+                std::cout.flush();
+                std::fflush(stdout);
+                ::dup2(saved, STDOUT_FILENO);
+                ::close(saved);
+                std::fclose(file);
+            }
+            long written() const {
+                std::cout.flush();
+                std::fflush(stdout);
+                return ::ftell(file);
+            }
+        };
+        std::string response;
+        long written = -1;
+        {
+            StdoutCapture capture;
+            response = s.get("/missing.txt");
+            written = capture.written();
+        }
+        CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+        CHECK(written == 0);
     }
     SECTION("applies to HEAD and POST too") {
         UnixSocketServer s(tree.www);
