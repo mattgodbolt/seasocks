@@ -290,7 +290,6 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
         }
     }
 }
-#endif
 
 TEST_CASE("Error pages escape the request path and are served as HTML", "[ServerTests]") {
     UnixSocketServer s;
@@ -307,3 +306,4 @@ TEST_CASE("Error pages do not re-substitute template placeholders in the body", 
     CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
     CHECK(contains(response, "Unable to find resource for: /%%BODY%%%%MESSAGE%%%%ERRORCODE%%"));
 }
+#endif
