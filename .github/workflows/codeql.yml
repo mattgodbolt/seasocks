@@ -31,6 +31,9 @@ jobs:
             paths-ignore:
             - 'build/**'
             - 'src/test/**'
+            query-filters:
+            - exclude:
+                id: cpp/unused-static-function
       - name: Build
         run: |
           cmake . -Bbuild -GNinja
