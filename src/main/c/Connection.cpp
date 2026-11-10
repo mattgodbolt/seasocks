@@ -1288,7 +1288,6 @@ bool Connection::sendStaticData() {
 #ifndef O_BINARY
 #define O_BINARY 0x8000 // is this needed sometimes (mingw?)
 #endif
-    // (open() on a FIFO can block before we get to fstat; pre-existing, out of scope.)
     RaiiFd input{::open(path.c_str(), O_RDONLY | O_BINARY)};
     if (!input.ok()) {
         LS_DEBUG(_logger, "Unable to open static file: " << seasocks::getLastError());
