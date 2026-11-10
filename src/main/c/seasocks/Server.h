@@ -75,6 +75,7 @@ public:
 
     void addPageHandler(std::shared_ptr<PageHandler> handler);
 
+    // The endpoint is the URI path to serve, e.g. "/chat". A missing leading '/' is added, with a warning.
     void addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
                              bool allowCrossOriginRequests = false);
 
