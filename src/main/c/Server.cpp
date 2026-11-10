@@ -108,6 +108,34 @@ std::ostream& operator<<(std::ostream& o, const EventBits& b) {
 constexpr int EpollTimeoutMillis = 500; // Twice a second is ample.
 constexpr int DefaultLameConnectionTimeoutSeconds = 10;
 
+// Closes and resets the given listen socket on destruction unless released, so
+// that every failure path of startListening* cleans up after itself.
+class ListenSocketGuard {
+    NativeSocketType& _sock;
+    bool _armed = true;
+
+public:
+    explicit ListenSocketGuard(NativeSocketType& sock)
+            : _sock(sock) {
+    }
+    ListenSocketGuard(const ListenSocketGuard&) = delete;
+    ListenSocketGuard& operator=(const ListenSocketGuard&) = delete;
+    ~ListenSocketGuard() {
+        if (!_armed || _sock == InvalidSocket) {
+            return;
+        }
+#ifdef _WIN32
+        ::closesocket(_sock);
+#else
+        close(_sock);
+#endif
+        _sock = InvalidSocket;
+    }
+    void release() {
+        _armed = false;
+    }
+};
+
 }
 
 namespace seasocks {
@@ -321,6 +349,7 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
         LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
         return false;
     }
+    ListenSocketGuard listenSocketGuard(_listenSock);
     if (!configureSocket(_listenSock)) {
         return false;
     }
@@ -343,6 +372,8 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
         return false;
     }
 
+    listenSocketGuard.release();
+
     char buf[1024];
     ::gethostname(buf, sizeof(buf));
     LS_INFO(_logger, "Listening on http://" << buf << ":" << port << "/");
@@ -358,6 +389,7 @@ bool Server::startListeningUnix(const char* socketPath) {
         LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
         return false;
     }
+    ListenSocketGuard listenSocketGuard(_listenSock);
     if (!configureSocket(_listenSock)) {
         return false;
     }
@@ -381,6 +413,8 @@ bool Server::startListeningUnix(const char* socketPath) {
         LS_ERROR(_logger, "Unable to add unix listen socket to epoll: " << getLastError());
         return false;
     }
+
+    listenSocketGuard.release();
 
     LS_INFO(_logger, "Listening on unix socket: http://unix:" << socketPath);
 
