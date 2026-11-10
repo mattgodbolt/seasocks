@@ -206,6 +206,28 @@ TEST_CASE("CORS preflight OPTIONS requests are answered", "[ServerTests]") {
     }
 }
 
+TEST_CASE("Page handlers can answer OPTIONS requests themselves", "[ServerTests]") {
+    struct OptionsHandler : CrackedUriPageHandler {
+        std::shared_ptr<Response> handle(const CrackedUri& uri, const Request& request) override {
+            if (request.verb() == Request::Verb::Options && uri.path().size() == 1 && uri.path()[0] == "custom") {
+                return Response::textResponse("custom-options");
+            }
+            return Response::unhandled();
+        }
+    };
+    auto root = std::make_shared<RootPageHandler>();
+    root->add(std::make_shared<OptionsHandler>());
+    UnixSocketServer s("", root);
+
+    auto response = s.request("OPTIONS /custom HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    CHECK(contains(response, "custom-options"));
+    CHECK(!contains(response, "Access-Control-Allow-Methods"));
+
+    response = s.request("OPTIONS /other HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+    CHECK(contains(response, "\r\nAccess-Control-Allow-Methods: "));
+}
+
 // Issue #203: an endpoint registered without a leading '/' never matched.
 TEST_CASE("WebSocket endpoints without a leading slash are registered with one", "[ServerTests]") {
     struct NoOpHandler : WebSocket::Handler {

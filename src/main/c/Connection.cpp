@@ -959,9 +959,6 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 }
 
 bool Connection::handlePageRequest() {
-    if (_request->verb() == Request::Verb::Options) {
-        return sendOptionsResponse();
-    }
     std::shared_ptr<Response> response;
     try {
         response = _server.handle(*_request);
@@ -994,6 +991,9 @@ bool Connection::handlePageRequest() {
         }
         auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
         return handleHybiHandshake(webSocketVersion, hybiKey);
+    }
+    if (!response && _request->verb() == Request::Verb::Options) {
+        return sendOptionsResponse();
     }
     return sendResponse(response);
 }
