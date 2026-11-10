@@ -185,6 +185,27 @@ TEST_CASE("Server can listen on and accept from a unix socket", "[ServerTests]")
     CHECK(s.get("/").rfind("HTTP/1.1 ", 0) == 0);
 }
 
+// Issue #152: browsers send an OPTIONS preflight before cross-origin PUT/POST etc.
+TEST_CASE("CORS preflight OPTIONS requests are answered", "[ServerTests]") {
+    UnixSocketServer s;
+    auto response = s.request("OPTIONS /api/thing HTTP/1.1\r\nHost: localhost\r\nOrigin: http://example.com\r\n"
+                              "Access-Control-Request-Method: PUT\r\nAccess-Control-Request-Headers: content-type\r\n\r\n");
+    CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+    CHECK(contains(response, "\r\nAccess-Control-Allow-Origin: *\r\n"));
+    CHECK(contains(response, "\r\nAccess-Control-Allow-Methods: GET, HEAD, POST, PUT, DELETE, OPTIONS\r\n"));
+    CHECK(contains(response, "\r\nAccess-Control-Allow-Headers: content-type\r\n"));
+    CHECK(contains(response, "\r\nAccess-Control-Max-Age: "));
+    CHECK(contains(response, "\r\nAllow: GET, HEAD, POST, PUT, DELETE, OPTIONS\r\n"));
+    CHECK(contains(response, "\r\nContent-Length: 0\r\n"));
+    CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
+
+    SECTION("without a requested header list no Allow-Headers is sent") {
+        response = s.request("OPTIONS * HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(!contains(response, "Access-Control-Allow-Headers"));
+    }
+}
+
 // Issue #203: an endpoint registered without a leading '/' never matched.
 TEST_CASE("WebSocket endpoints without a leading slash are registered with one", "[ServerTests]") {
     struct NoOpHandler : WebSocket::Handler {

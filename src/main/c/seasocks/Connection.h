@@ -166,6 +166,7 @@ private:
     bool processHeaders(uint8_t* first, uint8_t* last);
     bool sendData(const std::string& type, const char* start, size_t size);
     bool sendHeader(const std::string& type, size_t size);
+    bool sendOptionsResponse();
 
     // Delegated from ResponseWriter.
     struct Writer;
