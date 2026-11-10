@@ -35,11 +35,14 @@
 
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <thread>
 #include <vector>
 #ifndef _WIN32
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -306,4 +309,60 @@ TEST_CASE("Error pages do not re-substitute template placeholders in the body", 
     CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
     CHECK(contains(response, "Unable to find resource for: /%%BODY%%%%MESSAGE%%%%ERRORCODE%%"));
 }
+
+#ifdef __linux__
+namespace {
+
+size_t openFdCount() {
+    size_t count = 0;
+    for (const auto& entry : std::filesystem::directory_iterator("/proc/self/fd")) {
+        (void) entry;
+        ++count;
+    }
+    return count;
+}
+
+} // namespace
+
+TEST_CASE("Failing to start listening does not leak the listen socket", "[ServerTests]") {
+    auto logger = std::make_shared<IgnoringLogger>();
+    Server server(logger);
+    const auto baseline = openFdCount();
+
+    SECTION("unix socket bind failure") {
+        for (int i = 0; i < 3; ++i) {
+            CHECK_FALSE(server.startListeningUnix("/nonexistent-seasocks-dir/test.sock"));
+            CHECK(openFdCount() == baseline);
+        }
+    }
+
+    SECTION("tcp bind failure") {
+        // Occupy a port so that the server's bind() fails.
+        int holder = ::socket(AF_INET, SOCK_STREAM, 0);
+        REQUIRE(holder != -1);
+        sockaddr_in addr{};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        REQUIRE(::bind(holder, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
+        REQUIRE(::listen(holder, 1) == 0);
+        socklen_t len = sizeof(addr);
+        REQUIRE(::getsockname(holder, reinterpret_cast<sockaddr*>(&addr), &len) == 0);
+        const int port = ntohs(addr.sin_port);
+
+        const auto withHolder = openFdCount();
+        for (int i = 0; i < 3; ++i) {
+            CHECK_FALSE(server.startListening(INADDR_LOOPBACK, port));
+            CHECK(openFdCount() == withHolder);
+        }
+        ::close(holder);
+    }
+
+    SECTION("a retry on the same server works after a failure") {
+        CHECK_FALSE(server.startListeningUnix("/nonexistent-seasocks-dir/test.sock"));
+        CHECK(openFdCount() == baseline);
+        CHECK(server.startListening(INADDR_LOOPBACK, 0));
+        CHECK(openFdCount() == baseline + 1);
+    }
+}
+#endif
 #endif
