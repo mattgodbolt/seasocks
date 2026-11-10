@@ -30,6 +30,7 @@ jobs:
           config: |
             paths-ignore:
             - 'build/**'
+            - 'src/test/**'
       - name: Build
         run: |
           cmake . -Bbuild -GNinja
