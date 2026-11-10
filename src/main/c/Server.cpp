@@ -700,7 +700,12 @@ bool Server::unsubscribeFromWriteEvents(Connection* connection) {
 
 void Server::addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
                                  bool allowCrossOriginRequests) {
-    _webSocketHandlerMap[endpoint] = {handler, allowCrossOriginRequests};
+    std::string path = endpoint;
+    if (path.empty() || path[0] != '/') {
+        LS_WARNING(_logger, "WebSocket endpoint '" << path << "' lacks a leading '/'; registering it as '/" << path << "'");
+        path.insert(path.begin(), '/');
+    }
+    _webSocketHandlerMap[path] = {handler, allowCrossOriginRequests};
 }
 
 void Server::addPageHandler(std::shared_ptr<PageHandler> handler) {

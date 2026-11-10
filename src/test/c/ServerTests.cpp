@@ -37,6 +37,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -110,7 +111,8 @@ class UnixSocketServer {
 public:
     Server server{_logger};
 
-    explicit UnixSocketServer(const std::string& staticPath = "", std::shared_ptr<PageHandler> handler = nullptr) {
+    explicit UnixSocketServer(const std::string& staticPath = "", std::shared_ptr<PageHandler> handler = nullptr,
+                              const std::function<void(Server&)>& configure = nullptr) {
         ::unlink(_socketPath.c_str());
         // Not synchronised, so must be set before the server thread starts.
         if (!staticPath.empty()) {
@@ -118,6 +120,9 @@ public:
         }
         if (handler) {
             server.addPageHandler(std::move(handler));
+        }
+        if (configure) {
+            configure(server);
         }
         REQUIRE(server.startListeningUnix(_socketPath.c_str()));
         _thread = std::thread([this] { REQUIRE(server.loop()); });
@@ -174,6 +179,25 @@ TEST_CASE("Server can listen on and accept from a unix socket", "[ServerTests]")
     UnixSocketServer s;
     // Any HTTP response will do: it shows the accepted socket was usable.
     CHECK(s.get("/").rfind("HTTP/1.1 ", 0) == 0);
+}
+
+// Issue #203: an endpoint registered without a leading '/' never matched.
+TEST_CASE("WebSocket endpoints without a leading slash are registered with one", "[ServerTests]") {
+    struct NoOpHandler : WebSocket::Handler {
+        void onConnect(WebSocket*) override {
+        }
+        void onData(WebSocket*, const char*) override {
+        }
+        void onDisconnect(WebSocket*) override {
+        }
+    };
+    UnixSocketServer s("", nullptr, [](Server& server) {
+        server.addWebSocketHandler("pin", std::make_shared<NoOpHandler>());
+    });
+    auto response = s.request("GET /pin HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\n"
+                              "Connection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                              "Sec-WebSocket-Version: 13\r\n\r\n");
+    CHECK(statusLine(response).rfind("HTTP/1.1 101 ", 0) == 0);
 }
 
 namespace {
