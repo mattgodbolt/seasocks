@@ -58,8 +58,9 @@ TEST_CASE("Server tests", "[ServerTests]") {
     auto logger = std::make_shared<IgnoringLogger>();
     Server server(logger);
     REQUIRE(server.startListening(0));
+    bool loopResult = false; // Only read after the thread is joined.
     std::thread seasocksThread([&] {
-        REQUIRE(server.loop());
+        loopResult = server.loop();
     });
 
     std::atomic<int> test(0);
@@ -97,6 +98,7 @@ TEST_CASE("Server tests", "[ServerTests]") {
 
     server.terminate();
     seasocksThread.join();
+    CHECK(loopResult);
 }
 
 #ifndef _WIN32
@@ -106,6 +108,7 @@ class UnixSocketServer {
     std::shared_ptr<IgnoringLogger> _logger = std::make_shared<IgnoringLogger>();
     std::string _socketPath = "/tmp/seasocks-test-" + std::to_string(::getpid()) + ".sock";
     std::thread _thread;
+    bool _loopResult = false; // Only read after the thread is joined.
 
 public:
     Server server{_logger};
@@ -120,11 +123,12 @@ public:
             server.addPageHandler(std::move(handler));
         }
         REQUIRE(server.startListeningUnix(_socketPath.c_str()));
-        _thread = std::thread([this] { REQUIRE(server.loop()); });
+        _thread = std::thread([this] { _loopResult = server.loop(); });
     }
     ~UnixSocketServer() {
         server.terminate();
         _thread.join();
+        CHECK(_loopResult);
         ::unlink(_socketPath.c_str());
     }
 
