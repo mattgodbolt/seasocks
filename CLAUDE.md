@@ -1,7 +1,9 @@
 # CLAUDE.md
 
-Seasocks: small embeddable C++17 HTTP/WebSocket server library (CMake). Linux and Windows (MSVC) only;
-CMake hard-fails on Apple.
+Seasocks: small embeddable C++17 HTTP/WebSocket server library (CMake). Built and tested on Linux and
+Windows (MSVC). The event loop is epoll (wepoll shim on Windows) with no kqueue backend, so Apple is
+currently excluded by a `FATAL_ERROR` at the top of the root `CMakeLists.txt`; that guard is a current
+limitation, not a design rule, and would go if a kqueue backend were added.
 
 ## Build and test
 ```sh
@@ -29,8 +31,8 @@ ctest --test-dir build -T memcheck                       # valgrind, suppression
 
 ## Gotchas
 - Embedded content: a new file in `src/main/web/` must be added to `EMBEDDED_FILES` in its CMakeLists.
-  The generate step only depends on the script, so editing an embedded file does not rebuild it:
-  delete `build/src/main/web/Embedded.cpp` (or reconfigure) after changing one.
+  The generate step only depends on the script, so editing an embedded file does not rebuild it, and
+  reconfiguring does not help either: delete `build/src/main/web/Embedded.cpp` after changing one.
 - Threading: the server is single-threaded. `loop()`/`poll()` and everything on `Connection`/`WebSocket`
   (e.g. `send`, `close`) and `ResponseWriter` must run on the seasocks thread (`Server::checkThread()`
   throws otherwise). From other threads only `Server::terminate()` and `Server::execute(...)` are safe;
