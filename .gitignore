@@ -107,3 +107,6 @@ ipch/
 # TFS 2012 Local Workspace
 $tf/
 
+
+# Claude Code agent worktrees
+.claude/worktrees/
