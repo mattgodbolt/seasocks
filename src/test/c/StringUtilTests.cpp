@@ -172,3 +172,15 @@ TEST_CASE("hasParentDirectorySegment ignores other uses of dots", "[StringUtilTe
     CHECK_FALSE(hasParentDirectorySegment("/./a"));
     CHECK_FALSE(hasParentDirectorySegment("/%2e%2e/a"));
 }
+
+TEST_CASE("escapeHtml escapes HTML special characters", "[StringUtilTests]") {
+    CHECK(escapeHtml("<script>alert(1)</script>") == "&lt;script&gt;alert(1)&lt;/script&gt;");
+    CHECK(escapeHtml("a & b") == "a &amp; b");
+    CHECK(escapeHtml("\"quoted\" and 'single'") == "&quot;quoted&quot; and &#39;single&#39;");
+    CHECK(escapeHtml("&lt;") == "&amp;lt;");
+}
+
+TEST_CASE("escapeHtml leaves safe text alone", "[StringUtilTests]") {
+    CHECK(escapeHtml("") == "");
+    CHECK(escapeHtml("/plain/path.html") == "/plain/path.html");
+}

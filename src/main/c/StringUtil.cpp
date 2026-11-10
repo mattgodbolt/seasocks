@@ -147,6 +147,34 @@ void replace(std::string& string, const std::string& find, const std::string& re
     }
 }
 
+std::string escapeHtml(const std::string& text) {
+    std::string result;
+    result.reserve(text.size());
+    for (auto c : text) {
+        switch (c) {
+            case '&':
+                result += "&amp;";
+                break;
+            case '<':
+                result += "&lt;";
+                break;
+            case '>':
+                result += "&gt;";
+                break;
+            case '"':
+                result += "&quot;";
+                break;
+            case '\'':
+                result += "&#39;";
+                break;
+            default:
+                result += c;
+                break;
+        }
+    }
+    return result;
+}
+
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
     return compareCaseInsensitive(lhs, rhs);
 }

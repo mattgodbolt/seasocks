@@ -51,6 +51,9 @@ bool hasParentDirectorySegment(const std::string& path);
 
 void replace(std::string& string, const std::string& find, const std::string& replace);
 
+// Escapes &, <, >, " and ' so the text is safe to place in HTML content or attributes.
+std::string escapeHtml(const std::string& text);
+
 bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs);
 
 std::string webtime(time_t time);
