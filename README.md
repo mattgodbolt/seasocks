@@ -49,6 +49,7 @@ Alternatively, build Seasocks as part of your project, either with `add_subdirec
 set(UNITTESTS OFF CACHE INTERNAL "")
 set(SEASOCKS_EXAMPLE_APP OFF CACHE INTERNAL "")
 add_subdirectory(thirdparty/seasocks)
+target_compile_features(my_server PRIVATE cxx_std_17)
 target_link_libraries(my_server PRIVATE Seasocks::seasocks)
 ```
 
