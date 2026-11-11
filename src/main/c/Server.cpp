@@ -345,6 +345,7 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
         return false;
     }
     closeListenSocket(_listenSock);
+    _listenPaused = false;
     _listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (_listenSock == -1) {
         LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
@@ -386,6 +387,7 @@ bool Server::startListeningUnix(const char* socketPath) {
     struct sockaddr_un sock;
 
     closeListenSocket(_listenSock);
+    _listenPaused = false;
     _listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (_listenSock == -1) {
         LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
