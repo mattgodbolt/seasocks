@@ -210,6 +210,7 @@ private:
     std::shared_ptr<WebSocket::Handler> _webSocketHandler;
     bool _shutdownByUser;
     std::unique_ptr<PageRequest> _request;
+    bool _headRequest = false;
     std::shared_ptr<Response> _response;
     TransferEncoding _transferEncoding;
     unsigned _chunk;

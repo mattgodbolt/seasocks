@@ -179,6 +179,23 @@ std::string statusLine(const std::string& response) {
     return response.substr(0, response.find("\r\n"));
 }
 
+// Sends the request on an open connection, then reads whatever arrives until
+// nothing more comes for timeoutMs (or the peer closes).
+std::string exchange(int client, const std::string& rawRequest, int timeoutMs) {
+    timeval timeout{timeoutMs / 1000, (timeoutMs % 1000) * 1000};
+    ::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    REQUIRE(::send(client, rawRequest.data(), rawRequest.size(), 0) == static_cast<ssize_t>(rawRequest.size()));
+    std::string response;
+    char buf[4096];
+    for (;;) {
+        auto received = ::recv(client, buf, sizeof(buf), 0);
+        if (received <= 0)
+            break;
+        response.append(buf, static_cast<size_t>(received));
+    }
+    return response;
+}
+
 } // namespace
 
 // Newer Linux kernels reject SO_REUSEPORT on AF_UNIX sockets (issue #208).
@@ -518,6 +535,82 @@ TEST_CASE("Error pages do not re-substitute template placeholders in the body", 
     auto response = s.get("/%%BODY%%%%MESSAGE%%%%ERRORCODE%%");
     CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
     CHECK(contains(response, "Unable to find resource for: /%%BODY%%%%MESSAGE%%%%ERRORCODE%%"));
+}
+
+TEST_CASE("HEAD of embedded content responds without waiting for the client to close", "[ServerTests]") {
+    UnixSocketServer s;
+    int client = s.connectClient();
+    auto response = exchange(client, "HEAD /_error.css HTTP/1.1\r\nHost: localhost\r\n\r\n", 1000);
+    ::close(client);
+    CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+    CHECK(contains(response, "\r\nContent-Type: text/css"));
+    CHECK(contains(response, "\r\nContent-Length: "));
+    CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
+}
+
+TEST_CASE("HEAD error and built-in responses have no body", "[ServerTests]") {
+    UnixSocketServer s;
+    SECTION("a missing file") {
+        int client = s.connectClient();
+        auto response = exchange(client, "HEAD /missing.txt HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+        CHECK(contains(response, "\r\nContent-Length: "));
+        CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
+    }
+    SECTION("the statistics script") {
+        int client = s.connectClient();
+        auto response = exchange(client, "HEAD /_livestats.js HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
+    }
+    SECTION("a GET after a HEAD on the same connection still gets a body") {
+        int client = s.connectClient();
+        exchange(client, "HEAD /_livestats.js HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        auto get = exchange(client, "GET /_livestats.js HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(get) == "HTTP/1.1 200 OK");
+        CHECK(get.substr(get.size() - 4) != "\r\n\r\n");
+    }
+}
+
+TEST_CASE("HEAD and GET of static files", "[ServerTests]") {
+    TempTree tree;
+    const std::string contents = "static-file-contents";
+    tree.write(tree.www + "/hello.txt", contents);
+    UnixSocketServer s(tree.www);
+    const std::string lengthHeader = "\r\nContent-Length: " + std::to_string(contents.size()) + "\r\n";
+
+    SECTION("HEAD sends headers only and keeps the connection usable") {
+        int client = s.connectClient();
+        auto head = exchange(client, "HEAD /hello.txt HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        CHECK(statusLine(head) == "HTTP/1.1 200 OK");
+        CHECK(contains(head, lengthHeader));
+        CHECK(contains(head, "\r\nAccept-Ranges: bytes\r\n"));
+        CHECK(head.substr(head.size() - 4) == "\r\n\r\n");
+        CHECK_FALSE(contains(head, contents));
+
+        auto get = exchange(client, "GET /hello.txt HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(get) == "HTTP/1.1 200 OK");
+        CHECK(contains(get, lengthHeader));
+        CHECK(get.substr(get.size() - contents.size()) == contents);
+    }
+    SECTION("HEAD with a Range header sends no body") {
+        int client = s.connectClient();
+        auto head = exchange(client, "HEAD /hello.txt HTTP/1.1\r\nHost: localhost\r\nRange: bytes=0-3\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(head).rfind("HTTP/1.1 20", 0) == 0);
+        CHECK(head.substr(head.size() - 4) == "\r\n\r\n");
+        CHECK_FALSE(contains(head, "static"));
+    }
+    SECTION("GET still returns the body") {
+        auto response = s.get("/hello.txt");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(contains(response, lengthHeader));
+        CHECK(response.substr(response.size() - contents.size()) == contents);
+    }
 }
 
 // Zero-length frames used to index into an empty vector (undefined behaviour).

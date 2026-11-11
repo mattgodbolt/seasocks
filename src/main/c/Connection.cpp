@@ -835,7 +835,9 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
     bufferLine("Content-Length: " + toString(document.length()));
     bufferLine("Connection: close");
     bufferLine("");
-    write(document.data(), document.length(), false);
+    if (!_headRequest) {
+        write(document.data(), document.length(), false);
+    }
     if (!flush()) {
         return false;
     }
@@ -877,6 +879,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
     LS_ACCESS(_logger, "Request: " << requestLine);
 
+    _headRequest = false;
     const char* verbText = shift(requestLine);
     if (!verbText) {
         return sendBadRequest("Malformed request line");
@@ -885,6 +888,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (verb == Request::Verb::Invalid) {
         return sendBadRequest("Malformed request line");
     }
+    _headRequest = verb == Request::Verb::Head;
     const char* requestUri = shift(requestLine);
     if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
@@ -1365,6 +1369,9 @@ bool Connection::sendStaticData() {
     if (!flush()) {
         return false;
     }
+    if (_request->verb() == Request::Verb::Head) {
+        return true;
+    }
 
     for (auto range : ranges) {
         if (::lseek(input, static_cast<off_t>(range.start), SEEK_SET) == -1) {
@@ -1401,7 +1408,8 @@ bool Connection::sendHeader(const std::string& type, size_t size) {
     bufferLine("Content-Type: " + type);
     bufferLine("Content-Length: " + toString(size));
     bufferLine("Connection: keep-alive");
-    return bufferLine("");
+    bufferLine("");
+    return flush();
 }
 
 bool Connection::sendOptionsResponse() {
@@ -1427,8 +1435,10 @@ bool Connection::sendData(const std::string& type, const char* start, size_t siz
     bufferLine("Content-Length: " + toString(size));
     bufferLine("Connection: keep-alive");
     bufferLine("");
-    bool result = write(start, size, true);
-    return result;
+    if (_headRequest) {
+        return flush();
+    }
+    return write(start, size, true);
 }
 
 void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
