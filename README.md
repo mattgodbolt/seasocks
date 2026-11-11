@@ -23,6 +23,12 @@ Stuff it doesn't do
 * It has been designed for WebSocket based control.
 * It probably won't work on other systems (patches to support other systems would be welcome, but not a priority for us)
 
+Intended use and security
+-------------------------
+Seasocks is for internal tools and trusted environments: control and monitoring UIs, embedded devices, development and test setups. It is not designed for untrusted environments, and it should not be exposed directly to the internet.
+
+It has no TLS support, any authentication is left to your own handlers, and security hardening is not a goal of the project. Some basic safeguards exist (for example, static file requests can't climb out of the static directory with `..`), but its request handling isn't designed to withstand hostile clients, so assume that one on the network can cause trouble. If you need to serve untrusted clients, put Seasocks behind a reverse proxy (nginx, Caddy, etc.) that provides TLS, authentication and request limits.
+
 Getting started
 ---------------
 Check out the [tutorial](https://github.com/mattgodbolt/seasocks/wiki/Seasocks-quick-tutorial) on the wiki.
