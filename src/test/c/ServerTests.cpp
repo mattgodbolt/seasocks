@@ -434,7 +434,7 @@ TEST_CASE("Range requests on static files", "[ServerTests]") {
 
     SECTION("malformed or overflowing ranges are a 400 and do not kill the server") {
         for (const char* range : {"bytes=a-b", "bytes=1-b", "bytes=-", "bytes=99999999999999999999-", "bytes=0-99999999999999999999",
-                                  "bytes=-99999999999999999999", "bytes=5-2", "bytes=-0", "bytes=3", "bytes=+1-2", "bytes=1--2",
+                                  "bytes=-99999999999999999999", "bytes=5-2", "bytes=-0", "bytes=3", "bytes=+1-2", "bytes=1--2", "bytes=--5",
                                   "bytes=", "items=0-1"}) {
             INFO(range);
             CHECK(statusLine(getRange("data.txt", range)) == "HTTP/1.1 400 Bad Request");

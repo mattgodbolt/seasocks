@@ -74,6 +74,7 @@
 #include <cassert>
 #include <cctype>
 #include <cerrno>
+#include <charconv>
 #include <fcntl.h>
 #include <fstream>
 #include <limits>
@@ -1189,12 +1190,15 @@ void Connection::parsePerMessageDeflateHeader(const std::string& header) {
 namespace {
 
 bool parseOffset(const std::string& text, long long& value) {
-    if (text.empty() || text.find_first_not_of("0123456789") != std::string::npos) {
+    // Parsed as unsigned so that from_chars rejects a leading sign.
+    unsigned long long parsed = 0;
+    const char* end = text.data() + text.size();
+    const auto result = std::from_chars(text.data(), end, parsed);
+    if (result.ec != std::errc() || result.ptr != end || parsed > static_cast<unsigned long long>((std::numeric_limits<long long>::max)())) {
         return false;
     }
-    errno = 0;
-    value = std::strtoll(text.c_str(), nullptr, 10);
-    return errno != ERANGE;
+    value = static_cast<long long>(parsed);
+    return true;
 }
 
 }
