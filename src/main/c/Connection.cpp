@@ -1186,34 +1186,50 @@ void Connection::parsePerMessageDeflateHeader(const std::string& header) {
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4702) // unreachable code
-#endif
+namespace {
+
+bool parseOffset(const std::string& text, long long& value) {
+    if (text.empty() || text.find_first_not_of("0123456789") != std::string::npos) {
+        return false;
+    }
+    errno = 0;
+    value = std::strtoll(text.c_str(), nullptr, 10);
+    return errno != ERANGE;
+}
+
+}
+
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     size_t minusPos = rangeStr.find('-');
     if (minusPos == std::string::npos) {
         LS_WARNING(_logger, "Bad range: '" << rangeStr << "'");
         return false;
     }
+    long long first = 0;
+    long long last = 0;
     if (minusPos == 0) {
         // A range like "-500" means 500 bytes from end of file to end.
-        range.start = std::stoi(rangeStr);
-        range.end = (std::numeric_limits<long>::max)();
-        return true;
-    } else {
-        range.start = std::stoi(rangeStr.substr(0, minusPos));
-        if (minusPos == rangeStr.size() - 1) {
-            range.end = (std::numeric_limits<long>::max)();
-        } else {
-            range.end = std::stoi(rangeStr.substr(minusPos + 1));
+        if (!parseOffset(rangeStr.substr(1), first) || first == 0) {
+            return false;
         }
+        range.start = -first;
+        range.end = (std::numeric_limits<long long>::max)();
         return true;
     }
-    return false;
+    if (!parseOffset(rangeStr.substr(0, minusPos), first)) {
+        return false;
+    }
+    range.start = first;
+    if (minusPos == rangeStr.size() - 1) {
+        range.end = (std::numeric_limits<long long>::max)();
+        return true;
+    }
+    if (!parseOffset(rangeStr.substr(minusPos + 1), last) || last < first) {
+        return false;
+    }
+    range.end = last;
+    return true;
 }
-#ifdef _MSC_VER
-#pragma warning(default : 4702) // unreachable code
-#endif
 
 bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges) const {
     static const std::string expectedPrefix = "bytes=";
@@ -1234,7 +1250,7 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
 
 // Sends HTTP 200 or 206, content-length, and range info as needed. Returns the actual file ranges
 // needing sending.
-std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, long fileSize) {
+std::list<Connection::Range> Connection::processRangesForStaticData(const std::list<Range>& origRanges, long long fileSize) {
     if (origRanges.empty()) {
         // Easy case: a non-range request.
         bufferResponseAndCommonHeaders(ResponseCode::Ok);
@@ -1250,10 +1266,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
     std::list<Range> sendRanges;
     for (auto actualRange : origRanges) {
         if (actualRange.start < 0) {
-            actualRange.start += fileSize;
-        }
-        if (actualRange.start >= fileSize) {
-            actualRange.start = fileSize - 1;
+            actualRange.start = (std::max)(0LL, actualRange.start + fileSize);
         }
         if (actualRange.end >= fileSize) {
             actualRange.end = fileSize - 1;
@@ -1313,6 +1326,27 @@ bool Connection::sendStaticData() {
     if (!rangeHeader.empty() && !parseRanges(rangeHeader, ranges)) {
         return sendBadRequest("Bad range header");
     }
+    if (ranges.size() > 1) {
+        // Multipart responses aren't supported; ignoring the header and sending the whole file is permitted.
+        ranges.clear();
+    }
+    if (!ranges.empty()) {
+        const long long fileSize = fileStat.st_size;
+        const auto& range = ranges.front();
+        const long long start = range.start < 0 ? (std::max)(0LL, range.start + fileSize) : range.start;
+        if (start >= fileSize) {
+            bufferResponseAndCommonHeaders(ResponseCode::RequestedRangeNotSatisfiable);
+            bufferLine("Content-Range: bytes */" + toString(fileSize));
+            bufferLine("Content-Length: 0");
+            bufferLine("Connection: close");
+            bufferLine("");
+            if (!flush()) {
+                return false;
+            }
+            closeWhenEmpty();
+            return true;
+        }
+    }
     ranges = processRangesForStaticData(ranges, fileStat.st_size);
     bufferLine("Content-Type: " + getContentType(path));
     bufferLine("Connection: keep-alive");
@@ -1329,7 +1363,7 @@ bool Connection::sendStaticData() {
     }
 
     for (auto range : ranges) {
-        if (::lseek(input, static_cast<long>(range.start), SEEK_SET) == -1) {
+        if (::lseek(input, static_cast<off_t>(range.start), SEEK_SET) == -1) {
             // We've (probably) already sent data.
             return false;
         }
@@ -1338,7 +1372,7 @@ bool Connection::sendStaticData() {
             char buf[ReadWriteBufferSize];
 
             auto bytesRead = ::read(input, buf,
-                                    static_cast<unsigned int>(std::min(static_cast<long>(sizeof(buf)), bytesLeft)));
+                                    static_cast<unsigned int>(std::min(static_cast<long long>(sizeof(buf)), bytesLeft)));
             if (bytesRead <= 0) {
                 const static std::string unexpectedEof("Unexpected EOF");
                 LS_ERROR(_logger, "Error reading file: " << (bytesRead == 0 ? unexpectedEof : getLastError()));

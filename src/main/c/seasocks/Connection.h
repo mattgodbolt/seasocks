@@ -177,9 +177,9 @@ private:
     void error(ResponseCode responseCode, const std::string& payload);
 
     struct Range {
-        long start;
-        long end;
-        long length() const {
+        long long start;
+        long long end;
+        long long length() const {
             return end - start + 1;
         }
     };
@@ -193,7 +193,7 @@ private:
     void bufferResponseAndCommonHeaders(ResponseCode code);
 
     std::list<Range> processRangesForStaticData(const std::list<Range>& ranges,
-                                                long fileSize);
+                                                long long fileSize);
 
     std::shared_ptr<Logger> _logger;
     ServerImpl& _server;
