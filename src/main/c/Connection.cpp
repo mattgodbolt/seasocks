@@ -834,7 +834,9 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
     bufferLine("Content-Length: " + toString(document.length()));
     bufferLine("Connection: close");
     bufferLine("");
-    bufferLine(document);
+    if (!_headRequest) {
+        bufferLine(document);
+    }
     if (!flush()) {
         return false;
     }
@@ -876,6 +878,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
     LS_ACCESS(_logger, "Request: " << requestLine);
 
+    _headRequest = false;
     const char* verbText = shift(requestLine);
     if (!verbText) {
         return sendBadRequest("Malformed request line");
@@ -884,6 +887,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     if (verb == Request::Verb::Invalid) {
         return sendBadRequest("Malformed request line");
     }
+    _headRequest = verb == Request::Verb::Head;
     const char* requestUri = shift(requestLine);
     if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
@@ -1393,8 +1397,10 @@ bool Connection::sendData(const std::string& type, const char* start, size_t siz
     bufferLine("Content-Length: " + toString(size));
     bufferLine("Connection: keep-alive");
     bufferLine("");
-    bool result = write(start, size, true);
-    return result;
+    if (_headRequest) {
+        return flush();
+    }
+    return write(start, size, true);
 }
 
 void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {

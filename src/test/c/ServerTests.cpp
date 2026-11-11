@@ -474,6 +474,33 @@ TEST_CASE("HEAD of embedded content responds without waiting for the client to c
     CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
 }
 
+TEST_CASE("HEAD error and built-in responses have no body", "[ServerTests]") {
+    UnixSocketServer s;
+    SECTION("a missing file") {
+        int client = s.connectClient();
+        auto response = exchange(client, "HEAD /missing.txt HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(response) == "HTTP/1.1 404 Not Found");
+        CHECK(contains(response, "\r\nContent-Length: "));
+        CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
+    }
+    SECTION("the statistics script") {
+        int client = s.connectClient();
+        auto response = exchange(client, "HEAD /_livestats.js HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(response.substr(response.size() - 4) == "\r\n\r\n");
+    }
+    SECTION("a GET after a HEAD on the same connection still gets a body") {
+        int client = s.connectClient();
+        exchange(client, "HEAD /_livestats.js HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        auto get = exchange(client, "GET /_livestats.js HTTP/1.1\r\nHost: localhost\r\n\r\n", 500);
+        ::close(client);
+        CHECK(statusLine(get) == "HTTP/1.1 200 OK");
+        CHECK(get.substr(get.size() - 4) != "\r\n\r\n");
+    }
+}
+
 TEST_CASE("HEAD and GET of static files", "[ServerTests]") {
     TempTree tree;
     const std::string contents = "static-file-contents";
