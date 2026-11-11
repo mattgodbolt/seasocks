@@ -834,7 +834,7 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
     bufferLine("Content-Length: " + toString(document.length()));
     bufferLine("Connection: close");
     bufferLine("");
-    bufferLine(document);
+    write(document.data(), document.length(), false);
     if (!flush()) {
         return false;
     }

@@ -435,6 +435,19 @@ TEST_CASE("Error pages do not re-substitute template placeholders in the body", 
     CHECK(contains(response, "Unable to find resource for: /%%BODY%%%%MESSAGE%%%%ERRORCODE%%"));
 }
 
+TEST_CASE("Error responses send exactly Content-Length body bytes", "[ServerTests]") {
+    UnixSocketServer s;
+    auto response = s.get("/missing");
+    REQUIRE(statusLine(response) == "HTTP/1.1 404 Not Found");
+    const std::string lengthHeader = "\r\nContent-Length: ";
+    auto lengthPos = response.find(lengthHeader);
+    REQUIRE(lengthPos != std::string::npos);
+    const auto declared = std::stoul(response.substr(lengthPos + lengthHeader.size()));
+    auto bodyPos = response.find("\r\n\r\n");
+    REQUIRE(bodyPos != std::string::npos);
+    CHECK(response.size() - (bodyPos + 4) == declared);
+}
+
 #ifdef __linux__
 namespace {
 
