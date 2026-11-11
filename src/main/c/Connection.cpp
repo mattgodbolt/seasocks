@@ -992,6 +992,9 @@ bool Connection::handlePageRequest() {
         auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
         return handleHybiHandshake(webSocketVersion, hybiKey);
     }
+    if (!response && _request->verb() == Request::Verb::Options) {
+        return sendOptionsResponse();
+    }
     return sendResponse(response);
 }
 
@@ -1361,6 +1364,23 @@ bool Connection::sendHeader(const std::string& type, size_t size) {
     bufferLine("Content-Length: " + toString(size));
     bufferLine("Connection: keep-alive");
     return bufferLine("");
+}
+
+bool Connection::sendOptionsResponse() {
+    static const char allowedMethods[] = "GET, HEAD, POST, PUT, DELETE, OPTIONS";
+    bufferResponseAndCommonHeaders(ResponseCode::Ok);
+    bufferLine(std::string("Allow: ") + allowedMethods);
+    bufferLine(std::string("Access-Control-Allow-Methods: ") + allowedMethods);
+    auto requestedHeaders = getHeader("Access-Control-Request-Headers");
+    const bool safeToEcho = std::none_of(requestedHeaders.begin(), requestedHeaders.end(),
+                                         [](char c) { return static_cast<unsigned char>(c) < 0x20 || c == 0x7f; });
+    if (!requestedHeaders.empty() && safeToEcho) {
+        bufferLine("Access-Control-Allow-Headers: " + requestedHeaders);
+    }
+    bufferLine("Access-Control-Max-Age: 600");
+    bufferLine("Content-Length: 0");
+    bufferLine("Connection: keep-alive");
+    return write("\r\n", 2, true);
 }
 
 bool Connection::sendData(const std::string& type, const char* start, size_t size) {
