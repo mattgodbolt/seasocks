@@ -488,6 +488,15 @@ TEST_CASE("Range requests on static files", "[ServerTests]") {
         CHECK(statusLine(response) == "HTTP/1.1 200 OK");
         CHECK(body(response) == content);
     }
+    SECTION("whitespace around ranges is tolerated") {
+        auto response = getRange("data.txt", "bytes=0-1, 5-6");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(body(response) == content);
+
+        response = getRange("data.txt", "bytes= 0-4");
+        CHECK(statusLine(response) == "HTTP/1.1 206 Partial Content");
+        CHECK(body(response) == content.substr(0, 5));
+    }
 }
 
 TEST_CASE("Error pages escape the request path and are served as HTML", "[ServerTests]") {

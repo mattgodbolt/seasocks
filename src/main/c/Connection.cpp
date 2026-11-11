@@ -1240,7 +1240,7 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
     auto rangesText = split(range.substr(expectedPrefix.length()), ',');
     for (auto& it : rangesText) {
         Range r;
-        if (!parseRange(it, r)) {
+        if (!parseRange(trimWhitespace(it), r)) {
             return false;
         }
         ranges.push_back(r);
