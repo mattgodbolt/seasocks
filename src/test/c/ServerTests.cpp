@@ -137,7 +137,7 @@ public:
         ::unlink(_socketPath.c_str());
     }
 
-    std::string request(const std::string& rawRequest) const {
+    int connectClient() const {
         int client = ::socket(AF_UNIX, SOCK_STREAM, 0);
         REQUIRE(client != -1);
         timeval timeout{5, 0};
@@ -146,6 +146,11 @@ public:
         addr.sun_family = AF_UNIX;
         std::strncpy(addr.sun_path, _socketPath.c_str(), sizeof(addr.sun_path) - 1);
         REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
+        return client;
+    }
+
+    std::string request(const std::string& rawRequest) const {
+        int client = connectClient();
         REQUIRE(::send(client, rawRequest.data(), rawRequest.size(), 0) == static_cast<ssize_t>(rawRequest.size()));
         // Half-close so the server closes after replying and we can read to EOF.
         ::shutdown(client, SHUT_WR);
@@ -159,17 +164,6 @@ public:
         }
         ::close(client);
         return response;
-    }
-
-    // A connected client that never half-closes, for observing keep-alive behaviour.
-    int connectClient() const {
-        int client = ::socket(AF_UNIX, SOCK_STREAM, 0);
-        REQUIRE(client != -1);
-        sockaddr_un addr{};
-        addr.sun_family = AF_UNIX;
-        std::strncpy(addr.sun_path, _socketPath.c_str(), sizeof(addr.sun_path) - 1);
-        REQUIRE(::connect(client, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 0);
-        return client;
     }
 
     std::string get(const std::string& uri) const {
@@ -539,6 +533,67 @@ TEST_CASE("HEAD and GET of static files", "[ServerTests]") {
     }
 }
 
+// Zero-length frames used to index into an empty vector (undefined behaviour).
+TEST_CASE("Zero-length WebSocket ping and binary frames are handled", "[ServerTests]") {
+    struct EchoHandler : WebSocket::Handler {
+        void onConnect(WebSocket*) override {
+        }
+        void onData(WebSocket* socket, const uint8_t* data, size_t length) override {
+            socket->send(data, length);
+        }
+        void onDisconnect(WebSocket*) override {
+        }
+    };
+    UnixSocketServer s("", nullptr, [](Server& server) {
+        server.addWebSocketHandler("/ws", std::make_shared<EchoHandler>());
+    });
+    const int client = s.connectClient();
+    const std::string handshake = "GET /ws HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\n"
+                                  "Connection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                                  "Sec-WebSocket-Version: 13\r\n\r\n";
+    REQUIRE(::send(client, handshake.data(), handshake.size(), 0) == static_cast<ssize_t>(handshake.size()));
+    std::string response;
+    while (!contains(response, "\r\n\r\n")) {
+        char c;
+        REQUIRE(::recv(client, &c, 1, 0) == 1);
+        response += c;
+    }
+    REQUIRE(statusLine(response).rfind("HTTP/1.1 101 ", 0) == 0);
+
+    auto expectFrame = [&](uint8_t header) {
+        uint8_t reply[2] = {};
+        size_t got = 0;
+        while (got < sizeof(reply)) {
+            auto n = ::recv(client, reply + got, sizeof(reply) - got, 0);
+            REQUIRE(n > 0);
+            got += static_cast<size_t>(n);
+        }
+        CHECK(reply[0] == header);
+        CHECK(reply[1] == 0);
+    };
+    // FIN + opcode, masked with a zero-length payload, then the 4-byte mask key.
+    const uint8_t ping[] = {0x89, 0x80, 1, 2, 3, 4};
+    const uint8_t binary[] = {0x82, 0x80, 1, 2, 3, 4};
+    REQUIRE(::send(client, ping, sizeof(ping), 0) == static_cast<ssize_t>(sizeof(ping)));
+    expectFrame(0x8a);
+    REQUIRE(::send(client, binary, sizeof(binary), 0) == static_cast<ssize_t>(sizeof(binary)));
+    expectFrame(0x82);
+    ::close(client);
+}
+
+TEST_CASE("Error responses send exactly Content-Length body bytes", "[ServerTests]") {
+    UnixSocketServer s;
+    auto response = s.get("/missing");
+    REQUIRE(statusLine(response) == "HTTP/1.1 404 Not Found");
+    const std::string lengthHeader = "\r\nContent-Length: ";
+    auto lengthPos = response.find(lengthHeader);
+    REQUIRE(lengthPos != std::string::npos);
+    const auto declared = std::stoul(response.substr(lengthPos + lengthHeader.size()));
+    auto bodyPos = response.find("\r\n\r\n");
+    REQUIRE(bodyPos != std::string::npos);
+    CHECK(response.size() - (bodyPos + 4) == declared);
+}
+
 #ifdef __linux__
 namespace {
 
@@ -584,6 +639,22 @@ TEST_CASE("Failing to start listening does not leak the listen socket", "[Server
             CHECK(openFdCount() == withHolder);
         }
         ::close(holder);
+    }
+
+    SECTION("listening again closes the previous listen socket") {
+        REQUIRE(server.startListening(INADDR_LOOPBACK, 0));
+        const auto listening = openFdCount();
+        CHECK(listening == baseline + 1);
+        REQUIRE(server.startListening(INADDR_LOOPBACK, 0));
+        REQUIRE(server.startListening(INADDR_LOOPBACK, 0));
+        CHECK(openFdCount() == listening);
+        const std::string path = "/tmp/seasocks-relisten-" + std::to_string(::getpid()) + ".sock";
+        for (int i = 0; i < 3; ++i) {
+            ::unlink(path.c_str());
+            REQUIRE(server.startListeningUnix(path.c_str()));
+            CHECK(openFdCount() == listening);
+        }
+        ::unlink(path.c_str());
     }
 
     SECTION("a retry on the same server works after a failure") {
