@@ -770,7 +770,7 @@ void Connection::handleHybiWebSocket() {
                 break;
             case HybiPacketDecoder::MessageState::Ping:
                 sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
-                         &decodedMessage[0], decodedMessage.size());
+                         decodedMessage.data(), decodedMessage.size());
                 break;
             case HybiPacketDecoder::MessageState::Pong:
                 // Pongs can be sent unsolicited (MSIE and Edge do this)
@@ -804,7 +804,7 @@ void Connection::handleWebSocketTextMessage(const char* message) {
 void Connection::handleWebSocketBinaryMessage(const std::vector<uint8_t>& message) {
     LS_DEBUG(_logger, "Got binary web socket message (size: " << message.size() << ")");
     if (_webSocketHandler) {
-        _webSocketHandler->onData(this, &message[0], message.size());
+        _webSocketHandler->onData(this, message.data(), message.size());
     }
 }
 
