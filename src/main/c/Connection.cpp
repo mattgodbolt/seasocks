@@ -1327,6 +1327,9 @@ bool Connection::sendStaticData() {
     if (!flush()) {
         return false;
     }
+    if (_request->verb() == Request::Verb::Head) {
+        return true;
+    }
 
     for (auto range : ranges) {
         if (::lseek(input, static_cast<long>(range.start), SEEK_SET) == -1) {
@@ -1363,7 +1366,8 @@ bool Connection::sendHeader(const std::string& type, size_t size) {
     bufferLine("Content-Type: " + type);
     bufferLine("Content-Length: " + toString(size));
     bufferLine("Connection: keep-alive");
-    return bufferLine("");
+    bufferLine("");
+    return flush();
 }
 
 bool Connection::sendOptionsResponse() {
