@@ -548,6 +548,22 @@ TEST_CASE("Failing to start listening does not leak the listen socket", "[Server
         ::close(holder);
     }
 
+    SECTION("listening again closes the previous listen socket") {
+        REQUIRE(server.startListening(INADDR_LOOPBACK, 0));
+        const auto listening = openFdCount();
+        CHECK(listening == baseline + 1);
+        REQUIRE(server.startListening(INADDR_LOOPBACK, 0));
+        REQUIRE(server.startListening(INADDR_LOOPBACK, 0));
+        CHECK(openFdCount() == listening);
+        const std::string path = "/tmp/seasocks-relisten-" + std::to_string(::getpid()) + ".sock";
+        for (int i = 0; i < 3; ++i) {
+            ::unlink(path.c_str());
+            REQUIRE(server.startListeningUnix(path.c_str()));
+            CHECK(openFdCount() == listening);
+        }
+        ::unlink(path.c_str());
+    }
+
     SECTION("a retry on the same server works after a failure") {
         CHECK_FALSE(server.startListeningUnix("/nonexistent-seasocks-dir/test.sock"));
         CHECK(openFdCount() == baseline);

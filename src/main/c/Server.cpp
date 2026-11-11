@@ -108,6 +108,19 @@ std::ostream& operator<<(std::ostream& o, const EventBits& b) {
 constexpr int EpollTimeoutMillis = 500; // Twice a second is ample.
 constexpr int DefaultLameConnectionTimeoutSeconds = 10;
 
+// Closing the socket also removes it from the epoll set.
+void closeListenSocket(NativeSocketType& sock) {
+    if (sock == InvalidSocket) {
+        return;
+    }
+#ifdef _WIN32
+    ::closesocket(sock);
+#else
+    close(sock);
+#endif
+    sock = InvalidSocket;
+}
+
 // Closes and resets the given listen socket on destruction unless released, so
 // that every failure path of startListening* cleans up after itself.
 class ListenSocketGuard {
@@ -121,15 +134,9 @@ public:
     ListenSocketGuard(const ListenSocketGuard&) = delete;
     ListenSocketGuard& operator=(const ListenSocketGuard&) = delete;
     ~ListenSocketGuard() {
-        if (!_armed || _sock == InvalidSocket) {
-            return;
+        if (_armed) {
+            closeListenSocket(_sock);
         }
-#ifdef _WIN32
-        ::closesocket(_sock);
-#else
-        close(_sock);
-#endif
-        _sock = InvalidSocket;
     }
     void release() {
         _armed = false;
@@ -230,14 +237,7 @@ Server::~Server() {
 
 void Server::shutdown() {
     // Stop listening to any further incoming connections.
-    if (_listenSock != -1) {
-#ifdef _WIN32
-        ::closesocket(_listenSock);
-#else
-        close(_listenSock);
-#endif
-        _listenSock = InvalidSocket;
-    }
+    closeListenSocket(_listenSock);
     // Disconnect and close any current connections.
     while (!_connections.empty()) {
         // Deleting the connection closes it and removes it from 'this'.
@@ -344,6 +344,7 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
         LS_ERROR(_logger, "Invalid port: " << port);
         return false;
     }
+    closeListenSocket(_listenSock);
     _listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (_listenSock == -1) {
         LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
@@ -384,6 +385,7 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
 bool Server::startListeningUnix(const char* socketPath) {
     struct sockaddr_un sock;
 
+    closeListenSocket(_listenSock);
     _listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (_listenSock == -1) {
         LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
