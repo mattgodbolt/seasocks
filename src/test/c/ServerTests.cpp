@@ -424,6 +424,86 @@ TEST_CASE("Static file serving stays inside the static path", "[ServerTests]") {
     }
 }
 
+TEST_CASE("Range requests on static files", "[ServerTests]") {
+    TempTree tree;
+    const std::string content = "0123456789ABCDEFGHIJKL";
+    tree.write(tree.www + "/data.txt", content);
+    tree.write(tree.www + "/empty.txt", "");
+    UnixSocketServer s(tree.www);
+    auto getRange = [&s](const std::string& file, const std::string& range) {
+        return s.request("GET /" + file + " HTTP/1.1\r\nHost: localhost\r\nRange: " + range + "\r\n\r\n");
+    };
+    auto body = [](const std::string& response) {
+        return response.substr(response.find("\r\n\r\n") + 4);
+    };
+
+    SECTION("malformed or overflowing ranges are a 400 and do not kill the server") {
+        for (const char* range : {"bytes=a-b", "bytes=1-b", "bytes=-", "bytes=99999999999999999999-", "bytes=0-99999999999999999999",
+                                  "bytes=-99999999999999999999", "bytes=5-2", "bytes=-0", "bytes=3", "bytes=+1-2", "bytes=1--2", "bytes=--5",
+                                  "bytes=", "items=0-1"}) {
+            INFO(range);
+            CHECK(statusLine(getRange("data.txt", range)) == "HTTP/1.1 400 Bad Request");
+            CHECK(statusLine(s.get("/data.txt")) == "HTTP/1.1 200 OK");
+        }
+    }
+    SECTION("ranges that do not fit in 32 bits are handled") {
+        CHECK(statusLine(getRange("data.txt", "bytes=2147483648-")) == "HTTP/1.1 416 Requested Range Not Satisfiable");
+        CHECK(statusLine(getRange("data.txt", "bytes=0-99999999999")) == "HTTP/1.1 206 Partial Content");
+        CHECK(contains(getRange("data.txt", "bytes=-99999999999"), "Content-Range: bytes 0-21/22\r\n"));
+    }
+    SECTION("unsatisfiable ranges are a 416") {
+        for (const char* range : {"bytes=22-", "bytes=100-200", "bytes=22-30"}) {
+            INFO(range);
+            auto response = getRange("data.txt", range);
+            CHECK(statusLine(response) == "HTTP/1.1 416 Requested Range Not Satisfiable");
+            CHECK(contains(response, "\r\nContent-Range: bytes */22\r\n"));
+            CHECK(body(response).empty());
+        }
+        CHECK(statusLine(s.get("/data.txt")) == "HTTP/1.1 200 OK");
+    }
+    SECTION("any range on an empty file is a 416") {
+        for (const char* range : {"bytes=0-", "bytes=0-0", "bytes=-5"}) {
+            INFO(range);
+            auto response = getRange("empty.txt", range);
+            CHECK(statusLine(response) == "HTTP/1.1 416 Requested Range Not Satisfiable");
+            CHECK(contains(response, "\r\nContent-Range: bytes */0\r\n"));
+        }
+        CHECK(statusLine(s.get("/empty.txt")) == "HTTP/1.1 200 OK");
+    }
+    SECTION("valid ranges are a 206") {
+        struct Case {
+            const char* range;
+            const char* contentRange;
+            const char* length;
+            const char* expected;
+        };
+        for (const auto& c : {Case{"bytes=0-4", "0-4/22", "5", "01234"}, Case{"bytes=-5", "17-21/22", "5", "HIJKL"},
+                              Case{"bytes=3-", "3-21/22", "19", "3456789ABCDEFGHIJKL"},
+                              Case{"bytes=20-100", "20-21/22", "2", "KL"}, Case{"bytes=21-21", "21-21/22", "1", "L"}}) {
+            INFO(c.range);
+            auto response = getRange("data.txt", c.range);
+            CHECK(statusLine(response) == "HTTP/1.1 206 Partial Content");
+            CHECK(contains(response, std::string("\r\nContent-Range: bytes ") + c.contentRange + "\r\n"));
+            CHECK(contains(response, std::string("\r\nContent-Length: ") + c.length + "\r\n"));
+            CHECK(body(response) == c.expected);
+        }
+    }
+    SECTION("multiple ranges fall back to the full file") {
+        auto response = getRange("data.txt", "bytes=0-1,5-6");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(body(response) == content);
+    }
+    SECTION("whitespace around ranges is tolerated") {
+        auto response = getRange("data.txt", "bytes=0-1, 5-6");
+        CHECK(statusLine(response) == "HTTP/1.1 200 OK");
+        CHECK(body(response) == content);
+
+        response = getRange("data.txt", "bytes= 0-4");
+        CHECK(statusLine(response) == "HTTP/1.1 206 Partial Content");
+        CHECK(body(response) == content.substr(0, 5));
+    }
+}
+
 TEST_CASE("Error pages escape the request path and are served as HTML", "[ServerTests]") {
     UnixSocketServer s;
     auto response = s.get("/<script>alert(1)</script>\"'&x");
