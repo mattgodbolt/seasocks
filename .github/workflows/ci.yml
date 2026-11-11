@@ -49,10 +49,20 @@ jobs:
           cmake --build . --target test
           ctest -D ExperimentalBuild -j${JOBS}
           ctest -D ExperimentalMemCheck -j${JOBS}
-      - name: CodeCov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
+      - name: Coverage report
+        if: matrix.build_config.compiler == 'gcc' && matrix.build_config.version == 16 && !matrix.build_config.args
+        run: |
+          apt-get install -y python3-pip
+          pip install --break-system-packages gcovr
+          gcovr --root . --object-directory build/src/main --filter 'src/main/' \
+            --lcov build/coverage.lcov --markdown-summary "$GITHUB_STEP_SUMMARY" --txt-summary
+      - name: Codecov
+        if: matrix.build_config.compiler == 'gcc' && matrix.build_config.version == 16 && !matrix.build_config.args
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
-          gcov: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: build/coverage.lcov
+          fail_ci_if_error: false
   build_msvc:
     runs-on: windows-latest
     strategy:
