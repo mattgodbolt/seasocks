@@ -347,7 +347,7 @@ bool Server::startListening(uint32_t ipInHostOrder, int port) {
     closeListenSocket(_listenSock);
     _listenPaused = false;
     _listenSock = socket(AF_INET, SOCK_STREAM, 0);
-    if (_listenSock == (NativeSocketType) -1) {
+    if (_listenSock == InvalidSocket) {
         LS_ERROR(_logger, "Unable to create listen socket: " << getLastError());
         return false;
     }
@@ -389,7 +389,7 @@ bool Server::startListeningUnix(const char* socketPath) {
     closeListenSocket(_listenSock);
     _listenPaused = false;
     _listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (_listenSock == (NativeSocketType) -1) {
+    if (_listenSock == InvalidSocket) {
         LS_ERROR(_logger, "Unable to create unix listen socket: " << getLastError());
         return false;
     }
@@ -556,7 +556,7 @@ bool Server::serve(const char* staticPath, int port) {
 }
 
 bool Server::loop() {
-    if (_listenSock == (NativeSocketType) -1) {
+    if (_listenSock == InvalidSocket) {
         LS_ERROR(_logger, "Server not initialised");
         return false;
     }
@@ -584,7 +584,7 @@ Server::PollResult Server::poll(int millis) {
         LS_ERROR(_logger, "poll() called from the wrong thread");
         return PollResult::Error;
     }
-    if (_listenSock == (NativeSocketType) -1) {
+    if (_listenSock == InvalidSocket) {
         LS_ERROR(_logger, "Server not initialised");
         return PollResult::Error;
     }
@@ -637,7 +637,7 @@ void Server::handleAccept() {
     NativeSocketType fd = ::accept(_listenSock,
                                    reinterpret_cast<sockaddr*>(&address),
                                    &addrLen);
-    if (fd == (NativeSocketType) -1) {
+    if (fd == InvalidSocket) {
         if (errno == EMFILE || errno == ENFILE) {
             if (_connections.empty()) {
                 LS_ERROR(_logger, "Out of file descriptors and there are also no connections that might eventually close");

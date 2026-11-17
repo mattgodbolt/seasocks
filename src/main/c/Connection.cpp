@@ -297,7 +297,7 @@ void Connection::closeInternal() {
     // It only actually only calls shutdown on the socket,
     // leaving the close of the FD and the cleanup until the destructor runs.
     _server.checkThread();
-    if (_fd != (NativeSocketType) -1 && !_shutdown && ::shutdown(_fd, SHUT_RDWR) == -1) {
+    if (_fd != InvalidSocket && !_shutdown && ::shutdown(_fd, SHUT_RDWR) == -1) {
         LS_WARNING(_logger, "Unable to shutdown socket : " << getLastError());
     }
     _shutdown = true;
@@ -315,7 +315,7 @@ void Connection::finalise() {
         _webSocketHandler->onDisconnect(this);
         _webSocketHandler.reset();
     }
-    if (_fd != (NativeSocketType) -1) {
+    if (_fd != InvalidSocket) {
         _server.remove(this);
         LS_DEBUG(_logger, "Closing socket");
 #ifndef _WIN32
@@ -328,7 +328,7 @@ void Connection::finalise() {
 }
 
 ssize_t Connection::safeSend(const void* data, size_t size) {
-    if ((_fd == (NativeSocketType) -1) || _hadSendError || _shutdown) {
+    if ((_fd == InvalidSocket) || _hadSendError || _shutdown) {
         // Ignore further writes to the socket, it's already closed or has been shutdown
         return -1;
     }
@@ -458,7 +458,7 @@ bool Connection::flush() {
 }
 
 bool Connection::closed() const {
-    return _fd == (NativeSocketType) -1 || _shutdown;
+    return _fd == InvalidSocket || _shutdown;
 }
 
 void Connection::handleNewData() {
@@ -1453,7 +1453,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
 }
 
 void Connection::setLinger() {
-    if (_fd == (NativeSocketType) -1) {
+    if (_fd == InvalidSocket) {
         return;
     }
     const int secondsToLinger = 1;

@@ -103,6 +103,10 @@ target_include_directories(seasocks PUBLIC
 
 add_library(Seasocks::seasocks ALIAS seasocks)
 target_link_libraries(seasocks PRIVATE Threads::Threads)
+if (MINGW)
+    # MSVC gets Winsock via #pragma comment(lib) in Server.h; MinGW needs it on the link line.
+    target_link_libraries(seasocks PUBLIC ws2_32)
+endif ()
 if (DEFLATE_SUPPORT)
     target_link_libraries(seasocks PRIVATE ZLIB::ZLIB)
 endif ()
