@@ -57,7 +57,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+// unknown pragma on windows msys2
+#if defined(_MSC_VER)
 #pragma warning(disable : 4996)
+#endif
 
 #define __GETOPT_H__
 
@@ -113,7 +116,7 @@ static inline char* optarg = nullptr; /* argument associated with option */
 extern char __declspec(dllimport) * __progname;
 #endif
 
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(__MINGW64__)
 static char EMSG[] = "";
 #else
 #define EMSG ""
