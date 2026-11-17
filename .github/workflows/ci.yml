@@ -83,3 +83,27 @@ jobs:
         run: |
             cd build
             ctest -C ${{ matrix.build_config.config }}
+  build_msys2:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@main
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-zlib
+      - name: Build
+        run: |
+          cmake . -Bbuild -GNinja
+          cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --no-tests=error
